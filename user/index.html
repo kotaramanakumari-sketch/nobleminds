@@ -1,0 +1,1618 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>User Panel — NobleMinds</title>
+  <link rel="stylesheet" href="../styles/global.css">
+  <style>
+    .step-progress { display:flex; gap:0; margin-bottom:28px; background:var(--clr-surface); border-radius:var(--radius-lg); padding:6px; overflow-x:auto; }
+    .sp-item { display:flex;align-items:center;gap:8px;padding:9px 16px;border-radius:var(--radius-md);cursor:pointer;transition:var(--transition);flex-shrink:0; }
+    .sp-num { width:26px;height:26px;border-radius:50%;background:var(--clr-surface2);display:flex;align-items:center;justify-content:center;font-size:0.75rem;font-weight:700; }
+    .sp-item.active { background:rgba(108,99,255,0.12); }
+    .sp-item.active .sp-num { background:var(--clr-primary);color:#fff; }
+    .sp-item.done .sp-num { background:var(--clr-success);color:#111; }
+    .sp-label { font-size:0.82rem;font-weight:500;color:var(--clr-text-2); }
+    .sp-item.active .sp-label { color:var(--clr-text);font-weight:600; }
+    .step-pane { display:none; } .step-pane.active { display:block; }
+    .photo-box { width:110px;height:110px;border:2px dashed var(--clr-border);border-radius:var(--radius-md);display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;transition:var(--transition);overflow:hidden;position:relative;background:var(--clr-surface); }
+    .photo-box:hover { border-color:var(--clr-primary); }
+    .photo-box input { position:absolute;inset:0;opacity:0;cursor:pointer; }
+    .photo-box img { width:100%;height:100%;object-fit:cover; }
+    .section-header { display:flex;align-items:center;justify-content:space-between;margin-bottom:20px; }
+    .section-header h2 { font-size:1.3rem;font-weight:800; }
+  </style>
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body>
+<div class="panel-layout">
+
+  <!-- SIDEBAR -->
+  <aside class="sidebar">
+    <div class="sidebar-logo">
+      <img src="../assets/logo.png" alt="NobleMinds" style="width:40px;height:40px;border-radius:var(--radius-sm);object-fit:contain;background:#fff;padding:2px;">
+      <div>
+        <div class="sidebar-brand">Noble<span>Minds</span></div>
+        <div class="sidebar-sub" id="sb-school-name">School Portal</div>
+      </div>
+    </div>
+    <nav class="sidebar-nav">
+      <div class="nav-section-label">Main</div>
+      <div class="nav-item active" onclick="showSection('dashboard',this)"><span class="nav-item-icon">📊</span>Dashboard</div>
+      <div class="nav-section-label">Students</div>
+      <div class="nav-item" onclick="showSection('students',this)"><span class="nav-item-icon">🎓</span>All Students<span class="nav-badge" id="nb-count">0</span></div>
+      <div class="nav-item" onclick="showSection('add-student',this);resetForm()"><span class="nav-item-icon">➕</span>Add Student</div>
+      <div class="nav-item" onclick="showSection('import',this)"><span class="nav-item-icon">📥</span>Bulk Import</div>
+      <div class="nav-section-label">Records</div>
+      <div class="nav-item" onclick="showSection('observations',this)"><span class="nav-item-icon">👁‍🗨</span>Observations</div>
+      <div class="nav-item" onclick="showSection('counselling',this)"><span class="nav-item-icon">🤝</span>Counselling</div>
+      <div class="nav-item" onclick="showSection('movement',this)"><span class="nav-item-icon">🏃</span>Movement Record</div>
+      <div class="nav-section-label">Account</div>
+      <div class="nav-item" onclick="nmLogout()"><span class="nav-item-icon">🚪</span>Logout</div>
+    </nav>
+    <div class="sidebar-footer">
+      <div class="sidebar-user">
+        <div class="avatar" id="user-avatar">U</div>
+        <div class="sidebar-user-info">
+          <div class="sidebar-user-name" id="user-name-disp">User</div>
+          <div class="sidebar-user-role">School Staff</div>
+        </div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- MAIN -->
+  <div class="main-content">
+    <div class="topbar">
+      <div class="topbar-title" id="topbar-title">Dashboard</div>
+      <div class="topbar-right">
+        <button class="btn btn-ghost btn-sm" onclick="window.print()">🖨 Print Page</button>
+      </div>
+    </div>
+
+    <div class="content-area">
+
+      <!-- DASHBOARD -->
+      <div class="page-section active" id="section-dashboard">
+        <div class="mb-24">
+          <h2 style="font-size:1.5rem;font-weight:900;">Welcome back! 👋</h2>
+          <p id="dash-school-label">Loading your school data…</p>
+        </div>
+        <div class="stat-cards mb-24">
+          <div class="stat-card"><div class="stat-icon green">🎓</div><div><div class="stat-value" id="ds-total">0</div><div class="stat-label">Total Students</div></div></div>
+          <div class="stat-card"><div class="stat-icon purple">🤝</div><div><div class="stat-value" id="ds-sessions">0</div><div class="stat-label">Counselling Sessions</div></div></div>
+          <div class="stat-card"><div class="stat-icon amber">⏳</div><div><div class="stat-value" id="ds-followups">0</div><div class="stat-label">Pending Follow-ups</div></div></div>
+          <div class="stat-card"><div class="stat-icon pink">🏆</div><div><div class="stat-value" id="ds-activities">0</div><div class="stat-label">In Activities</div></div></div>
+        </div>
+        <div style="display:grid;grid-template-columns:1.5fr 1fr;gap:24px;">
+          <div class="card">
+            <div class="card-header"><span class="card-title">Recent Students</span><button class="btn btn-ghost btn-sm" onclick="showSection('students',document.querySelector('[onclick*=students]'))">View All →</button></div>
+            <div id="recent-table"></div>
+          </div>
+          <div class="card">
+            <div class="card-header"><span class="card-title">Recent Counselling</span><button class="btn btn-ghost btn-sm" onclick="showSection('counselling',document.querySelector('[onclick*=counselling]'))">View All →</button></div>
+            <div id="recent-cns-list" style="font-size:0.85rem;"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- STUDENTS LIST -->
+      <div class="page-section" id="section-students">
+        <div class="section-header">
+          <h2>🎓 Students</h2>
+          <button class="btn btn-primary" onclick="showSection('add-student',document.querySelector('[onclick*=add-student]'));resetForm()">+ Add Student</button>
+        </div>
+        <div class="filter-bar mb-20">
+          <div class="search-input-wrapper" style="flex:1;min-width:180px;">
+            <span>🔍</span><input type="text" id="std-search" placeholder="Search by name, admission no…" oninput="renderStudents()">
+          </div>
+          <select class="filter-select" id="f-class" onchange="renderStudents()">
+            <option value="">All Classes</option>
+            <option value="1">Class 1</option><option value="2">Class 2</option><option value="3">Class 3</option>
+            <option value="4">Class 4</option><option value="5">Class 5</option><option value="6">Class 6</option>
+            <option value="7">Class 7</option><option value="8">Class 8</option><option value="9">Class 9</option>
+            <option value="10">Class 10</option><option value="11">Class 11</option><option value="12">Class 12</option>
+          </select>
+          <select class="filter-select" id="f-section" onchange="renderStudents()">
+            <option value="">All Sections</option>
+            <option>A</option><option>B</option><option>C</option><option>D</option><option>E</option><option>F</option>
+          </select>
+          <select class="filter-select" id="f-gender" onchange="renderStudents()">
+            <option value="">All Genders</option><option>Male</option><option>Female</option>
+          </select>
+          <button class="btn btn-ghost btn-sm" onclick="exportStudents()">⬇ Export Excel</button>
+        </div>
+        <div class="card" style="padding:0;overflow:hidden;">
+          <div class="table-wrapper">
+            <table class="data-table">
+              <thead><tr><th>Student Name</th><th>Class</th><th>Section</th><th>House</th><th>Phone Number</th><th>Actions</th></tr></thead>
+              <tbody id="std-tbody"></tbody>
+            </table>
+          </div>
+          <div id="std-empty" class="empty-state hidden">
+            <div class="empty-state-icon">🎓</div><h3>No students found</h3><p>Add students or adjust your filters.</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- ADD STUDENT (5-STEP FORM) -->
+      <div class="page-section" id="section-add-student">
+        <div class="section-header">
+          <h2 id="form-title">➕ Add New Student</h2>
+        </div>
+        <!-- Step progress -->
+        <div class="step-progress" id="step-progress">
+          <div class="sp-item active" onclick="goToStep(1)"><div class="sp-num" id="sn1">1</div><div class="sp-label">Basic Info</div></div>
+          <div class="sp-item" onclick="goToStep(2)"><div class="sp-num" id="sn2">2</div><div class="sp-label">Contact & IDs</div></div>
+          <div class="sp-item" onclick="goToStep(3)"><div class="sp-num" id="sn3">3</div><div class="sp-label">Father Details</div></div>
+          <div class="sp-item" onclick="goToStep(4)"><div class="sp-num" id="sn4">4</div><div class="sp-label">Mother Details</div></div>
+          <div class="sp-item" onclick="goToStep(5)"><div class="sp-num" id="sn5">5</div><div class="sp-label">Medical & Activities</div></div>
+        </div>
+
+        <div class="card">
+          <!-- STEP 1: Basic Info -->
+          <div class="step-pane active" id="pane-1">
+            <h3 style="margin-bottom:20px;">📋 Step 1: Basic Information</h3>
+            <div style="display:flex;gap:20px;align-items:flex-start;flex-wrap:wrap;margin-bottom:20px;">
+              <div>
+                <div class="form-label" style="margin-bottom:8px;">Student Photo</div>
+                <div class="photo-box" id="sp-preview" onclick="document.getElementById('f-photo').click()">
+                  <input type="file" id="f-photo" accept="image/*" onchange="previewPhoto(this,'sp-preview')">
+                  <span style="font-size:2rem;color:var(--clr-text-3);">📷</span>
+                  <span style="font-size:0.7rem;color:var(--clr-text-3);margin-top:4px;">Upload Photo</span>
+                </div>
+              </div>
+              <div style="flex:1;min-width:280px;">
+                <div class="form-grid">
+                  <div class="form-group">
+                    <label class="form-label">Admission Number <span class="required">*</span></label>
+                    <input type="text" id="f-adm" class="form-control" placeholder="e.g. SCH/2024/001">
+                  </div>
+                  <div class="form-group">
+                    <label class="form-label">Full Name <span class="required">*</span></label>
+                    <input type="text" id="f-name" class="form-control" placeholder="Student full name">
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="form-grid mb-16">
+              <div class="form-group">
+                <label class="form-label">Class <span class="required">*</span></label>
+                <select id="f-class-val" class="form-control">
+                  <option value="">Select class</option>
+                  <option value="1">Class 1</option><option value="2">Class 2</option><option value="3">Class 3</option>
+                  <option value="4">Class 4</option><option value="5">Class 5</option><option value="6">Class 6</option>
+                  <option value="7">Class 7</option><option value="8">Class 8</option><option value="9">Class 9</option>
+                  <option value="10">Class 10</option><option value="11">Class 11</option><option value="12">Class 12</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label class="form-label">Section</label>
+                <select id="f-section-val" class="form-control">
+                  <option value="">Select</option>
+                  <option>A</option><option>B</option><option>C</option><option>D</option><option>E</option><option>F</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label class="form-label">House</label>
+                <input type="text" id="f-house" class="form-control" placeholder="e.g. Blue, Red, Topaz">
+              </div>
+            </div>
+            <div class="form-grid mb-16">
+              <div class="form-group">
+                <label class="form-label">Date of Birth <span class="required">*</span></label>
+                <input type="date" id="f-dob" class="form-control" onchange="calcAge()">
+              </div>
+              <div class="form-group">
+                <label class="form-label">Age</label>
+                <input type="text" id="f-age" class="form-control" placeholder="Auto-calculated" readonly style="background:rgba(255,255,255,0.03);">
+              </div>
+            </div>
+            <div class="form-grid mb-16">
+              <div class="form-group">
+                <label class="form-label">Gender <span class="required">*</span></label>
+                <div class="radio-group">
+                  <label class="radio-option"><input type="radio" name="gender" value="Male"> Male</label>
+                  <label class="radio-option"><input type="radio" name="gender" value="Female"> Female</label>
+                </div>
+              </div>
+              <div class="form-group">
+                <label class="form-label">Religion</label>
+                <select id="f-religion" class="form-control">
+                  <option value="">Select</option>
+                  <option>Hindu</option><option>Muslim</option><option>Christian</option><option>Others</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label class="form-label">Caste</label>
+                <select id="f-caste" class="form-control">
+                  <option value="">Select</option>
+                  <option>OC</option><option>BC</option><option>SC</option><option>ST</option><option>NA</option>
+                </select>
+              </div>
+            </div>
+            <div class="step-actions"><div></div><button class="btn btn-primary" onclick="nextStep(1)">Next: Contact & IDs →</button></div>
+          </div>
+
+          <!-- STEP 2: Contact & IDs -->
+          <div class="step-pane" id="pane-2">
+            <h3 style="margin-bottom:20px;">📞 Step 2: Contact & Identity Documents</h3>
+            <div class="form-group mb-16">
+              <label class="form-label">Address</label>
+              <textarea id="f-address" class="form-control" rows="2" placeholder="Full residential address"></textarea>
+            </div>
+            <div class="form-grid mb-16">
+              <div class="form-group">
+                <label class="form-label">Phone Number</label>
+                <input type="tel" id="f-phone" class="form-control" placeholder="10-digit mobile" maxlength="10">
+              </div>
+              <div class="form-group">
+                <label class="form-label">Email</label>
+                <input type="email" id="f-email" class="form-control" placeholder="student@email.com">
+              </div>
+            </div>
+            <div class="form-grid mb-16">
+              <div class="form-group">
+                <label class="form-label">Aadhar Number</label>
+                <input type="text" id="f-aadhar" class="form-control" placeholder="12-digit Aadhar" maxlength="12">
+              </div>
+              <div class="form-group">
+                <label class="form-label">APAAR Number</label>
+                <input type="text" id="f-apaar" class="form-control" placeholder="APAAR ID">
+              </div>
+              <div class="form-group">
+                <label class="form-label">PEN</label>
+                <input type="text" id="f-pen" class="form-control" placeholder="Permanent Education Number">
+              </div>
+            </div>
+            <div class="step-actions">
+              <button class="btn btn-ghost" onclick="goToStep(1)">← Previous</button>
+              <button class="btn btn-primary" onclick="nextStep(2)">Next: Father Details →</button>
+            </div>
+          </div>
+
+          <!-- STEP 3: Father Details -->
+          <div class="step-pane" id="pane-3">
+            <h3 style="margin-bottom:20px;">👨 Step 3: Father's Details</h3>
+            <div style="display:flex;gap:20px;align-items:flex-start;flex-wrap:wrap;margin-bottom:20px;">
+              <div>
+                <div class="form-label" style="margin-bottom:8px;">Father Photo</div>
+                <div class="photo-box" id="fp-preview" onclick="document.getElementById('f-father-photo').click()">
+                  <input type="file" id="f-father-photo" accept="image/*" onchange="previewPhoto(this,'fp-preview')">
+                  <span style="font-size:2rem;color:var(--clr-text-3);">📷</span>
+                  <span style="font-size:0.7rem;color:var(--clr-text-3);margin-top:4px;">Upload Photo</span>
+                </div>
+              </div>
+              <div style="flex:1;min-width:280px;">
+                <div class="form-group mb-16">
+                  <label class="form-label">Father's Full Name</label>
+                  <input type="text" id="f-fname" class="form-control" placeholder="Father's full name">
+                </div>
+                <div class="form-grid">
+                  <div class="form-group">
+                    <label class="form-label">Qualification</label>
+                    <input type="text" id="f-fqual" class="form-control" placeholder="e.g. B.Sc, Graduate">
+                  </div>
+                  <div class="form-group">
+                    <label class="form-label">Occupation</label>
+                    <input type="text" id="f-focc" class="form-control" placeholder="e.g. Business, Farmer">
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="form-group mb-16">
+              <label class="form-label">Father's Phone Number</label>
+              <input type="tel" id="f-fphone" class="form-control" placeholder="10-digit mobile" maxlength="10" style="max-width:300px;">
+            </div>
+            <div class="step-actions">
+              <button class="btn btn-ghost" onclick="goToStep(2)">← Previous</button>
+              <button class="btn btn-primary" onclick="nextStep(3)">Next: Mother Details →</button>
+            </div>
+          </div>
+
+          <!-- STEP 4: Mother Details -->
+          <div class="step-pane" id="pane-4">
+            <h3 style="margin-bottom:20px;">👩 Step 4: Mother's Details</h3>
+            <div style="display:flex;gap:20px;align-items:flex-start;flex-wrap:wrap;margin-bottom:20px;">
+              <div>
+                <div class="form-label" style="margin-bottom:8px;">Mother Photo</div>
+                <div class="photo-box" id="mp-preview" onclick="document.getElementById('f-mother-photo').click()">
+                  <input type="file" id="f-mother-photo" accept="image/*" onchange="previewPhoto(this,'mp-preview')">
+                  <span style="font-size:2rem;color:var(--clr-text-3);">📷</span>
+                  <span style="font-size:0.7rem;color:var(--clr-text-3);margin-top:4px;">Upload Photo</span>
+                </div>
+              </div>
+              <div style="flex:1;min-width:280px;">
+                <div class="form-group mb-16">
+                  <label class="form-label">Mother's Full Name</label>
+                  <input type="text" id="f-mname" class="form-control" placeholder="Mother's full name">
+                </div>
+                <div class="form-grid">
+                  <div class="form-group">
+                    <label class="form-label">Qualification</label>
+                    <input type="text" id="f-mqual" class="form-control" placeholder="e.g. Graduate, HSC">
+                  </div>
+                  <div class="form-group">
+                    <label class="form-label">Occupation</label>
+                    <input type="text" id="f-mocc" class="form-control" placeholder="e.g. Homemaker, Teacher">
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="form-group mb-16">
+              <label class="form-label">Mother's Phone Number</label>
+              <input type="tel" id="f-mphone" class="form-control" placeholder="10-digit mobile" maxlength="10" style="max-width:300px;">
+            </div>
+            <div class="step-actions">
+              <button class="btn btn-ghost" onclick="goToStep(3)">← Previous</button>
+              <button class="btn btn-primary" onclick="nextStep(4)">Next: Medical & Activities →</button>
+            </div>
+          </div>
+
+          <!-- STEP 5: Medical & Activities -->
+          <div class="step-pane" id="pane-5">
+            <h3 style="margin-bottom:20px;">🏥 Step 5: Medical History & Activities</h3>
+            <div class="form-group mb-20">
+              <label class="form-label">Medical History</label>
+              <textarea id="f-medical" class="form-control" rows="4" placeholder="Describe any known medical conditions, allergies, disabilities, or special needs. Write 'None' if healthy."></textarea>
+            </div>
+            <div class="form-group mb-20">
+              <label class="form-label">Extracurricular Activities</label>
+              <div class="check-group" style="gap:12px;">
+                <label class="check-option"><input type="checkbox" id="f-ncc"> NCC</label>
+                <label class="check-option"><input type="checkbox" id="f-nss"> NSS</label>
+                <label class="check-option"><input type="checkbox" id="f-sgfi"> SGFI</label>
+                <label class="check-option"><input type="checkbox" id="f-scouts"> Scouts &amp; Guides</label>
+              </div>
+            </div>
+            <!-- Summary preview -->
+            <div style="padding:20px;background:rgba(108,99,255,0.07);border:1px solid rgba(108,99,255,0.18);border-radius:var(--radius-md);margin-bottom:4px;">
+              <div style="font-weight:700;margin-bottom:12px;color:var(--clr-primary);">📋 Summary Preview</div>
+              <div id="form-summary" style="font-size:0.85rem;color:var(--clr-text-2);line-height:1.9;"></div>
+            </div>
+            <div class="step-actions">
+              <button class="btn btn-ghost" onclick="goToStep(4)">← Previous</button>
+              <button class="btn btn-success btn-lg" onclick="submitStudent()" id="submit-btn">✓ Save Student Record</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- BULK IMPORT -->
+      <div class="page-section" id="section-import">
+        <div class="section-header"><h2>📥 Bulk Import Students (Excel)</h2></div>
+        <div class="card mb-20">
+          <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-bottom:16px;">
+            <div><h3 style="margin-bottom:4px;">Step 1: Download Template</h3><p style="font-size:0.85rem;">Get the Excel template (.xlsx) with the correct columns.</p></div>
+            <button class="btn btn-ghost" onclick="nmDownloadTemplate()">⬇ Download Template Excel</button>
+          </div>
+          <hr class="divider">
+          <h3 style="margin-bottom:8px;">Step 2: Upload Filled Excel</h3>
+          <p style="font-size:0.85rem;margin-bottom:16px;">Fill the template and upload it here. Preview before saving.</p>
+          <div class="drop-zone" id="drop-zone">
+            <input type="file" id="excel-file" accept=".xlsx, .xls, .csv" onchange="handleExcelUpload(this)">
+            <div class="drop-zone-icon">📊</div>
+            <h3>Drop your Excel file here</h3>
+            <p>or click to browse · .xlsx or .csv accepted</p>
+          </div>
+        </div>
+        <div id="excel-preview" class="hidden">
+          <div class="card" style="padding:0;overflow:hidden;">
+            <div class="card-header" style="padding:16px 20px;"><span class="card-title" id="excel-preview-title">Preview</span><div style="display:flex;gap:8px;"><button class="btn btn-ghost btn-sm" onclick="clearExcel()">✕ Clear</button><button class="btn btn-primary btn-sm" onclick="confirmImport()" id="import-btn">✓ Import All</button></div></div>
+            <div class="table-wrapper" id="excel-table-wrap"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- OBSERVATIONS -->
+      <div class="page-section" id="section-observations">
+        <div class="section-header">
+          <h2>👁‍🗨 Observations</h2>
+          <button class="btn btn-primary" onclick="openObservationModal()">+ Add Observation</button>
+        </div>
+        <div class="filter-bar mb-20">
+          <div class="search-input-wrapper" style="flex:1;">
+            <span>🔍</span><input type="text" id="obs-search" placeholder="Search students..." oninput="renderObservations()">
+          </div>
+          <button class="btn btn-ghost btn-sm" onclick="exportObservations()">⬇ Export Excel</button>
+        </div>
+        <div class="card" style="padding:0;overflow:hidden;">
+          <div class="table-wrapper">
+            <table class="data-table">
+              <thead><tr><th>Date</th><th>Student Name</th><th>Class</th><th>Sec</th><th>House</th><th>Observation</th><th>Actions</th></tr></thead>
+              <tbody id="obs-tbody"></tbody>
+            </table>
+          </div>
+          <div id="obs-empty" class="empty-state hidden">
+            <div class="empty-state-icon">👁‍🗨</div><h3>No observations found</h3><p>Record your first student observation today.</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- COUNSELLING -->
+      <div class="page-section" id="section-counselling">
+        <div class="section-header">
+          <h2>🤝 Counselling Records</h2>
+          <button class="btn btn-primary" onclick="openCounsellingModal()">+ Add Counselling</button>
+        </div>
+        <div class="filter-bar mb-20">
+          <div class="search-input-wrapper" style="flex:1;">
+            <span>🔍</span><input type="text" id="cns-search" placeholder="Search students or issues..." oninput="renderCounselling()">
+          </div>
+          <button class="btn btn-ghost btn-sm" onclick="exportCounselling()">⬇ Export Excel</button>
+        </div>
+        <div class="card" style="padding:0;overflow:hidden;">
+          <div class="table-wrapper">
+            <table class="data-table">
+              <thead><tr><th>Date</th><th>Student Name</th><th>Class</th><th>Sec</th><th>House</th><th>Brief Issue</th><th>Actions</th></tr></thead>
+              <tbody id="cns-tbody"></tbody>
+            </table>
+          </div>
+          <div id="cns-empty" class="empty-state hidden">
+            <div class="empty-state-icon">🤝</div><h3>No counselling records</h3><p>Support your students with documented counselling sessions.</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- MOVEMENT RECORD -->
+      <div class="page-section" id="section-movement">
+        <div class="section-header">
+          <h2>🏃 Movement Record</h2>
+          <button class="btn btn-primary" onclick="openMovementModal()">+ Add Movement</button>
+        </div>
+        <div class="filter-bar mb-20">
+          <div class="search-input-wrapper" style="flex:1;">
+            <span>🔍</span><input type="text" id="mov-search" placeholder="Search student or escort..." oninput="renderMovements()">
+          </div>
+          <button class="btn btn-ghost btn-sm" onclick="exportMovements()">⬇ Export Excel</button>
+        </div>
+        <div class="card" style="padding:0;overflow:hidden;">
+          <div class="table-wrapper">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>Leaving Date</th>
+                  <th>Student Info</th>
+                  <th>Reason</th>
+                  <th>Reporting Date</th>
+                  <th>Escort Details</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody id="mov-tbody"></tbody>
+            </table>
+          </div>
+          <div id="mov-empty" class="empty-state hidden">
+            <div class="empty-state-icon">🏃</div>
+            <h3>No movement records found</h3>
+            <p>Click "Add Movement" to record a student leaving or reporting.</p>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- STUDENT VIEW MODAL -->
+<div class="modal-overlay" id="student-modal">
+  <div class="modal modal-lg">
+    <div class="modal-header">
+      <span class="modal-title">Student Profile</span>
+      <div style="display:flex;gap:8px;">
+        <button class="btn btn-ghost btn-sm" onclick="nmPreparePrintProfile(currentStudentId)">🖨 Print Profile</button>
+        <button class="btn btn-danger btn-sm" id="modal-delete-btn">🗑 Delete</button>
+        <button class="modal-close" onclick="closeModal('student-modal')">✕</button>
+      </div>
+    </div>
+    <div class="modal-body" id="student-modal-body"></div>
+  </div>
+</div>
+
+<!-- OBSERVATION MODAL -->
+<div class="modal-overlay" id="obs-modal">
+  <div class="modal">
+    <div class="modal-header"><span class="modal-title" id="obs-modal-title">Add Observation</span><button class="modal-close" onclick="closeModal('obs-modal')">✕</button></div>
+    <div class="modal-body">
+      <input type="hidden" id="o-id">
+      <div class="form-group mb-16">
+        <label class="form-label">Date <span class="required">*</span></label>
+        <input type="date" id="o-date" class="form-control">
+      </div>
+      <div class="form-group mb-16" id="o-student-select-wrap">
+        <label class="form-label">Search & Select Students <span class="required">*</span></label>
+        <div class="search-input-wrapper mb-8"><span>🔍</span><input type="text" id="o-std-search" placeholder="Type name..." oninput="searchStudentsForObs()"></div>
+        <div id="o-std-list" style="max-height:150px;overflow-y:auto;border:1px solid var(--clr-border);border-radius:var(--radius-sm);background:var(--clr-surface2);"></div>
+        <div id="o-selected-names" style="margin-top:8px;font-size:0.75rem;color:var(--clr-primary);font-weight:600;"></div>
+      </div>
+      <div class="form-group mb-16" id="o-student-edit-wrap" style="display:none;">
+        <label class="form-label">Student</label>
+        <div id="o-edit-name" style="font-weight:600;padding:8px;background:var(--clr-surface);border-radius:var(--radius-sm);"></div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Observation <span class="required">*</span></label>
+        <textarea id="o-text" class="form-control" rows="4" placeholder="What did you observe?"></textarea>
+      </div>
+    </div>
+    <div class="modal-footer"><button class="btn btn-ghost" onclick="closeModal('obs-modal')">Cancel</button><button class="btn btn-primary" onclick="saveObservation()">Save Observation</button></div>
+  </div>
+</div>
+
+<!-- COUNSELLING MODAL -->
+<div class="modal-overlay" id="cns-modal">
+  <div class="modal">
+    <div class="modal-header"><span class="modal-title" id="cns-modal-title">Add Counselling Record</span><button class="modal-close" onclick="closeModal('cns-modal')">✕</button></div>
+    <div class="modal-body">
+      <input type="hidden" id="c-id">
+      <div class="form-group mb-16">
+        <label class="form-label">Date <span class="required">*</span></label>
+        <input type="date" id="c-date" class="form-control">
+      </div>
+      <div class="form-group mb-16">
+        <label class="form-label">Select Student <span class="required">*</span></label>
+        <select id="c-student" class="form-control"><option value="">— Choose Student —</option></select>
+      </div>
+      <div class="form-grid mb-16">
+        <div class="form-group">
+          <label class="form-label">Brief Issue <span class="required">*</span></label>
+          <input type="text" id="c-issue" class="form-control" placeholder="e.g. Behavioural, Academic stress">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Status</label>
+          <select id="c-status" class="form-control">
+            <option value="Resolved">Resolved</option>
+            <option value="Open">Open</option>
+            <option value="Follow-up">Follow-up Required</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-group mb-16">
+        <label class="check-option"><input type="checkbox" id="c-followup"> Flag for Follow-up</label>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Counselling Record <span class="required">*</span></label>
+        <textarea id="c-text" class="form-control" rows="5" placeholder="Details of the counselling session..."></textarea>
+      </div>
+    </div>
+    <div class="modal-footer"><button class="btn btn-ghost" onclick="closeModal('cns-modal')">Cancel</button><button class="btn btn-primary" onclick="saveCounselling()">Save Record</button></div>
+  </div>
+</div>
+
+<!-- MOVEMENT MODAL -->
+<div class="modal-overlay" id="movement-modal">
+  <div class="modal">
+    <div class="modal-header">
+      <span class="modal-title" id="mov-modal-title">Add Movement Record</span>
+      <button class="modal-close" onclick="closeModal('movement-modal')">✕</button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="mov-id">
+      <div class="form-group mb-16">
+        <label class="form-label">Select Student <span class="required">*</span></label>
+        <select id="m-student" class="form-control"><option value="">— Choose Student —</option></select>
+      </div>
+      <div class="form-group mb-16">
+        <label class="form-label">Reason for Leave <span class="required">*</span></label>
+        <input type="text" id="m-reason" class="form-control" placeholder="e.g. Visiting home for holidays">
+      </div>
+      <div class="form-grid mb-16">
+        <div class="form-group">
+          <label class="form-label">Date of Leaving <span class="required">*</span></label>
+          <input type="date" id="m-leave-date" class="form-control">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Date of Reporting <span class="required">*</span></label>
+          <input type="date" id="m-report-date" class="form-control">
+        </div>
+      </div>
+      <div class="card mb-16" style="background:var(--clr-surface);border:1px solid var(--clr-border);">
+        <h4 style="margin-bottom:12px;font-size:0.9rem;">👤 Escort Information</h4>
+        <div class="form-grid mb-0">
+          <div class="form-group">
+            <label class="form-label">Escort Name <span class="required">*</span></label>
+            <input type="text" id="m-escort-name" class="form-control">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Relationship <span class="required">*</span></label>
+            <input type="text" id="m-relationship" class="form-control">
+          </div>
+        </div>
+        <div class="form-group mt-12">
+          <label class="form-label">Phone Number <span class="required">*</span></label>
+          <input type="tel" id="m-phone" class="form-control">
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('movement-modal')">Cancel</button>
+      <button class="btn btn-primary" onclick="saveMovement()">Save Record</button>
+    </div>
+  </div>
+</div>
+
+<script src="../js/supabase.js"></script>
+<script src="../js/auth.js"></script>
+<script src="../js/data.js"></script>
+<script src="../js/utils.js"></script>
+<script>
+// ── Auth ──────────────────────────────────────────────────────────────────────
+let schoolId = '', currentStudentId = '', excelParsed = [], currentStep = 1;
+
+async function init() {
+  await nmInitAuth();
+  const session = nmRequireAuth('user');
+  if (session) {
+    schoolId = session.school_id || session.schoolId;
+    document.getElementById('user-name-disp').textContent = session.name;
+    document.getElementById('user-avatar').textContent    = nmGetInitials(session.name);
+    document.getElementById('sb-school-name').textContent = session.school_name || session.schoolName || 'School Portal';
+  }
+  
+  // Handle URL params
+  const params = new URLSearchParams(window.location.search);
+  const action = params.get('action');
+  const stdId  = params.get('studentId');
+  if (action === 'add-observations' && stdId) {
+    await showSection('observations');
+    await quickAddObservation(stdId);
+  } else if (action === 'add-counselling' && stdId) {
+    await showSection('counselling');
+    await quickAddCounselling(stdId);
+  } else if (action === 'add-movement' && stdId) {
+    await showSection('movement');
+    await quickAddMovement(stdId);
+  } else {
+    await showSection('dashboard');
+  }
+}
+
+// ── Navigation ────────────────────────────────────────────────────────────────
+const pageTitles = { dashboard:'Dashboard', students:'Students', 'add-student':'Add Student', import:'Bulk Import', observations:'Observations', counselling:'Counselling', movement:'Movement Record' };
+async function showSection(id, el) {
+  document.querySelectorAll('.page-section').forEach(s => s.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  document.getElementById('section-' + id).classList.add('active');
+  if (el) el.classList.add('active');
+  document.getElementById('topbar-title').textContent = pageTitles[id] || id;
+
+  if (id === 'dashboard') await renderDashboard();
+  if (id === 'students')  await renderStudents();
+  if (id === 'observations') await renderObservations();
+  if (id === 'counselling')  await renderCounselling();
+  if (id === 'movement')     await renderMovements();
+}
+function openModal(id)  { document.getElementById(id).classList.add('active'); }
+function closeModal(id) { document.getElementById(id).classList.remove('active'); }
+document.querySelectorAll('.modal-overlay').forEach(o => o.addEventListener('click', e => { if (e.target===o) o.classList.remove('active'); }));
+
+// ── Dashboard ─────────────────────────────────────────────────────────────────
+async function renderDashboard() {
+  const stats = await nmGetStats(schoolId);
+  const students = await nmGetStudents(schoolId);
+  const counselling = await nmGetCounselling(schoolId);
+  
+  document.getElementById('ds-total').textContent    = stats.total;
+  document.getElementById('ds-sessions').textContent = stats.counselling.total;
+  document.getElementById('ds-followups').textContent = stats.counselling.followUps;
+  document.getElementById('ds-activities').textContent = stats.total ? students.filter(s=>s.ncc||s.nss||s.sgfi||s.scouts).length : 0;
+  
+  document.getElementById('nb-count').textContent    = stats.total;
+  document.getElementById('dash-school-label').textContent = `School: ${document.getElementById('sb-school-name').textContent} · ${stats.total} students enrolled`;
+  
+  // Recent Students
+  const recent = [...students].reverse().slice(0,5);
+  document.getElementById('recent-table').innerHTML = !recent.length ?
+    '<div class="empty-state" style="padding:32px;"><div class="empty-state-icon">🎓</div><h3>No students yet</h3><p>Add your first student to get started.</p></div>' :
+    `<div class="table-wrapper"><table class="data-table"><thead><tr><th>Student</th><th>Class</th><th>Added</th><th></th></tr></thead><tbody>${recent.map(s=>`<tr>
+      <td><div style="display:flex;align-items:center;gap:10px;">${s.photo?`<img src="${s.photo}" style="width:30px;height:30px;border-radius:8px;object-fit:cover;">`:`<div class="avatar" style="width:30px;height:30px;font-size:0.7rem;">${(s.full_name||s.fullName||'?')[0]}</div>`}<span style="font-weight:600;">${s.full_name||s.fullName}</span></div></td>
+      <td><span class="badge badge-purple">Class ${s.class}</span></td>
+      <td>${nmFmtDate(s.created_at||s.createdAt)}</td>
+      <td><button class="btn btn-ghost btn-sm" onclick="viewStudent('${s.id}')">👁 View</button></td>
+    </tr>`).join('')}</tbody></table></div>`;
+
+  // Recent Counselling
+  const recentCns = [...counselling].reverse().slice(0,5);
+  let cnsHtml = '';
+  if (!recentCns.length) {
+    cnsHtml = '<div class="empty-state" style="padding:20px;"><p>No counselling records yet.</p></div>';
+  } else {
+    for (const c of recentCns) {
+      const s = students.find(x => x.id === (c.student_id || c.studentId)) || { full_name: 'Unknown' };
+      cnsHtml += `<div style="padding:12px;border-bottom:1px solid var(--clr-border);display:flex;justify-content:space-between;align-items:center;">
+        <div>
+          <div style="font-weight:600;">${s.full_name||s.fullName}</div>
+          <div style="font-size:0.75rem;color:var(--clr-text-2);">${c.issue}</div>
+          <div style="font-size:0.7rem;color:var(--clr-text-3); margin-top:2px;">${nmFmtDate(c.date)}</div>
+        </div>
+        <div>
+          <span class="status-badge ${c.follow_up||c.followUp ? 'status-followup' : 'status-resolved'}">${c.follow_up||c.followUp ? 'Follow-up' : 'Resolved'}</span>
+        </div>
+      </div>`;
+    }
+  }
+  document.getElementById('recent-cns-list').innerHTML = cnsHtml;
+}
+
+// ── Students ──────────────────────────────────────────────────────────────────
+async function renderStudents() {
+  const q  = (document.getElementById('std-search')?.value||'').toLowerCase();
+  const fc = document.getElementById('f-class')?.value||'';
+  const fs = document.getElementById('f-section')?.value||'';
+  const fg = document.getElementById('f-gender')?.value||'';
+  
+  let list = await nmGetStudents(schoolId);
+  const totalCount = list.length;
+  
+  if (q)  list = list.filter(s=>(s.full_name||s.fullName||'').toLowerCase().includes(q)||(s.admission_number||s.admissionNumber||'').toLowerCase().includes(q));
+  if (fc) list = list.filter(s=>s.class===fc);
+  if (fs) list = list.filter(s=>s.section===fs);
+  if (fg) list = list.filter(s=>s.gender===fg);
+  
+  document.getElementById('nb-count').textContent = totalCount;
+  const tbody = document.getElementById('std-tbody');
+  const empty = document.getElementById('std-empty');
+  
+  if (!list.length) { tbody.innerHTML=''; empty.classList.remove('hidden'); return; }
+  empty.classList.add('hidden');
+  tbody.innerHTML = list.map(s=>`<tr>
+    <td><div style="display:flex;align-items:center;gap:10px;cursor:pointer;" onclick="viewStudent('${s.id}')">${s.photo?`<img src="${s.photo}" style="width:34px;height:34px;border-radius:8px;object-fit:cover;">`:`<div class="avatar" style="width:34px;height:34px;font-size:0.75rem;">${(s.full_name||s.fullName||'?')[0]}</div>`}<div><div style="font-weight:600;color:var(--clr-primary);">${s.full_name||s.fullName||'—'}</div><div style="font-size:0.72rem;color:var(--clr-text-2);">${s.admission_number||s.admissionNumber||''}</div></div></div></td>
+    <td><span class="badge badge-purple">Class ${s.class||'?'}</span></td>
+    <td>${s.section||'—'}</td>
+    <td><span class="badge badge-gray">${s.house||'—'}</span></td>
+    <td>${s.phone||'—'}</td>
+    <td><div style="display:flex;gap:4px;">
+      <button class="btn btn-ghost btn-sm" onclick="editStudent('${s.id}')" title="Edit">✏️ Edit</button>
+      <button class="btn btn-danger btn-sm" onclick="deleteStudentRow('${s.id}')" title="Delete">🗑 Delete</button>
+    </div></td>
+  </tr>`).join('');
+}
+
+function exportStudents() {
+  const list = nmGetStudents(schoolId);
+  if (!list.length) { nmToast('No students to export','info'); return; }
+  const safe = list.map(s => { const c={...s}; delete c.photo; delete c.fatherPhoto; delete c.motherPhoto; return c; });
+  nmExportExcel(safe, `students_${session?.schoolName?.replace(/\s+/g,'_')||'export'}.xlsx`);
+  nmToast('Exported successfully!','success');
+}
+
+// ── View Student ──────────────────────────────────────────────────────────────
+async function viewStudent(id) {
+  const students = await nmGetStudents(schoolId);
+  const s = students.find(x => x.id === id);
+  if (!s) return;
+  
+  currentStudentId = id;
+  const act = [s.ncc&&'NCC',s.nss&&'NSS',s.sgfi&&'SGFI',s.scouts&&'Scouts & Guides'].filter(Boolean);
+  const history = await nmGetStudentHistory(id);
+
+  document.getElementById('student-modal-body').innerHTML = `
+    <div class="profile-header">
+      <div class="profile-photo">${s.photo?`<img src="${s.photo}" style="width:100%;height:100%;border-radius:inherit;object-fit:cover;">`:'<span style="font-size:2.5rem;">👤</span>'}</div>
+      <div style="flex:1;">
+        <div class="profile-name">${s.full_name||s.fullName||'—'}</div>
+        <div style="color:var(--clr-text-2);font-size:0.88rem;">${s.admission_number||s.admissionNumber||''} · ID: ${s.id.slice(0,8)}</div>
+        <div class="profile-meta">
+          <span class="badge badge-purple">Class ${s.class||'?'} - ${s.section||'?'}</span>
+          <span class="badge badge-gray">${s.house||'—'} House</span>
+          <span class="badge ${s.gender==='Male'?'badge-blue':'badge-pink'}">${s.gender||'—'}</span>
+          ${act.map(a=>`<span class="badge badge-green">${a}</span>`).join('')}
+        </div>
+      </div>
+      <div style="display:flex; flex-direction:column; gap:8px; align-items:flex-end;">
+        <div style="display:flex; gap:8px;">
+          <button class="btn btn-primary btn-sm" onclick="quickAddObservation('${id}')">👁‍🗨 Obs</button>
+          <button class="btn btn-primary btn-sm" onclick="quickAddCounselling('${id}')">🤝 Cns</button>
+          <button class="btn btn-primary btn-sm" onclick="quickAddMovement('${id}')">🏃 Mov</button>
+          <button class="btn btn-ghost btn-sm" onclick="nmPreparePrintProfile('${id}')">🖨 Print</button>
+        </div>
+        <div style="font-size:0.7rem; color:var(--clr-text-3); font-weight:600; text-transform:uppercase; letter-spacing:0.5px;">Quick Actions</div>
+      </div>
+    </div>
+    
+    <div style="display:grid;grid-template-columns:1.2fr 1fr;gap:28px;">
+      <div>
+        <h4 style="margin-bottom:12px; display:flex; align-items:center; gap:8px;">📋 Profile Information</h4>
+        <div class="info-grid mb-16">
+          ${iI('DOB',nmFmtDate(s.dob))}${iI('Age',s.dob?nmCalcAge(s.dob)+' years' : (s.age ? s.age : '—'))}
+          ${iI('Religion',s.religion)}${iI('Caste',s.caste)}
+          ${iI('Phone',s.phone)}${iI('Email',s.email)}
+        </div>
+        <h4 style="margin-bottom:12px;">🏠 Address</h4>
+        <div style="padding:12px 16px;background:var(--clr-surface);border-radius:var(--radius-sm);border:1px solid var(--clr-border);margin-bottom:16px;color:var(--clr-text-2);font-size:0.88rem;">${s.address||'—'}</div>
+        <h4 style="margin-bottom:12px;">📁 Identity Documents</h4>
+        <div class="info-grid mb-16">${iI('Aadhar',s.aadhar)}${iI('APAAR',s.apaar_number||s.apaarNumber||'—')}${iI('PEN',s.pen)}</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px;">
+          <div><h4 style="margin-bottom:10px;">👨 Father</h4><div class="info-grid" style="grid-template-columns:1fr;">${iI('Name',s.father_name||s.fatherName)}${iI('Phone',s.father_phone||s.fatherPhone)}</div></div>
+          <div><h4 style="margin-bottom:10px;">👩 Mother</h4><div class="info-grid" style="grid-template-columns:1fr;">${iI('Name',s.mother_name||s.motherName)}${iI('Phone',s.mother_phone||s.motherPhone)}</div></div>
+        </div>
+        <h4 style="margin-bottom:12px;">🏥 Medical History</h4>
+        <div style="padding:12px 16px;background:var(--clr-surface);border-radius:var(--radius-sm);border:1px solid var(--clr-border);color:var(--clr-text-2);font-size:0.88rem;">${s.medical_history||s.medicalHistory||'None recorded'}</div>
+      </div>
+      
+      <div>
+        <h4 style="margin-bottom:12px; display:flex; align-items:center; gap:8px;">📜 History Timeline</h4>
+        <div class="timeline">
+          ${!history.length ? '<div class="empty-state" style="padding:24px;"><p>No records found.</p></div>' : 
+            history.map(h => {
+              let icon = '👁', title = h.type === 'observation' ? 'Observation' : h.issue || 'History', body = h.type === 'observation' ? h.observation : h.counselling || h.reason || '';
+              let footer = '';
+              if (h.type === 'counselling') {
+                icon = '🤝'; 
+                footer = `<div class="timeline-footer"><span class="status-badge ${h.follow_up||h.followUp ? 'status-followup' : 'status-resolved'}">${h.follow_up||h.followUp ? 'Follow-up' : h.status}</span></div>`;
+              } else if (h.type === 'movement') {
+                icon = '🏃'; title = `Movement: ${h.reason}`;
+                body = `<strong>Leaving:</strong> ${nmFmtDate(h.leave_date||h.leaveDate)} · <strong>Return:</strong> ${nmFmtDate(h.report_date||h.reportDate)}<br><strong>Escort:</strong> ${h.escort_name||h.escortName} (${h.relationship})`;
+              }
+              return `
+                <div class="timeline-item ${h.type}">
+                  <div class="timeline-dot">${icon}</div>
+                  <div class="timeline-content">
+                    <div class="timeline-header">
+                      <span class="timeline-title">${title}</span>
+                      <span class="timeline-date">${nmFmtDate(h.date)}</span>
+                    </div>
+                    <div class="timeline-body">${body}</div>
+                    ${footer}
+                  </div>
+                </div>
+              `;
+            }).join('')
+          }
+        </div>
+      </div>
+    </div>`;
+  document.getElementById('modal-delete-btn').onclick = () => deleteStudentRow(id, true);
+  openModal('student-modal');
+}
+function iI(k,v){return`<div class="info-item"><div class="key">${k}</div><div class="val">${v||'—'}</div></div>`;}
+
+// ── Quick Actions from Profile ────────────────────────────────────────────────
+async function quickAddObservation(id) {
+  closeModal('student-modal');
+  openModal('obs-modal');
+  const students = await nmGetStudents(schoolId);
+  const s = students.find(x => x.id === id);
+  document.getElementById('obs-modal-title').textContent = 'Add Observation';
+  document.getElementById('o-id').value = '';
+  document.getElementById('o-date').value = nmToday();
+  document.getElementById('o-text').value = '';
+  document.getElementById('o-student-select-wrap').style.display = 'none';
+  document.getElementById('o-student-edit-wrap').style.display = 'block';
+  document.getElementById('o-edit-name').textContent = s?.full_name || s?.fullName || 'Selected Student';
+  selectedObsStudents = [id];
+}
+function quickAddCounselling(id) {
+  closeModal('student-modal');
+  openCounsellingModal();
+  setTimeout(() => { document.getElementById('c-student').value = id; }, 50);
+}
+function quickAddMovement(id) {
+  closeModal('student-modal');
+  openMovementModal();
+  setTimeout(() => { document.getElementById('m-student').value = id; }, 50);
+}
+
+async function deleteStudentRow(id, fromModal) {
+  const ok = await nmConfirm('Delete this student record permanently?');
+  if (!ok) return;
+  nmDeleteStudent(id);
+  if (fromModal) closeModal('student-modal');
+  renderStudents(); renderDashboard();
+  nmToast('Student deleted.','info');
+}
+
+// ── 5-Step Form ───────────────────────────────────────────────────────────────
+let editingId = null, photoB64 = '', fatherPhotoB64 = '', motherPhotoB64 = '';
+
+function resetForm() {
+  editingId = null; photoB64 = ''; fatherPhotoB64 = ''; motherPhotoB64 = '';
+  document.getElementById('form-title').textContent = '➕ Add New Student';
+  ['f-adm','f-name','f-address','f-phone','f-email','f-aadhar','f-apaar','f-pen',
+   'f-fname','f-fqual','f-focc','f-fphone','f-mname','f-mqual','f-mocc','f-mphone','f-medical',
+   'f-dob','f-age'].forEach(id => { const el=document.getElementById(id); if(el) el.value=''; });
+  ['f-class-val','f-section-val','f-house','f-religion','f-caste'].forEach(id => { const el=document.getElementById(id); if(el) el.value=''; });
+  document.querySelectorAll('input[name="gender"]').forEach(r=>r.checked=false);
+  ['f-ncc','f-nss','f-sgfi','f-scouts'].forEach(id=>{ const el=document.getElementById(id); if(el) el.checked=false; });
+  resetPhotoBox('sp-preview','Upload Photo');
+  resetPhotoBox('fp-preview','Upload Photo');
+  resetPhotoBox('mp-preview','Upload Photo');
+  goToStep(1);
+}
+
+function resetPhotoBox(id, label) {
+  const box = document.getElementById(id); if(!box) return;
+  const inp = box.querySelector('input');
+  box.innerHTML = `<input type="file" accept="image/*" onchange="previewPhoto(this,'${id}')">
+    <span style="font-size:2rem;color:var(--clr-text-3);">📷</span>
+    <span style="font-size:0.7rem;color:var(--clr-text-3);margin-top:4px;">${label}</span>`;
+  if (inp) box.querySelector('input').id = inp.id;
+}
+
+async function editStudent(id) {
+  const students = await nmGetStudents(schoolId);
+  const s = students.find(x => x.id === id);
+  if (!s) return;
+  editingId = id;
+  photoB64 = s.photo||''; fatherPhotoB64 = s.father_photo||s.fatherPhoto||''; motherPhotoB64 = s.mother_photo||s.motherPhoto||'';
+  document.getElementById('form-title').textContent = '✏️ Edit Student Record';
+  
+  setVal('f-adm',s.admission_number||s.admissionNumber);
+  setVal('f-name',s.full_name||s.fullName);
+  setVal('f-class-val',s.class);
+  setVal('f-section-val',s.section);
+  setVal('f-house',s.house);
+  setVal('f-dob',s.dob);
+  setVal('f-age',s.dob?nmCalcAge(s.dob)+' years' : (s.age ? s.age + ' years' : ''));
+  setVal('f-religion',s.religion);
+  setVal('f-caste',s.caste);
+  setVal('f-address',s.address);
+  setVal('f-phone',s.phone);
+  setVal('f-email',s.email);
+  setVal('f-aadhar',s.aadhar);
+  setVal('f-apaar',s.apaar_number||s.apaarNumber);
+  setVal('f-pen',s.pen);
+  setVal('f-fname',s.father_name||s.fatherName);
+  setVal('f-fqual',s.father_qualification||s.fatherQualification);
+  setVal('f-focc',s.father_occupation||s.fatherOccupation);
+  setVal('f-fphone',s.father_phone||s.fatherPhone);
+  setVal('f-mname',s.mother_name||s.motherName);
+  setVal('f-mqual',s.mother_qualification||s.motherQualification);
+  setVal('f-mocc',s.mother_occupation||s.motherOccupation);
+  setVal('f-mphone',s.mother_phone||s.motherPhone);
+  setVal('f-medical',s.medical_history||s.medicalHistory);
+  
+  document.querySelectorAll('input[name="gender"]').forEach(r=>r.checked=r.value===s.gender);
+  ['ncc','nss','sgfi','scouts'].forEach(a=>{ const el=document.getElementById('f-'+a); if(el) el.checked=!!s[a]; });
+  
+  if (s.photo) setPhotoPreview('sp-preview','f-photo',s.photo);
+  if (s.father_photo||s.fatherPhoto) setPhotoPreview('fp-preview','f-father-photo',s.father_photo||s.fatherPhoto);
+  if (s.mother_photo||s.motherPhoto) setPhotoPreview('mp-preview','f-mother-photo',s.mother_photo||s.motherPhoto);
+  
+  showSection('add-student', document.querySelector('[onclick*="add-student"]'));
+  goToStep(1);
+}
+function setVal(id,v){const el=document.getElementById(id);if(el&&v!=null)el.value=v;}
+function setPhotoPreview(boxId,inputId,src){
+  const box=document.getElementById(boxId);if(!box)return;
+  box.innerHTML=`<input type="file" id="${inputId}" accept="image/*" onchange="previewPhoto(this,'${boxId}')">
+    <img src="${src}" style="width:100%;height:100%;object-fit:cover;border-radius:inherit;">`;
+}
+
+async function previewPhoto(input, boxId) {
+  if (!input.files[0]) return;
+  const b64 = await nmToBase64(input.files[0]);
+  const box = document.getElementById(boxId); if (!box) return;
+  box.innerHTML = `<input type="file" id="${input.id}" accept="image/*" onchange="previewPhoto(this,'${boxId}')"><img src="${b64}" style="width:100%;height:100%;object-fit:cover;border-radius:inherit;">`;
+  if (boxId==='sp-preview') photoB64 = b64;
+  if (boxId==='fp-preview') fatherPhotoB64 = b64;
+  if (boxId==='mp-preview') motherPhotoB64 = b64;
+}
+
+function calcAge() {
+  const dob = document.getElementById('f-dob').value;
+  document.getElementById('f-age').value = dob ? nmCalcAge(dob)+' years' : '';
+}
+
+function goToStep(n) {
+  currentStep = n;
+  document.querySelectorAll('.step-pane').forEach((p,i) => p.classList.toggle('active', i+1===n));
+  document.querySelectorAll('.sp-item').forEach((it,i) => {
+    it.classList.toggle('active', i+1===n);
+    it.classList.toggle('done', i+1<n);
+    const num = it.querySelector('.sp-num');
+    if (i+1 < n) num.textContent = '✓';
+    else num.textContent = i+1;
+  });
+  if (n===5) buildSummary();
+}
+
+function nextStep(n) {
+  if (n===1) {
+    if (!document.getElementById('f-adm').value.trim()) { nmToast('Admission number is required','error'); return; }
+    if (!document.getElementById('f-name').value.trim()) { nmToast('Student name is required','error'); return; }
+    if (!document.getElementById('f-class-val').value)   { nmToast('Please select a class','error'); return; }
+    if (!document.getElementById('f-dob').value)         { nmToast('Date of birth is required','error'); return; }
+    if (!document.querySelector('input[name="gender"]:checked')) { nmToast('Please select gender','error'); return; }
+  }
+  goToStep(n+1);
+}
+
+function buildSummary() {
+  const g = id => document.getElementById(id)?.value||'';
+  const gender = document.querySelector('input[name="gender"]:checked')?.value||'—';
+  const acts = ['ncc','nss','sgfi','scouts'].filter(a=>document.getElementById('f-'+a)?.checked).join(', ')||'None';
+  document.getElementById('form-summary').innerHTML = `
+    <b>Name:</b> ${g('f-name')} &nbsp;|&nbsp; <b>Adm No:</b> ${g('f-adm')} &nbsp;|&nbsp; <b>Class:</b> ${g('f-class-val')}-${g('f-section-val')}<br>
+    <b>DOB:</b> ${nmFmtDate(g('f-dob'))} &nbsp;|&nbsp; <b>Age:</b> ${g('f-age')} &nbsp;|&nbsp; <b>Gender:</b> ${gender} &nbsp;|&nbsp; <b>House:</b> ${g('f-house')||'—'}<br>
+    <b>Religion:</b> ${g('f-religion')||'—'} &nbsp;|&nbsp; <b>Caste:</b> ${g('f-caste')||'—'}<br>
+    <b>Father:</b> ${g('f-fname')||'—'} (${g('f-focc')||'—'}) &nbsp;|&nbsp; <b>Mother:</b> ${g('f-mname')||'—'} (${g('f-mocc')||'—'})<br>
+    <b>Activities:</b> ${acts}`;
+}
+
+async function submitStudent() {
+  const g = id => document.getElementById(id)?.value?.trim()||'';
+  const gender = document.querySelector('input[name="gender"]:checked')?.value||'';
+
+  // Guard: schoolId must be set
+  if (!schoolId) {
+    nmToast('Session error: school not identified. Please log out and log in again.', 'error');
+    return;
+  }
+
+  const student = {
+    id: editingId || undefined,
+    school_id: schoolId,
+    admission_number: g('f-adm'),
+    full_name: g('f-name'),
+    class: g('f-class-val'),
+    section: g('f-section-val'),
+    house: g('f-house'),
+    dob: g('f-dob') || null,
+    gender,
+    religion: g('f-religion'),
+    caste: g('f-caste'),
+    address: g('f-address'),
+    phone: g('f-phone'),
+    email: g('f-email'),
+    aadhar: g('f-aadhar'),
+    apaar_number: g('f-apaar'),
+    pen: g('f-pen'),
+    father_name: g('f-fname'),
+    father_phone: g('f-fphone'),
+    mother_name: g('f-mname'),
+    mother_phone: g('f-mphone'),
+    medical_history: g('f-medical'),
+    ncc: document.getElementById('f-ncc')?.checked||false,
+    nss: document.getElementById('f-nss')?.checked||false,
+    sgfi: document.getElementById('f-sgfi')?.checked||false,
+    scouts: document.getElementById('f-scouts')?.checked||false,
+    photo: photoB64
+  };
+
+  const btn = document.getElementById('submit-btn');
+  if (btn) { btn.disabled = true; btn.textContent = '⏳ Saving…'; }
+
+  try {
+    await nmSaveStudent(student);
+    nmToast(editingId ? 'Student record updated!' : 'Student added successfully!', 'success');
+    editingId = null;
+    await showSection('students', document.querySelector('[onclick*="students"]'));
+  } catch (err) {
+    console.error('Save student error:', err);
+    nmToast('Error saving student: ' + (err.message || 'Unknown error. Check console.'), 'error');
+  } finally {
+    if (btn) { btn.disabled = false; btn.textContent = '✓ Save Student Record'; }
+  }
+}
+
+// ── Excel Import ─────────────────────────────────────────────────────────────
+function handleExcelUpload(input) {
+  if (!input.files[0]) return;
+  const file = input.files[0];
+  const reader = new FileReader();
+  
+  reader.onload = e => {
+    const data = new Uint8Array(e.target.result);
+    const workbook = XLSX.read(data, { type: 'array' });
+    const firstSheetName = workbook.SheetNames[0];
+    const worksheet = workbook.Sheets[firstSheetName];
+    excelParsed = XLSX.utils.sheet_to_json(worksheet, { defval: "" });
+    
+    if (!excelParsed.length) { nmToast('No data found in file','error'); return; }
+    showExcelPreview();
+  };
+  reader.readAsArrayBuffer(file);
+}
+
+function showExcelPreview() {
+  document.getElementById('excel-preview').classList.remove('hidden');
+  document.getElementById('excel-preview-title').textContent = `Preview — ${excelParsed.length} records found`;
+  const cols = Object.keys(excelParsed[0]);
+  document.getElementById('excel-table-wrap').innerHTML = `<table class="data-table">
+    <thead><tr>${cols.map(c=>`<th>${c}</th>`).join('')}</tr></thead>
+    <tbody>${excelParsed.slice(0,20).map(r=>`<tr>${cols.map(c=>`<td style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${r[c]||'—'}</td>`).join('')}</tr>`).join('')}</tbody>
+  </table>${excelParsed.length>20?`<div style="padding:12px 16px;font-size:0.8rem;color:var(--clr-text-2);">Showing first 20 of ${excelParsed.length} rows.</div>`:''}`;
+}
+
+function clearExcel() {
+  excelParsed = [];
+  document.getElementById('excel-preview').classList.add('hidden');
+  document.getElementById('excel-file').value = '';
+}
+
+async function confirmImport() {
+  if (!excelParsed.length) return;
+  const btn = document.getElementById('import-btn');
+  btn.disabled = true; btn.textContent = 'Importing…';
+  let count = 0;
+  
+  for (const row of excelParsed) {
+    if (!row.fullName && !row['Full Name'] && !row['Student Name']) continue;
+    
+    await nmSaveStudent({
+      school_id: schoolId,
+      admission_number: row.admissionNumber||row['Admission Number']||row['Admission No']||'',
+      full_name:   row.fullName||row['Full Name']||row['Student Name']||'',
+      class:      row.class||row['Class']||'',
+      section:    row.section||row['Section']||'',
+      house:      row.house||row['House']||'',
+      dob:        row.dob||row['DOB']||row['Date of Birth']||'',
+      gender:     row.gender||row['Gender']||'',
+      religion:   row.religion||row['Religion']||'',
+      caste:      row.caste||row['Caste']||'',
+      address:    row.address||row['Address']||'',
+      phone:      row.phone||row['Phone']||row['Phone Number']||'',
+      email:      row.email||row['Email']||'',
+      aadhar:     row.aadhar||row['Aadhar Number']||row['Aadhar']||'',
+      apaar_number:row.apaarNumber||row['APAAR Number']||row['APAAR']||'',
+      pen:        row.pen||row['PEN']||'',
+      father_name: row.fatherName||row['Father Name']||'',
+      mother_name: row.motherName||row['Mother Name']||'',
+      medical_history: row.medicalHistory||'',
+      ncc:    ['yes','true','1'].includes((row.ncc||'').toString().toLowerCase()),
+      nss:    ['yes','true','1'].includes((row.nss||'').toString().toLowerCase()),
+      sgfi:   ['yes','true','1'].includes((row.sgfi||'').toString().toLowerCase()),
+      scouts: ['yes','true','1'].includes((row.scouts||'').toString().toLowerCase()),
+    });
+    count++;
+  }
+  
+  clearExcel();
+  btn.disabled = false; btn.textContent = '✓ Import All';
+  nmToast(`${count} students imported successfully!`, 'success');
+  await renderStudents();
+  showSection('students', document.querySelector('[onclick*="students"]'));
+}
+
+// Drag-and-drop
+const dz = document.getElementById('drop-zone');
+dz.addEventListener('dragover', e => { e.preventDefault(); dz.classList.add('drag-over'); });
+dz.addEventListener('dragleave', () => dz.classList.remove('drag-over'));
+dz.addEventListener('drop', e => { e.preventDefault(); dz.classList.remove('drag-over'); const f = e.dataTransfer.files[0]; if(f) { const inp=document.getElementById('excel-file'); const dt=new DataTransfer(); dt.items.add(f); inp.files=dt.files; handleExcelUpload(inp); } });
+
+// ── Init ──────────────────────────────────────────────────────────────────────
+renderDashboard();
+
+// ── Observations Logic ────────────────────────────────────────────────────────
+let selectedObsStudents = [];
+async function renderObservations() {
+  const q = (document.getElementById('obs-search')?.value||'').toLowerCase();
+  const students = await nmGetStudents(schoolId);
+  const obs = await nmGetObservations(schoolId);
+  
+  const list = obs.filter(o => {
+    const s = students.find(x => x.id === (o.student_id || o.studentId));
+    return !q || (s && (s.full_name||s.fullName).toLowerCase().includes(q));
+  }).reverse();
+  
+  const tbody = document.getElementById('obs-tbody');
+  const empty = document.getElementById('obs-empty');
+  if (!list.length) { tbody.innerHTML=''; empty.classList.remove('hidden'); return; }
+  empty.classList.add('hidden');
+  tbody.innerHTML = list.map(o => {
+    const s = students.find(x => x.id === (o.student_id || o.studentId)) || { full_name: 'Unknown', class:'?', section:'?', house:'?' };
+    const dateVal = o.observation_date || o.date || '';
+    return `<tr>
+      <td>${nmFmtDate(dateVal)}</td>
+      <td><div style="font-weight:600;color:var(--clr-primary);cursor:pointer;" onclick="viewStudent('${s.id}')">${s.full_name||s.fullName}</div><div style="font-size:0.7rem;color:var(--clr-text-2);">${s.admission_number||s.admissionNumber||''}</div></td>
+      <td>Class ${s.class}</td>
+      <td>${s.section}</td>
+      <td>${s.house||'—'}</td>
+      <td style="max-width:300px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${o.observation}</td>
+      <td><div style="display:flex;gap:4px;">
+        <button class="btn btn-ghost btn-sm btn-icon" onclick="openObservationModal('${o.id}')" title="Edit">✏️</button>
+        <button class="btn btn-danger btn-sm btn-icon" onclick="deleteObservationRecord('${o.id}')" title="Delete">🗑</button>
+      </div></td>
+    </tr>`;
+  }).join('');
+}
+
+async function openObservationModal(id) {
+  const modal = document.getElementById('obs-modal');
+  const title = document.getElementById('obs-modal-title');
+  const oId = document.getElementById('o-id');
+  const oDate = document.getElementById('o-date');
+  const oText = document.getElementById('o-text');
+  const selWrap = document.getElementById('o-student-select-wrap');
+  const editWrap = document.getElementById('o-student-edit-wrap');
+  
+  const students = await nmGetStudents(schoolId);
+
+  if (id) {
+    const list = await nmGetObservations(schoolId);
+    const o = list.find(x => x.id === id);
+    if (!o) return;
+    title.textContent = 'Edit Observation';
+    oId.value = o.id;
+    oDate.value = o.observation_date || o.date || '';
+    oText.value = o.observation;
+    selWrap.style.display = 'none';
+    editWrap.style.display = 'block';
+    const s = students.find(x => x.id === (o.student_id || o.studentId));
+    document.getElementById('o-edit-name').textContent = s ? `${s.full_name||s.fullName} (${s.admission_number||s.admissionNumber})` : 'Unknown Student';
+  } else {
+    title.textContent = 'Add Observation';
+    oId.value = '';
+    oDate.value = nmToday();
+    oText.value = '';
+    selWrap.style.display = 'block';
+    editWrap.style.display = 'none';
+    selectedObsStudents = [];
+    document.getElementById('o-selected-names').textContent = '';
+    document.getElementById('o-std-search').value = '';
+    await searchStudentsForObs();
+  }
+  openModal('obs-modal');
+}
+
+async function searchStudentsForObs() {
+  const q = document.getElementById('o-std-search').value.toLowerCase();
+  const all = await nmGetStudents(schoolId);
+  const students = all.filter(s => (s.full_name||s.fullName).toLowerCase().includes(q) || (s.admission_number||s.admissionNumber).toLowerCase().includes(q));
+  const list = document.getElementById('o-std-list');
+  list.innerHTML = students.map(s => `
+    <div style="padding:6px 10px;border-bottom:1px solid var(--clr-border);display:flex;align-items:center;gap:10px;">
+      <input type="checkbox" value="${s.id}" ${selectedObsStudents.includes(s.id)?'checked':''} onchange="toggleObsStudent('${s.id}', this.checked)">
+      <div style="font-size:0.85rem;">${s.full_name||s.fullName} <span style="font-size:0.7rem;color:var(--clr-text-2);">(${s.admission_number||s.admissionNumber})</span></div>
+    </div>
+  `).join('') || '<div style="padding:10px;font-size:0.8rem;color:var(--clr-text-3);">No students found</div>';
+}
+
+async function toggleObsStudent(id, checked) {
+  if (checked) { if(!selectedObsStudents.includes(id)) selectedObsStudents.push(id); }
+  else { selectedObsStudents = selectedObsStudents.filter(x => x !== id); }
+  const students = await nmGetStudents(schoolId);
+  const names = selectedObsStudents.map(sid => students.find(x=>x.id===sid)?.full_name || students.find(x=>x.id===sid)?.fullName).filter(Boolean);
+  document.getElementById('o-selected-names').textContent = names.length ? `Selected: ${names.join(', ')}` : '';
+}
+
+async function saveObservation() {
+  const idValue = document.getElementById('o-id').value;
+  const date = document.getElementById('o-date').value;
+  const text = document.getElementById('o-text').value.trim();
+  if (!date) { nmToast('Please select a date','error'); return; }
+  if (!text) { nmToast('Observation text cannot be empty','error'); return; }
+
+  if (idValue) {
+    const list = await nmGetObservations(schoolId);
+    const o = list.find(x => x.id === idValue);
+    if (o) { 
+      o.date = date; 
+      o.observation = text; 
+      await nmSaveObservation(o); 
+    }
+  } else {
+    if (!selectedObsStudents.length) { nmToast('Please select at least one student','error'); return; }
+    for (const sid of selectedObsStudents) {
+      await nmSaveObservation({ school_id: schoolId, student_id: sid, date, observation: text });
+    }
+  }
+  closeModal('obs-modal');
+  nmToast('Observation saved successfully','success');
+  await renderObservations();
+}
+
+async function exportObservations() {
+  const list = await nmGetObservations(schoolId);
+  const students = await nmGetStudents(schoolId);
+  if (!list.length) { nmToast('No observations to export', 'info'); return; }
+  const data = list.map(o => {
+    const s = students.find(x => x.id === (o.student_id || o.studentId)) || {};
+    return {
+      Date: o.observation_date || o.date || '',
+      StudentName: s.full_name || s.fullName || 'Unknown',
+      AdmissionNo: s.admission_number || s.admissionNumber || '',
+      Class: s.class || '',
+      Section: s.section || '',
+      House: s.house || '',
+      Observation: o.observation
+    };
+  });
+  nmExportExcel(data, `NobleMinds_Observations_${new Date().toISOString().split('T')[0]}.xlsx`);
+}
+
+async function deleteObservationRecord(id) {
+  if (await nmConfirm('Delete this observation?')) {
+    await nmDeleteObservation(id);
+    await renderObservations();
+    nmToast('Observation deleted','info');
+  }
+}
+
+// ── Counselling Logic ─────────────────────────────────────────────────────────
+async function renderCounselling() {
+  const q = (document.getElementById('cns-search')?.value||'').toLowerCase();
+  const students = await nmGetStudents(schoolId);
+  const cns = await nmGetCounselling(schoolId);
+  
+  const list = cns.filter(c => {
+    const s = students.find(x => x.id === (c.student_id || c.studentId));
+    return !q || (s && (s.full_name||s.fullName).toLowerCase().includes(q)) || (c.issue||'').toLowerCase().includes(q);
+  }).reverse();
+  
+  const tbody = document.getElementById('cns-tbody');
+  const empty = document.getElementById('cns-empty');
+  if (!list.length) { tbody.innerHTML=''; empty.classList.remove('hidden'); return; }
+  empty.classList.add('hidden');
+  tbody.innerHTML = list.map(c => {
+    const s = students.find(x => x.id === (c.student_id || c.studentId)) || { full_name: 'Unknown', class:'?', section:'?', house:'?' };
+    const dateVal = c.record_date || c.date || '';
+    return `<tr>
+      <td>${nmFmtDate(dateVal)}</td>
+      <td><div style="font-weight:600;color:var(--clr-primary);cursor:pointer;" onclick="viewStudent('${s.id}')">${s.full_name||s.fullName}</div><div style="font-size:0.7rem;color:var(--clr-text-2);">${s.admission_number||s.admissionNumber||''}</div></td>
+      <td><span class="badge badge-purple">Class ${s.class}</span></td>
+      <td>${s.section||'—'}</td>
+      <td><span class="badge badge-gray">${s.house||'—'}</span></td>
+      <td style="max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${c.issue || '—'}</td>
+      <td><span class="status-badge ${c.follow_up||c.followUp ? 'status-followup' : 'status-resolved'}">${c.follow_up||c.followUp ? 'Follow-up' : c.status||'Resolved'}</span></td>
+      <td><button class="btn btn-ghost btn-sm" onclick="openCounsellingModal('${c.id}')">✏️ Edit</button></td>
+    </tr>`;
+  }).join('');
+}
+
+async function openCounsellingModal(id) {
+  const students = await nmGetStudents(schoolId);
+  const sel = document.getElementById('c-student');
+  sel.innerHTML = '<option value="">— Choose Student —</option>' + students.map(s => `<option value="${s.id}">${s.full_name||s.fullName} (${s.admission_number||s.admissionNumber})</option>`).join('');
+
+  const cId = document.getElementById('c-id');
+  const cDate = document.getElementById('c-date');
+  const cIssue = document.getElementById('c-issue');
+  const cStatus = document.getElementById('c-status');
+  const cFollowup = document.getElementById('c-followup');
+  const cText = document.getElementById('c-text');
+
+  if (id) {
+    const list = await nmGetCounselling(schoolId);
+    const c = list.find(x => x.id === id);
+    if (!c) return;
+    document.getElementById('cns-modal-title').textContent = 'Edit Counselling Record';
+    cId.value = c.id;
+    cDate.value = c.date;
+    sel.value = c.student_id || c.studentId;
+    cIssue.value = c.issue;
+    cStatus.value = c.status || 'Resolved';
+    cFollowup.checked = !!(c.follow_up || c.followUp);
+    cText.value = c.counselling;
+  } else {
+    document.getElementById('cns-modal-title').textContent = 'Add Counselling Record';
+    cId.value = '';
+    cDate.value = nmToday();
+    sel.value = '';
+    cIssue.value = '';
+    cStatus.value = 'Resolved';
+    cFollowup.checked = false;
+    cText.value = '';
+  }
+  openModal('cns-modal');
+}
+
+async function saveCounselling() {
+  const sid = document.getElementById('c-student').value;
+  const date = document.getElementById('c-date').value;
+  const issue = document.getElementById('c-issue').value.trim();
+  const status = document.getElementById('c-status').value;
+  const followUp = document.getElementById('c-followup').checked;
+  const text = document.getElementById('c-text').value.trim();
+
+  if (!date || !sid || !issue || !text) { nmToast('Please fill all required fields','error'); return; }
+
+  await nmSaveCounselling({
+    id: document.getElementById('c-id').value || undefined,
+    school_id: schoolId, student_id: sid, date, issue, status, follow_up: followUp, counselling: text
+  });
+  closeModal('cns-modal');
+  nmToast('Counselling record saved','success');
+  await renderCounselling();
+  await renderDashboard();
+}
+
+async function deleteCounsellingRecord(id) {
+  if (await nmConfirm('Delete this counselling record?')) {
+    await nmDeleteCounselling(id);
+    await renderCounselling();
+    nmToast('Record deleted','info');
+  }
+}
+
+async function exportCounselling() {
+  const list = await nmGetCounselling(schoolId);
+  const students = await nmGetStudents(schoolId);
+  if (!list.length) { nmToast('No records to export', 'info'); return; }
+  const data = list.map(c => {
+    const s = students.find(x => x.id === (c.student_id || c.studentId)) || {};
+    return {
+      Date: c.date,
+      StudentName: s.full_name || s.fullName || 'Unknown',
+      AdmissionNo: s.admission_number || s.admissionNumber || '',
+      Class: s.class || '',
+      Section: s.section || '',
+      Issue: c.issue,
+      Status: c.status || 'Resolved',
+      FollowUp: (c.follow_up || c.followUp) ? 'Yes' : 'No',
+      Counselling: c.counselling
+    };
+  });
+  nmExportExcel(data, `NobleMinds_Counselling_${new Date().toISOString().split('T')[0]}.xlsx`);
+}
+
+async function nmPreparePrintProfile(id) {
+  const students = await nmGetStudents(schoolId);
+  const s = students.find(x => x.id === id);
+  if (!s) return;
+  const history = await nmGetStudentHistory(id);
+  const p = document.getElementById('print-section');
+  document.body.classList.add('printing-profile');
+  
+  const infoRow = (k, v) => `<div class="print-info-item"><strong>${k}</strong><span>${v || '—'}</span></div>`;
+
+  p.innerHTML = `
+    <div class="print-header">
+      <div class="print-logo-wrap"><img src="../assets/logo.png" class="print-logo">
+        <div class="print-header-text"><h1>Student Record</h1><p>NobleMinds · ${document.getElementById('sb-school-name').textContent}</p></div>
+      </div>
+      <div class="print-meta"><div>Ref: ${s.admission_number||s.admissionNumber}</div><div>Date: ${nmToday()}</div></div>
+    </div>
+    <div style="display:flex; gap:30px; margin-bottom:30px;">
+      <div class="print-photo-wrap"><img src="${s.photo || '../assets/logo.png'}" class="print-photo"></div>
+      <div style="flex:1;"><h2 style="margin:0;">${s.full_name||s.fullName}</h2><div class="print-grid">${infoRow('Adm No', s.admission_number||s.admissionNumber)}${infoRow('Class', s.class)}</div></div>
+    </div>
+    <h3 class="print-section-title">History Timeline</h3>
+    <div class="timeline">
+      ${history.map(h => `<div class="timeline-item"><div class="timeline-dot">📑</div><div class="timeline-content"><div class="timeline-header"><span>${h.type.toUpperCase()}</span><span>${nmFmtDate(h.date)}</span></div><div>${h.observation || h.counselling || h.reason}</div></div></div>`).join('')}
+    </div>
+  `;
+
+  setTimeout(() => {
+    window.print();
+    setTimeout(() => { document.body.classList.remove('printing-profile'); }, 500);
+  }, 300);
+}
+
+// ── Init Run ──────────────────────────────────────────────────────────────────
+init();
+
+// ── Movement Logic ────────────────────────────────────────────────────────────
+async function renderMovements() {
+  const q = (document.getElementById('mov-search')?.value||'').toLowerCase();
+  const students = await nmGetStudents(schoolId);
+  const mov = await nmGetMovements(schoolId);
+  
+  const list = mov.filter(m => {
+    const s = students.find(x => x.id === (m.student_id || m.studentId));
+    return !q || (s && (s.full_name||s.fullName).toLowerCase().includes(q)) || 
+           (m.escort_name||m.escortName||'').toLowerCase().includes(q) || (m.reason||'').toLowerCase().includes(q);
+  }).reverse();
+  
+  const tbody = document.getElementById('mov-tbody');
+  const empty = document.getElementById('mov-empty');
+  if (!list.length) { tbody.innerHTML=''; empty.classList.remove('hidden'); return; }
+  empty.classList.add('hidden');
+  
+  tbody.innerHTML = list.map(m => {
+    const s = students.find(x => x.id === (m.student_id || m.studentId)) || { full_name: 'Unknown', class:'?', section:'?', house:'?' };
+    return `<tr>
+      <td><div style="font-weight:600;color:var(--clr-primary);">${nmFmtDate(m.leave_date||m.leaveDate)}</div></td>
+      <td>
+        <div style="font-weight:600;">${s.full_name||s.fullName}</div>
+        <div style="font-size:0.75rem;color:var(--clr-text-2);">Class ${s.class} · ${s.section} · ${s.house} House</div>
+      </td>
+      <td style="max-width:200px;font-size:0.85rem;">${m.reason}</td>
+      <td>${nmFmtDate(m.report_date||m.reportDate)}</td>
+      <td>
+        <div style="font-weight:500;">${m.escort_name||m.escortName}</div>
+        <div style="font-size:0.75rem;color:var(--clr-text-2);">${m.relationship} · ${m.phone}</div>
+      </td>
+      <td>
+        <div style="display:flex;gap:4px;">
+          <button class="btn btn-ghost btn-sm" onclick="openMovementModal('${m.id}')">✏️ Edit</button>
+          <button class="btn btn-danger btn-sm btn-icon" onclick="deleteMovementRecord('${m.id}')" title="Delete">🗑</button>
+        </div>
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+async function openMovementModal(id) {
+  const students = await nmGetStudents(schoolId);
+  const sel = document.getElementById('m-student');
+  sel.innerHTML = '<option value="">— Choose Student —</option>' + 
+    students.map(s => `<option value="${s.id}">${s.full_name||s.fullName} (${s.admission_number||s.admissionNumber})</option>`).join('');
+
+  const mId = document.getElementById('mov-id');
+  const mReason = document.getElementById('m-reason');
+  const mLeave = document.getElementById('m-leave-date');
+  const mReport = document.getElementById('m-report-date');
+  const mEscort = document.getElementById('m-escort-name');
+  const mRel = document.getElementById('m-relationship');
+  const mPhone = document.getElementById('m-phone');
+
+  if (id) {
+    const list = await nmGetMovements(schoolId);
+    const m = list.find(x => x.id === id);
+    if (!m) return;
+    document.getElementById('mov-modal-title').textContent = 'Edit Movement Record';
+    mId.value = m.id;
+    sel.value = m.student_id || m.studentId;
+    mReason.value = m.reason;
+    mLeave.value = m.leave_date || m.leaveDate;
+    mReport.value = m.report_date || m.reportDate;
+    mEscort.value = m.escort_name || m.escortName;
+    mRel.value = m.relationship;
+    mPhone.value = m.phone;
+  } else {
+    document.getElementById('mov-modal-title').textContent = 'Add Movement Record';
+    mId.value = '';
+    sel.value = '';
+    mReason.value = '';
+    mLeave.value = nmToday();
+    mReport.value = '';
+    mEscort.value = '';
+    mRel.value = '';
+    mPhone.value = '';
+  }
+  openModal('movement-modal');
+}
+
+async function saveMovement() {
+  const sid = document.getElementById('m-student').value;
+  const reason = document.getElementById('m-reason').value.trim();
+  const leave = document.getElementById('m-leave-date').value;
+  const report = document.getElementById('m-report-date').value;
+  const escort = document.getElementById('m-escort-name').value.trim();
+  const rel = document.getElementById('m-relationship').value.trim();
+  const phone = document.getElementById('m-phone').value.trim();
+
+  if (!sid || !reason || !leave || !report || !escort || !rel || !phone) {
+    nmToast('Please fill all required fields','error'); return;
+  }
+
+  await nmSaveMovement({
+    id: document.getElementById('mov-id').value || undefined,
+    school_id: schoolId, student_id: sid, reason, leave_date: leave, report_date: report,
+    escort_name: escort, relationship: rel, phone
+  });
+  
+  closeModal('movement-modal');
+  nmToast('Movement record saved successfully','success');
+  await renderMovements();
+}
+
+async function deleteMovementRecord(id) {
+  if (await nmConfirm('Delete this movement record?')) {
+    await nmDeleteMovement(id);
+    await renderMovements();
+    nmToast('Record deleted','info');
+  }
+}
+
+async function exportMovements() {
+  const list = await nmGetMovements(schoolId);
+  const students = await nmGetStudents(schoolId);
+  if (!list.length) { nmToast('No records to export', 'info'); return; }
+  const data = list.map(m => {
+    const s = students.find(x => x.id === (m.student_id || m.studentId)) || {};
+    return {
+      'Date of Leaving': m.leave_date || m.leaveDate,
+      'Student Name': s.full_name || s.fullName || 'Unknown',
+      'Admission Number': s.admission_number || s.admissionNumber || '',
+      'Class': s.class || '',
+      'Section': s.section || '',
+      'House': s.house || '',
+      'Reason for Leave': m.reason,
+      'Date of Reporting': m.report_date || m.reportDate,
+      'Escort Name': m.escort_name || m.escortName,
+      'Relationship': m.relationship,
+      'Phone Number': m.phone
+    };
+  });
+  nmExportExcel(data, `NobleMinds_Movements_${new Date().toISOString().split('T')[0]}.xlsx`);
+}
+
+</script>
+<!-- PRINT SECTION (Hidden in UI, visible in Print) -->
+<div id="print-section" class="print-only" style="display:none;"></div>
+
+</body>
+</html>
