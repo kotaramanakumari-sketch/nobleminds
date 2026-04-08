@@ -189,25 +189,7 @@
       </button>
     </form>
 
-    <!-- Demo Credentials -->
-    <div class="demo-box">
-      <div class="demo-box-title">🎮 Demo Credentials</div>
-      <div class="demo-cred">
-        <span class="demo-role">👑 Super Admin</span>
-        <span class="demo-val">kotaramanakumari@gmail.com</span>
-        <span class="demo-use" onclick="fillDemo('kotaramanakumari@gmail.com','Admin@123')">Use</span>
-      </div>
-      <div class="demo-cred">
-        <span class="demo-role">🏫 School Staff 1</span>
-        <span class="demo-val">ravi@gvhs.edu</span>
-        <span class="demo-use" onclick="fillDemo('ravi@gvhs.edu','User@123')">Use</span>
-      </div>
-      <div class="demo-cred">
-        <span class="demo-role">🏫 School Staff 2</span>
-        <span class="demo-val">priya@sps.edu</span>
-        <span class="demo-use" onclick="fillDemo('priya@sps.edu','User@123')">Use</span>
-      </div>
-    </div>
+
 
     <div style="margin-top: 24px; text-align: center; font-size: 0.9rem; color: var(--clr-text-2);">
       New School? <a href="register.html" style="color: var(--clr-primary); font-weight: 700;">Register Here</a>
@@ -264,12 +246,7 @@
     pwdInput.type = pwdInput.type === 'password' ? 'text' : 'password';
   });
 
-  // Fill demo credentials
-  function fillDemo(email, pwd) {
-    document.getElementById('login-email').value = email;
-    document.getElementById('login-password').value = pwd;
-    document.getElementById('login-email').focus();
-  }
+
 
   // Login form submit
   document.getElementById('login-form').addEventListener('submit', async e => {
