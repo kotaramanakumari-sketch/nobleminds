@@ -62,7 +62,7 @@ async function nmSignUp(data) {
   const { error: profError } = await sb.from('profiles').insert([{
     id: authData.user.id,
     name: name,
-    role: email.toLowerCase() === 'admin@nobleminds.com' ? 'admin' : 'user', // Super admin override
+    role: email.toLowerCase() === 'kotaramanakumari@gmail.com' ? 'admin' : 'user', // Super admin override
     school_id: school.id,
     school_name: school.name
   }]);
@@ -81,7 +81,7 @@ async function nmLogin(email, password) {
   let profile = await nmGetProfile(data.user.id);
 
   // Auto-heal super admin profile if it got lost/skipped
-  if (!profile && email.toLowerCase() === 'admin@nobleminds.com') {
+  if (!profile && email.toLowerCase() === 'kotaramanakumari@gmail.com') {
     const { error: profError } = await sb.from('profiles').insert([{
       id: data.user.id,
       name: 'Super Admin',
