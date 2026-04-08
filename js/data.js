@@ -98,6 +98,14 @@ async function nmSaveStudent(s) {
 }
 
 async function nmDeleteStudent(id) {
+  // Cascading deletes for related records
+  await Promise.all([
+    sb.from('observations').delete().eq('student_id', id),
+    sb.from('counselling_records').delete().eq('student_id', id),
+    sb.from('movements').delete().eq('student_id', id)
+  ]);
+  
+  // Delete the actual student record
   await sb.from('students').delete().eq('id', id);
 }
 

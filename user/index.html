@@ -65,6 +65,7 @@
   <!-- MAIN -->
   <div class="main-content">
     <div class="topbar">
+      <button class="mobile-menu-btn" onclick="toggleMobileMenu()">☰</button>
       <div class="topbar-title" id="topbar-title">Dashboard</div>
       <div class="topbar-right">
         <button class="btn btn-ghost btn-sm" onclick="window.print()">🖨 Print Page</button>
@@ -669,7 +670,11 @@ async function init() {
 
 // ── Navigation ────────────────────────────────────────────────────────────────
 const pageTitles = { dashboard:'Dashboard', students:'Students', 'add-student':'Add Student', import:'Bulk Import', observations:'Observations', counselling:'Counselling', movement:'Movement Record' };
+function toggleMobileMenu() {
+  document.querySelector('.sidebar').classList.toggle('open');
+}
 async function showSection(id, el) {
+  document.querySelector('.sidebar').classList.remove('open');
   document.querySelectorAll('.page-section').forEach(s => s.classList.remove('active'));
   document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
   document.getElementById('section-' + id).classList.add('active');
@@ -1440,33 +1445,115 @@ async function exportCounselling() {
 async function nmPreparePrintProfile(id) {
   const students = await nmGetStudents(schoolId);
   const s = students.find(x => x.id === id);
-  if (!s) return;
+  if (!s) { nmToast('Student not found', 'error'); return; }
+
   const history = await nmGetStudentHistory(id);
   const p = document.getElementById('print-section');
   document.body.classList.add('printing-profile');
-  
+
   const infoRow = (k, v) => `<div class="print-info-item"><strong>${k}</strong><span>${v || '—'}</span></div>`;
 
   p.innerHTML = `
     <div class="print-header">
-      <div class="print-logo-wrap"><img src="../assets/logo.png" class="print-logo">
-        <div class="print-header-text"><h1>Student Record</h1><p>NobleMinds · ${document.getElementById('sb-school-name').textContent}</p></div>
+      <div class="print-logo-wrap">
+        <img src="../assets/logo.png" class="print-logo">
+        <div class="print-header-text">
+          <h1>Student Record</h1>
+          <p>${document.getElementById('sb-school-name')?.textContent || s.school_name || 'NobleMinds Platform'} · Official Archive</p>
+        </div>
       </div>
-      <div class="print-meta"><div>Ref: ${s.admission_number||s.admissionNumber}</div><div>Date: ${nmToday()}</div></div>
+      <div class="print-meta">
+        <div>Ref: NM/STU/${s.admission_number || '000'}</div>
+        <div>Date: ${new Date().toLocaleDateString('en-IN')}</div>
+        <div>Time: ${new Date().toLocaleTimeString('en-IN', {hour:'2-digit', minute:'2-digit'})}</div>
+      </div>
     </div>
+
     <div style="display:flex; gap:30px; margin-bottom:30px;">
-      <div class="print-photo-wrap"><img src="${s.photo || '../assets/logo.png'}" class="print-photo"></div>
-      <div style="flex:1;"><h2 style="margin:0;">${s.full_name||s.fullName}</h2><div class="print-grid">${infoRow('Adm No', s.admission_number||s.admissionNumber)}${infoRow('Class', s.class)}</div></div>
+      <div class="print-photo-wrap">
+        <img src="${s.photo || '../assets/logo.png'}" class="print-photo">
+      </div>
+      <div style="flex:1;">
+        <h2 style="margin:0 0 10px; font-size:18pt; color:#000;">${s.full_name || s.fullName || '—'}</h2>
+        <div class="print-grid">
+          ${infoRow('Admission No', s.admission_number || s.admissionNumber)}
+          ${infoRow('Class & Section', `${s.class || '?'} - ${s.section || '?'}`)}
+          ${infoRow('Gender', s.gender)}
+          ${infoRow('House', s.house)}
+          ${infoRow('Date of Birth', nmFmtDate(s.dob))}
+          ${infoRow('Age', s.dob ? nmCalcAge(s.dob) + ' Years' : '—')}
+        </div>
+      </div>
     </div>
-    <h3 class="print-section-title">History Timeline</h3>
+
+    <h3 class="print-section-title">Personal & Contact Details</h3>
+    <div class="print-grid">
+      ${infoRow('Religion', s.religion)}
+      ${infoRow('Caste', s.caste)}
+      ${infoRow('Phone', s.phone)}
+      ${infoRow('Email', s.email)}
+      ${infoRow('Aadhar', s.aadhar)}
+      ${infoRow('APAAR', s.apaar_number || s.apaarNumber)}
+      ${infoRow('PEN', s.pen)}
+    </div>
+    <div style="margin-top:15px;">
+      ${infoRow('Residential Address', s.address)}
+    </div>
+
+    <div style="display:grid; grid-template-columns: 1fr 1fr; gap:30px; margin-top:20px;">
+      <div>
+        <h3 class="print-section-title">Father's Info</h3>
+        ${infoRow('Name', s.father_name || s.fatherName)}
+        ${infoRow('Occupation', s.father_occupation || s.fatherOccupation)}
+        ${infoRow('Contact', s.father_phone || s.fatherPhone)}
+      </div>
+      <div>
+        <h3 class="print-section-title">Mother's Info</h3>
+        ${infoRow('Name', s.mother_name || s.motherName)}
+        ${infoRow('Occupation', s.mother_occupation || s.motherOccupation)}
+        ${infoRow('Contact', s.mother_phone || s.motherPhone)}
+      </div>
+    </div>
+
+    <h3 class="print-section-title">Medical History</h3>
+    <div style="padding:15px; border:1px solid #eee; font-size:10pt; color:#333; line-height:1.6; border-radius:6px;">${s.medical_history || s.medicalHistory || 'No significant medical history recorded.'}</div>
+
+    <h3 class="print-section-title">Counselling, Observation & Movement History</h3>
     <div class="timeline">
-      ${history.map(h => `<div class="timeline-item"><div class="timeline-dot">📑</div><div class="timeline-content"><div class="timeline-header"><span>${h.type.toUpperCase()}</span><span>${nmFmtDate(h.date)}</span></div><div>${h.observation || h.counselling || h.reason}</div></div></div>`).join('')}
+      ${history.length ? history.map(h => {
+        let icon = '👁', title = h.type === 'observation' ? 'Observation' : (h.issue || 'Record');
+        let body = h.type === 'observation' ? h.observation : (h.counselling || '');
+        if (h.type === 'movement') {
+          icon = '🏃'; title = `Movement: ${h.reason}`;
+          body = `Leaving: ${nmFmtDate(h.leave_date || h.leaveDate)} · Return: ${nmFmtDate(h.report_date || h.reportDate)}<br>Escort: ${h.escort_name || h.escortName} (${h.relationship}) · Contact: ${h.phone}`;
+        }
+        return `
+        <div class="timeline-item ${h.type}">
+          <div class="timeline-dot">${icon}</div>
+          <div class="timeline-content">
+            <div class="timeline-header">
+              <span class="timeline-title"><strong>${title}</strong></span>
+              <span class="timeline-date">${nmFmtDate(h.date)}</span>
+            </div>
+            <div class="timeline-body">${body}</div>
+            ${h.type === 'counselling' ? `<div style="margin-top:8px;"><span class="status-badge">${h.status || 'Resolved'}</span></div>` : ''}
+          </div>
+        </div>
+        `;
+      }).join('') : '<p style="padding:10px; color:#666;">No history records found for this student.</p>'}
+    </div>
+
+    <div class="print-footer">
+      <span>Official Student Record — NobleMinds</span>
+      <span>Confidential Document</span>
     </div>
   `;
 
   setTimeout(() => {
     window.print();
-    setTimeout(() => { document.body.classList.remove('printing-profile'); }, 500);
+    setTimeout(() => {
+      document.body.classList.remove('printing-profile');
+    }, 500);
   }, 300);
 }
 

@@ -78,6 +78,7 @@
   <!-- ── Main Content ───────────────────────────────────────────────────── -->
   <div class="main-content">
     <div class="topbar">
+      <button class="mobile-menu-btn" onclick="toggleMobileMenu()">☰</button>
       <div class="topbar-title" id="topbar-title">Dashboard</div>
       <div class="topbar-right">
         <button class="btn btn-ghost btn-sm" onclick="window.print()">🖨 Print Page</button>
@@ -388,7 +389,11 @@ document.getElementById('greeting-time').textContent = h < 12 ? 'morning' : h < 
 
 // ─── Section Navigation ───────────────────────────────────────────────────────
 const titles = { dashboard:'Dashboard', management:'System Management', 'school-data':'Student Data by School' };
+function toggleMobileMenu() {
+  document.querySelector('.sidebar').classList.toggle('open');
+}
 async function showSection(id, el) {
+  document.querySelector('.sidebar').classList.remove('open');
   document.querySelectorAll('.page-section').forEach(s => s.classList.remove('active'));
   document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
   document.getElementById('section-' + id).classList.add('active');
