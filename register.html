@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Register — NobleMinds</title>
+  <meta name="description" content="Register your school with NobleMinds.">
+  <link rel="stylesheet" href="styles/global.css">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <style>
+    body { display: flex; align-items: center; justify-content: center; min-height: 100vh; overflow-y: auto; position: relative; padding: 40px 20px; }
+
+    .login-bg { position: fixed; inset: 0; z-index: 0; }
+    .grid-lines {
+      position: absolute; inset: 0;
+      background-image: linear-gradient(rgba(108,99,255,0.06) 1px, transparent 1px),
+                        linear-gradient(90deg, rgba(108,99,255,0.06) 1px, transparent 1px);
+      background-size: 60px 60px;
+    }
+
+    .login-wrap {
+      position: relative; z-index: 1;
+      width: 100%; max-width: 500px;
+    }
+
+    .login-card {
+      background: rgba(17,17,40,0.85);
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 24px;
+      backdrop-filter: blur(24px);
+      -webkit-backdrop-filter: blur(24px);
+      padding: 44px 40px;
+      box-shadow: 0 32px 80px rgba(0,0,0,0.6);
+      animation: loginAppear 0.5s ease both;
+    }
+    @keyframes loginAppear {
+      from { opacity:0; transform: translateY(40px) scale(0.95); }
+      to   { opacity:1; transform: translateY(0) scale(1); }
+    }
+
+    .login-logo {
+      display: flex; align-items: center; gap: 12px;
+      margin-bottom: 32px; justify-content: center;
+    }
+    .login-logo-text { font-size: 1.5rem; font-weight: 800; }
+    .login-logo-text span { color: var(--clr-accent); }
+
+    .login-title { font-size: 1.5rem; font-weight: 800; text-align: center; margin-bottom: 6px; }
+    .login-sub { text-align: center; color: var(--clr-text-2); font-size: 0.9rem; margin-bottom: 32px; }
+
+    .input-wrapper {
+      position: relative;
+      display: flex; align-items: center;
+    }
+    .input-wrapper .form-control { padding-left: 44px; }
+    .input-icon {
+      position: absolute; left: 14px;
+      font-size: 1rem; color: var(--clr-text-3); pointer-events: none;
+      z-index:1;
+    }
+
+    .login-btn {
+      width: 100%; padding: 14px; font-size: 1rem; font-weight: 700;
+      letter-spacing: 0.02em; margin-top: 8px;
+      background: linear-gradient(135deg, var(--clr-primary), #8b7cf8);
+      color: #fff; border: none; border-radius: var(--radius-sm);
+      cursor: pointer; transition: var(--transition);
+      box-shadow: 0 6px 24px rgba(108,99,255,0.4);
+    }
+    .login-btn:hover { transform: translateY(-2px); box-shadow: 0 10px 32px rgba(108,99,255,0.55); }
+
+    .back-link {
+      display: flex; align-items: center; justify-content: center;
+      gap: 6px; margin-top: 20px;
+      font-size: 0.85rem; color: var(--clr-text-3); transition: color 0.2s;
+    }
+    .back-link:hover { color: var(--clr-text); }
+  </style>
+</head>
+<body>
+
+<div class="login-bg">
+  <div class="blob blob-1" style="opacity:0.18;"></div>
+  <div class="blob blob-2" style="opacity:0.15;"></div>
+  <div class="grid-lines"></div>
+</div>
+
+<div class="login-wrap">
+  <div class="login-card">
+    <!-- Logo -->
+    <div class="login-logo">
+      <img src="assets/logo.png" alt="NobleMinds" style="width:48px;height:48px;border-radius:14px;object-fit:contain;background:#fff;padding:4px;box-shadow: 0 8px 24px rgba(108,99,255,0.2);">
+      <span class="login-logo-text">Noble<span>Minds</span></span>
+    </div>
+
+    <h1 class="login-title">School Registration</h1>
+    <p class="login-sub">Join NobleMinds to manage student records</p>
+
+    <form id="register-form" autocomplete="off">
+      <div class="form-group mb-16">
+        <label class="form-label">School UDISE Code <span class="required">*</span></label>
+        <div class="input-wrapper">
+          <span class="input-icon">🔢</span>
+          <input type="text" id="reg-udise" class="form-control" placeholder="11-digit UDISE code" maxlength="11" required>
+        </div>
+      </div>
+
+      <div class="form-group mb-16">
+        <label class="form-label">School Name <span class="required">*</span></label>
+        <div class="input-wrapper">
+          <span class="input-icon">🏫</span>
+          <input type="text" id="reg-school" class="form-control" placeholder="Name of your institution" required>
+        </div>
+      </div>
+
+      <div class="form-group mb-16">
+        <label class="form-label">Address <span class="required">*</span></label>
+        <div class="input-wrapper">
+          <span class="input-icon">📍</span>
+          <textarea id="reg-address" class="form-control" rows="2" placeholder="Full address of the school" required></textarea>
+        </div>
+      </div>
+
+      <div class="form-group mb-16">
+        <label class="form-label">User Name <span class="required">*</span></label>
+        <div class="input-wrapper">
+          <span class="input-icon">👤</span>
+          <input type="text" id="reg-name" class="form-control" placeholder="Administrator's full name" required>
+        </div>
+      </div>
+
+      <div class="form-group mb-16">
+        <label class="form-label">Phone Number (10 Digits Valid Number) <span class="required">*</span></label>
+        <div class="input-wrapper">
+          <span class="input-icon">📞</span>
+          <input type="tel" id="reg-phone" class="form-control" placeholder="10-digit mobile number" maxlength="10" pattern="[0-9]{10}" required>
+        </div>
+      </div>
+
+      <div class="form-group mb-16">
+        <label class="form-label">Email ID <span class="required">*</span></label>
+        <div class="input-wrapper">
+          <span class="input-icon">✉</span>
+          <input type="email" id="reg-email" class="form-control" placeholder="admin@school.edu.in" required>
+        </div>
+      </div>
+
+      <div class="form-grid mb-16" style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+        <div class="form-group">
+          <label class="form-label">Password <span class="required">*</span></label>
+          <div class="input-wrapper">
+            <span class="input-icon">🔒</span>
+            <input type="password" id="reg-password" class="form-control" placeholder="Create password" required>
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Confirm Password <span class="required">*</span></label>
+          <div class="input-wrapper">
+            <span class="input-icon">🔒</span>
+            <input type="password" id="reg-confirm" class="form-control" placeholder="Re-enter password" required>
+          </div>
+        </div>
+      </div>
+
+      <button type="submit" class="login-btn" id="reg-btn">
+        Send Request
+      </button>
+    </form>
+
+    <a href="login.html" class="back-link">← Back to Login</a>
+  </div>
+</div>
+
+<script src="js/supabase.js"></script>
+<script src="js/data.js"></script>
+<script src="js/utils.js"></script>
+<script src="js/auth.js"></script>
+<script>
+  document.getElementById('register-form').addEventListener('submit', async e => {
+    e.preventDefault();
+    const password = document.getElementById('reg-password').value;
+    const confirm  = document.getElementById('reg-confirm').value;
+    const phone    = document.getElementById('reg-phone').value.trim();
+
+    if (phone.length !== 10 || isNaN(phone)) {
+      nmToast('Please enter a valid 10-digit phone number.', 'error');
+      return;
+    }
+
+    if (password.length < 6) {
+      nmToast('Password must be at least 6 characters long.', 'error');
+      return;
+    }
+
+    if (password !== confirm) {
+      nmToast('Passwords do not match. Please re-enter.', 'error');
+      return;
+    }
+
+    const data = {
+      udise:      document.getElementById('reg-udise').value.trim(),
+      schoolName: document.getElementById('reg-school').value.trim(),
+      address:    document.getElementById('reg-address').value.trim(),
+      name:       document.getElementById('reg-name').value.trim(),
+      phone:      phone,
+      email:      document.getElementById('reg-email').value.trim(),
+      password:   password
+    };
+
+    const btn = document.getElementById('reg-btn');
+    btn.disabled = true;
+    btn.textContent = 'Creating Account...';
+
+    try {
+      await nmSignUp(data);
+      nmToast('Registration successful! You can now log in.', 'success');
+      setTimeout(() => { window.location.href = 'login.html'; }, 2000);
+    } catch (err) {
+      console.error(err);
+      nmToast('Registration failed: ' + err.message, 'error');
+      btn.disabled = false;
+      btn.textContent = 'Send Request';
+    }
+  });
+</script>
+</body>
+</html>

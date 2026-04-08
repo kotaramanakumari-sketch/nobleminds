@@ -1,0 +1,334 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>NobleMinds — Student Counselling Records Platform</title>
+  <meta name="description" content="NobleMinds is a comprehensive student counselling records management platform for schools. Manage student data, parent info, medical history and extracurricular activities effortlessly.">
+  <link rel="stylesheet" href="styles/global.css">
+  <style>
+    /* ─── Home-specific styles ─── */
+    body { overflow-x: hidden; }
+
+    /* NAV */
+    .home-nav {
+      position: fixed; top: 0; left: 0; right: 0; z-index: 200;
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 0 60px; height: 70px;
+      background: rgba(13,13,26,0.8); backdrop-filter: blur(16px);
+      border-bottom: 1px solid var(--clr-border);
+    }
+    .nav-logo { display: flex; align-items: center; gap: 12px; }
+    .nav-logo-icon {
+      width: 40px; height: 40px; border-radius: 10px;
+      background: linear-gradient(135deg, var(--clr-primary), var(--clr-accent));
+      display: flex; align-items: center; justify-content: center;
+      font-weight: 900; font-size: 0.95rem; color: #fff;
+    }
+    .nav-logo-text { font-size: 1.2rem; font-weight: 800; }
+    .nav-logo-text span { color: var(--clr-accent); }
+    .nav-links { display: flex; align-items: center; gap: 32px; }
+    .nav-links a { font-size: 0.9rem; color: var(--clr-text-2); font-weight: 500; transition: color 0.2s; }
+    .nav-links a:hover { color: var(--clr-text); }
+
+    /* HERO */
+    .hero-section {
+      min-height: 100vh; display: flex; align-items: center;
+      justify-content: center; position: relative; overflow: hidden;
+      padding: 100px 60px 60px;
+    }
+    .hero-bg { position: absolute; inset: 0; }
+    .hero-inner {
+      max-width: 900px; text-align: center; position: relative; z-index: 2;
+    }
+    .hero-badge {
+      display: inline-flex; align-items: center; gap: 8px;
+      padding: 8px 20px; border-radius: 100px;
+      background: rgba(108,99,255,0.12); border: 1px solid rgba(108,99,255,0.25);
+      font-size: 0.82rem; font-weight: 600; color: var(--clr-primary);
+      margin-bottom: 28px; animation: fadeUp 0.6s ease both;
+    }
+    .hero-badge::before { content: '●'; animation: pulse 2s infinite; }
+    @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.3} }
+    .hero-title {
+      margin-bottom: 24px; animation: fadeUp 0.6s ease 0.1s both;
+    }
+    .hero-subtitle {
+      font-size: clamp(1rem, 2vw, 1.2rem); color: var(--clr-text-2);
+      max-width: 680px; margin: 0 auto 40px;
+      animation: fadeUp 0.6s ease 0.2s both;
+    }
+    .hero-cta {
+      display: flex; gap: 16px; justify-content: center; flex-wrap: wrap;
+      margin-bottom: 60px; animation: fadeUp 0.6s ease 0.3s both;
+    }
+    .hero-stats {
+      display: flex; gap: 48px; justify-content: center; flex-wrap: wrap;
+      animation: fadeUp 0.6s ease 0.4s both;
+    }
+    .hs { text-align: center; }
+    .hs-num {
+      font-size: 2.2rem; font-weight: 900;
+      background: linear-gradient(135deg, var(--clr-primary), var(--clr-accent));
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    .hs-label { font-size: 0.82rem; color: var(--clr-text-3); margin-top: 2px; }
+    @keyframes fadeUp { from { opacity:0; transform:translateY(30px) } to { opacity:1; transform:translateY(0) } }
+
+    /* FEATURES */
+    .features-section { padding: 100px 60px; }
+    .section-tag {
+      display: inline-flex; padding: 6px 16px; border-radius: 100px;
+      background: rgba(255,101,132,0.1); border: 1px solid rgba(255,101,132,0.2);
+      font-size: 0.78rem; font-weight: 700; color: var(--clr-accent);
+      text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 16px;
+    }
+    .section-title { margin-bottom: 12px; }
+    .section-sub { max-width: 600px; margin-bottom: 60px; color: var(--clr-text-2); }
+    .features-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px; }
+    .feature-card {
+      padding: 28px; background: var(--clr-surface);
+      border: 1px solid var(--clr-border); border-radius: var(--radius-lg);
+      transition: var(--transition);
+    }
+    .feature-card:hover { border-color: var(--clr-primary); transform: translateY(-4px); box-shadow: 0 20px 40px rgba(108,99,255,0.15); }
+    .feature-icon {
+      width: 52px; height: 52px; border-radius: var(--radius-sm);
+      background: linear-gradient(135deg, rgba(108,99,255,0.2), rgba(255,101,132,0.15));
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1.6rem; margin-bottom: 16px;
+    }
+    .feature-title { font-size: 1.05rem; font-weight: 700; margin-bottom: 8px; }
+    .feature-desc { font-size: 0.88rem; color: var(--clr-text-2); line-height: 1.7; }
+
+    /* HOW IT WORKS */
+    .how-section { padding: 80px 60px; background: var(--clr-bg2); }
+    .steps-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 24px; margin-top: 48px; }
+    .step-card { text-align: center; padding: 28px; }
+    .step-circle {
+      width: 60px; height: 60px; border-radius: 50%;
+      background: linear-gradient(135deg, var(--clr-primary), var(--clr-accent));
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1.4rem; font-weight: 900; margin: 0 auto 16px;
+    }
+    .step-title { font-weight: 700; margin-bottom: 8px; }
+    .step-desc { font-size: 0.87rem; color: var(--clr-text-2); }
+
+    /* CTA SECTION */
+    .cta-section {
+      padding: 100px 60px; text-align: center; position: relative; overflow: hidden;
+    }
+    .cta-box {
+      background: linear-gradient(135deg, rgba(108,99,255,0.15), rgba(255,101,132,0.1));
+      border: 1px solid rgba(108,99,255,0.25);
+      border-radius: var(--radius-xl); padding: 64px 48px;
+      position: relative; max-width: 700px; margin: auto;
+    }
+    .cta-box h2 { margin-bottom: 16px; }
+    .cta-box p { margin-bottom: 36px; }
+
+    /* FOOTER */
+    .footer {
+      padding: 40px 60px; border-top: 1px solid var(--clr-border);
+      display: flex; align-items: center; justify-content: space-between;
+      flex-wrap: wrap; gap: 16px;
+    }
+    .footer-copy { font-size: 0.85rem; color: var(--clr-text-3); }
+    .footer-links { display: flex; gap: 24px; }
+    .footer-links a { font-size: 0.85rem; color: var(--clr-text-3); transition: color 0.2s; }
+    .footer-links a:hover { color: var(--clr-text); }
+
+    /* Glowing orbs */
+    .orb {
+      position: absolute; border-radius: 50%; pointer-events: none;
+      filter: blur(80px); opacity: 0.18;
+    }
+
+    @media (max-width: 768px) {
+      .home-nav { padding: 0 20px; }
+      .hero-section, .features-section, .how-section, .cta-section, .footer { padding-left: 20px; padding-right: 20px; }
+      .nav-links { display: none; }
+      .hero-stats { gap: 24px; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- ── Navigation ─────────────────────────────────────────────────────────── -->
+<nav class="home-nav">
+  <div class="nav-logo">
+    <img src="assets/logo.png" alt="NobleMinds" style="width:40px;height:40px;border-radius:var(--radius-sm);object-fit:contain;background:#fff;padding:2px;">
+    <span class="nav-logo-text">Noble<span>Minds</span></span>
+  </div>
+  <div class="nav-links">
+    <a href="#features">Features</a>
+    <a href="#how">How it Works</a>
+    <a href="login.html">Login</a>
+  </div>
+  <a href="login.html" class="btn btn-primary" id="nav-login-btn">Login to Portal →</a>
+</nav>
+
+<!-- ── Hero ───────────────────────────────────────────────────────────────── -->
+<section class="hero-section">
+  <div class="hero-bg">
+    <div class="blob blob-1"></div>
+    <div class="blob blob-2"></div>
+    <div class="blob blob-3"></div>
+  </div>
+  <div class="hero-inner">
+    <div class="hero-badge">🎓 Student Records Platform</div>
+    <h1 class="hero-title">
+      Manage Student Counselling<br>
+      <span class="gradient-text">Records Effortlessly</span>
+    </h1>
+    <p class="hero-subtitle">
+      NobleMinds is an all-in-one platform for schools to securely manage student profiles, parent information, medical history, identity documents, and extracurricular activities.
+    </p>
+    <div class="hero-cta">
+      <a href="login.html" class="btn btn-primary btn-lg" id="hero-get-started-btn">Get Started →</a>
+      <a href="#features" class="btn btn-ghost btn-lg" id="hero-learn-more-btn">Learn More</a>
+    </div>
+    <div class="hero-stats">
+      <div class="hs"><div class="hs-num">500+</div><div class="hs-label">Schools Registered</div></div>
+      <div class="hs"><div class="hs-num">50K+</div><div class="hs-label">Students Managed</div></div>
+      <div class="hs"><div class="hs-num">99.9%</div><div class="hs-label">Data Security</div></div>
+      <div class="hs"><div class="hs-num">5★</div><div class="hs-label">Admin Rating</div></div>
+    </div>
+  </div>
+</section>
+
+<!-- ── Features ───────────────────────────────────────────────────────────── -->
+<section id="features" class="features-section">
+  <div class="section-tag">✦ Features</div>
+  <h2 class="section-title">Everything you need to manage <span class="gradient-text">student records</span></h2>
+  <p class="section-sub">From student enrollment to parent details, medical history, and identity verification — all in one secure platform.</p>
+
+  <div class="features-grid">
+    <div class="feature-card">
+      <div class="feature-icon">🏫</div>
+      <div class="feature-title">Multi-School Management</div>
+      <p class="feature-desc">Register multiple schools and assign dedicated staff users. Each school manages its own students independently.</p>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon">👤</div>
+      <div class="feature-title">Complete Student Profiles</div>
+      <p class="feature-desc">Capture student photo, admission number, class, section, house, DOB, gender, religion, caste, and full address details.</p>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon">👨‍👩‍👧</div>
+      <div class="feature-title">Parent Information</div>
+      <p class="feature-desc">Maintain detailed father and mother profiles with photos, qualification, occupation, and contact information.</p>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon">🆔</div>
+      <div class="feature-title">Identity Documents</div>
+      <p class="feature-desc">Securely store Aadhar number, APAAR number, and PEN for every student for government compliance.</p>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon">🏥</div>
+      <div class="feature-title">Medical History</div>
+      <p class="feature-desc">Record and track student medical history for counselling support and emergency preparedness.</p>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon">🏆</div>
+      <div class="feature-title">Extracurricular Tracking</div>
+      <p class="feature-desc">Track participation in NCC, NSS, SGFI, and Scouts & Guides activities for each student.</p>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon">📥</div>
+      <div class="feature-title">Bulk Import via CSV</div>
+      <p class="feature-desc">Import hundreds of student records at once using our CSV template. Preview before saving.</p>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon">🔐</div>
+      <div class="feature-title">Role-Based Access</div>
+      <p class="feature-desc">Admin controls schools and users. School staff only access their own school's student data.</p>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon">📊</div>
+      <div class="feature-title">Smart Dashboard</div>
+      <p class="feature-desc">Instant overview of student counts, gender distribution, class-wise breakdown, and activity stats.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ── How it Works ────────────────────────────────────────────────────────── -->
+<section id="how" class="how-section">
+  <div class="section-tag">✦ Process</div>
+  <h2 class="section-title">How <span class="gradient-text">NobleMinds</span> works</h2>
+  <p class="section-sub">Simple 4-step process to get your school up and running.</p>
+  <div class="steps-grid">
+    <div class="step-card">
+      <div class="step-circle">1</div>
+      <div class="step-title">Admin Registers School</div>
+      <p class="step-desc">Super Admin registers a new school with its details and code.</p>
+    </div>
+    <div class="step-card">
+      <div class="step-circle">2</div>
+      <div class="step-title">Create School Users</div>
+      <p class="step-desc">Admin creates user accounts for school staff and assigns them to their school.</p>
+    </div>
+    <div class="step-card">
+      <div class="step-circle">3</div>
+      <div class="step-title">Staff Adds Students</div>
+      <p class="step-desc">School staff logs in and adds student records individually or via bulk CSV import.</p>
+    </div>
+    <div class="step-card">
+      <div class="step-circle">4</div>
+      <div class="step-title">Access Anywhere</div>
+      <p class="step-desc">View, filter, search, and manage all student records from any device, anytime.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ── CTA ─────────────────────────────────────────────────────────────────── -->
+<section class="cta-section">
+  <div class="cta-box">
+    <div class="orb" style="width:300px;height:300px;background:var(--clr-primary);top:-80px;right:-80px;"></div>
+    <div class="orb" style="width:200px;height:200px;background:var(--clr-accent);bottom:-60px;left:-60px;"></div>
+    <div style="position:relative;z-index:2">
+      <div class="section-tag">✦ Get Started Today</div>
+      <h2>Ready to transform<br><span class="gradient-text">student management?</span></h2>
+      <p>Join schools already using NobleMinds to securely manage student counselling records.</p>
+      <a href="login.html" class="btn btn-primary btn-lg" id="cta-login-btn">Login to Your Portal →</a>
+    </div>
+  </div>
+</section>
+
+<!-- ── Footer ──────────────────────────────────────────────────────────────── -->
+<footer class="footer">
+  <div class="flex items-center gap-12">
+    <img src="assets/logo.png" alt="NobleMinds" style="width:32px;height:32px;border-radius:var(--radius-sm);object-fit:contain;background:#fff;padding:2px;">
+    <span class="footer-copy">© 2024 NobleMinds. All rights reserved.</span>
+  </div>
+  <div class="footer-links" style="display:flex;align-items:center;gap:24px;">
+    <button onclick="window.print()" class="btn btn-ghost btn-sm no-print" style="padding: 4px 12px; font-size: 0.75rem;">🖨 Print Page</button>
+    <a href="privacy.html">Privacy Policy</a>
+    <a href="terms.html">Terms of Use</a>
+    <a href="register.html">Support</a>
+  </div>
+</footer>
+
+<script>
+  // Smooth scroll for anchor links
+  document.querySelectorAll('a[href^="#"]').forEach(a => {
+    a.addEventListener('click', e => {
+      e.preventDefault();
+      document.querySelector(a.getAttribute('href'))?.scrollIntoView({ behavior: 'smooth' });
+    });
+  });
+
+  // Animate stat numbers on scroll
+  const observer = new IntersectionObserver(entries => {
+    entries.forEach(e => {
+      if (e.isIntersecting) {
+        e.target.style.animation = 'fadeUp 0.6s ease both';
+        observer.unobserve(e.target);
+      }
+    });
+  }, { threshold: 0.15 });
+  document.querySelectorAll('.feature-card, .step-card').forEach(el => observer.observe(el));
+</script>
+</body>
+</html>

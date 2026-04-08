@@ -1,0 +1,324 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Login — NobleMinds</title>
+  <meta name="description" content="Login to NobleMinds student counselling records portal.">
+  <link rel="stylesheet" href="styles/global.css">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <style>
+    body { display: flex; align-items: center; justify-content: center; min-height: 100vh; position: relative; padding: 40px 20px; }
+
+    .login-bg { position: fixed; inset: 0; z-index: 0; }
+    .grid-lines {
+      position: absolute; inset: 0;
+      background-image: linear-gradient(rgba(108,99,255,0.06) 1px, transparent 1px),
+                        linear-gradient(90deg, rgba(108,99,255,0.06) 1px, transparent 1px);
+      background-size: 60px 60px;
+    }
+
+    .login-wrap {
+      position: relative; z-index: 1;
+      width: 100%; max-width: 460px;
+      padding: 20px;
+    }
+
+    .login-card {
+      background: rgba(17,17,40,0.85);
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 24px;
+      backdrop-filter: blur(24px);
+      -webkit-backdrop-filter: blur(24px);
+      padding: 44px 40px;
+      box-shadow: 0 32px 80px rgba(0,0,0,0.6);
+      animation: loginAppear 0.5s ease both;
+    }
+    @keyframes loginAppear {
+      from { opacity:0; transform: translateY(40px) scale(0.95); }
+      to   { opacity:1; transform: translateY(0) scale(1); }
+    }
+
+    .login-logo {
+      display: flex; align-items: center; gap: 12px;
+      margin-bottom: 32px; justify-content: center;
+    }
+    .login-logo-icon {
+      width: 48px; height: 48px; border-radius: 14px;
+      background: linear-gradient(135deg, var(--clr-primary), var(--clr-accent));
+      display: flex; align-items: center; justify-content: center;
+      font-weight: 900; font-size: 1.1rem; color: #fff;
+      box-shadow: 0 8px 24px rgba(108,99,255,0.4);
+    }
+    .login-logo-text { font-size: 1.5rem; font-weight: 800; }
+    .login-logo-text span { color: var(--clr-accent); }
+
+    .login-title { font-size: 1.5rem; font-weight: 800; text-align: center; margin-bottom: 6px; }
+    .login-sub { text-align: center; color: var(--clr-text-2); font-size: 0.9rem; margin-bottom: 32px; }
+
+    .input-wrapper {
+      position: relative;
+      display: flex; align-items: center;
+    }
+    .input-wrapper .form-control { padding-left: 44px; padding-right: 44px; }
+    .input-icon {
+      position: absolute; left: 14px;
+      font-size: 1rem; color: var(--clr-text-3); pointer-events: none;
+      z-index:1;
+    }
+    .input-suffix {
+      position: absolute; right: 14px;
+      font-size: 0.9rem; color: var(--clr-text-3);
+      cursor: pointer; user-select: none;
+    }
+    .input-suffix:hover { color: var(--clr-primary); }
+
+    .login-btn {
+      width: 100%; padding: 14px; font-size: 1rem; font-weight: 700;
+      letter-spacing: 0.02em; margin-top: 8px;
+      background: linear-gradient(135deg, var(--clr-primary), #8b7cf8);
+      color: #fff; border: none; border-radius: var(--radius-sm);
+      cursor: pointer; transition: var(--transition);
+      box-shadow: 0 6px 24px rgba(108,99,255,0.4);
+      position: relative; overflow: hidden;
+    }
+    .login-btn::after {
+      content: ''; position: absolute; inset: 0;
+      background: linear-gradient(135deg, transparent, rgba(255,255,255,0.12));
+      opacity: 0; transition: opacity 0.3s;
+    }
+    .login-btn:hover { transform: translateY(-2px); box-shadow: 0 10px 32px rgba(108,99,255,0.55); }
+    .login-btn:hover::after { opacity: 1; }
+    .login-btn:disabled { opacity: 0.6; transform: none; }
+
+    .login-error {
+      display: none; align-items: center; gap: 8px;
+      padding: 12px 16px; border-radius: var(--radius-sm);
+      background: rgba(248,113,113,0.1); border: 1px solid rgba(248,113,113,0.3);
+      color: var(--clr-danger); font-size: 0.88rem; margin-bottom: 16px;
+    }
+    .login-error.show { display: flex; }
+
+    .demo-box {
+      margin-top: 28px; padding: 16px;
+      background: rgba(108,99,255,0.07); border: 1px solid rgba(108,99,255,0.15);
+      border-radius: var(--radius-md);
+    }
+    .demo-box-title {
+      font-size: 0.75rem; font-weight: 700; color: var(--clr-primary);
+      text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 10px;
+    }
+    .demo-cred {
+      display: flex; justify-content: space-between; align-items: center;
+      padding: 7px 0; border-bottom: 1px solid rgba(255,255,255,0.05);
+      font-size: 0.82rem;
+    }
+    .demo-cred:last-child { border-bottom: none; }
+    .demo-role { color: var(--clr-text-2); }
+    .demo-val { font-family: monospace; color: var(--clr-text); font-size: 0.78rem; }
+    .demo-use {
+      font-size: 0.75rem; color: var(--clr-primary); cursor: pointer;
+      padding: 3px 8px; border-radius: 4px; background: rgba(108,99,255,0.12);
+      transition: background 0.2s;
+    }
+    .demo-use:hover { background: rgba(108,99,255,0.25); }
+
+    .back-link {
+      display: flex; align-items: center; justify-content: center;
+      gap: 6px; margin-top: 20px;
+      font-size: 0.85rem; color: var(--clr-text-3); transition: color 0.2s;
+    }
+    .back-link:hover { color: var(--clr-text); }
+
+    @media (max-width: 480px) {
+      .login-card { padding: 32px 24px; }
+    }
+  </style>
+</head>
+<body>
+
+<div class="login-bg">
+  <div class="blob blob-1" style="opacity:0.18;"></div>
+  <div class="blob blob-2" style="opacity:0.15;"></div>
+  <div class="grid-lines"></div>
+</div>
+
+<div class="login-wrap">
+  <div class="login-card">
+
+    <!-- Logo -->
+    <div class="login-logo">
+      <img src="assets/logo.png" alt="NobleMinds" style="width:48px;height:48px;border-radius:14px;object-fit:contain;background:#fff;padding:4px;box-shadow: 0 8px 24px rgba(108,99,255,0.2);">
+      <span class="login-logo-text">Noble<span>Minds</span></span>
+    </div>
+
+    <h1 class="login-title">Welcome Back</h1>
+    <p class="login-sub">Sign in to your school portal</p>
+
+    <!-- Error -->
+    <div class="login-error" id="login-error">
+      <span>⚠</span><span id="login-error-msg">Invalid credentials</span>
+    </div>
+
+    <!-- Form -->
+    <form id="login-form" autocomplete="off">
+      <div class="form-group mb-16">
+        <label class="form-label">Email Address</label>
+        <div class="input-wrapper">
+          <span class="input-icon">✉</span>
+          <input type="email" id="login-email" class="form-control"
+                 placeholder="you@school.edu.in" required autocomplete="email">
+        </div>
+      </div>
+
+      <div class="form-group mb-20">
+        <label class="form-label">Password</label>
+        <div class="input-wrapper">
+          <span class="input-icon">🔒</span>
+          <input type="password" id="login-password" class="form-control"
+                 placeholder="Enter your password" required>
+          <span class="input-suffix" id="toggle-pwd" title="Show/hide password">👁</span>
+        </div>
+        <div style="text-align: right; margin-top: 8px;">
+          <a href="#" onclick="nmToast('Password reset link has been sent to your email!','info')" style="font-size: 0.8rem; color: var(--clr-primary); font-weight: 600;">Forgot Password?</a>
+        </div>
+      </div>
+
+      <button type="submit" class="login-btn" id="login-submit-btn">
+        <span id="login-btn-text">Sign In →</span>
+      </button>
+    </form>
+
+    <!-- Demo Credentials -->
+    <div class="demo-box">
+      <div class="demo-box-title">🎮 Demo Credentials</div>
+      <div class="demo-cred">
+        <span class="demo-role">👑 Super Admin</span>
+        <span class="demo-val">admin@nobleminds.com</span>
+        <span class="demo-use" onclick="fillDemo('admin@nobleminds.com','Admin@123')">Use</span>
+      </div>
+      <div class="demo-cred">
+        <span class="demo-role">🏫 School Staff 1</span>
+        <span class="demo-val">ravi@gvhs.edu</span>
+        <span class="demo-use" onclick="fillDemo('ravi@gvhs.edu','User@123')">Use</span>
+      </div>
+      <div class="demo-cred">
+        <span class="demo-role">🏫 School Staff 2</span>
+        <span class="demo-val">priya@sps.edu</span>
+        <span class="demo-use" onclick="fillDemo('priya@sps.edu','User@123')">Use</span>
+      </div>
+    </div>
+
+    <div style="margin-top: 24px; text-align: center; font-size: 0.9rem; color: var(--clr-text-2);">
+      New School? <a href="register.html" style="color: var(--clr-primary); font-weight: 700;">Register Here</a>
+    </div>
+
+    <a href="index.html" class="back-link">← Back to Home</a>
+    
+    <div style="margin-top: 40px; border-top: 1px solid rgba(255,255,255,0.05); padding-top: 20px; display: flex; justify-content: center; gap: 20px;">
+      <a href="privacy.html" style="font-size: 0.75rem; color: var(--clr-text-3);">Privacy Policy</a>
+      <a href="terms.html" style="font-size: 0.75rem; color: var(--clr-text-3);">Terms & Conditions</a>
+    </div>
+  </div>
+</div>
+
+<script src="js/supabase.js"></script>
+<script src="js/auth.js"></script>
+<script src="js/data.js"></script>
+<script src="js/utils.js"></script>
+<script>
+  // Init auth
+  nmInitAuth();
+
+  // Auto-seed Demo Admin if it doesn't exist
+  (async function() {
+    try {
+      await nmSignUp({
+        email: 'admin@nobleminds.com',
+        password: 'Admin@123',
+        name: 'Super Admin',
+        schoolName: 'NobleMinds Headquarters',
+        udise: 'NM-HQ-001',
+        phone: '9999999999',
+        address: 'NobleMinds Server'
+      });
+      console.log("System: Demo Admin seeded automatically.");
+      nmToast('Demo Admin seeded automatically!', 'success');
+    } catch(e) {
+      if (!e.message.includes('User already registered')) {
+        console.error("Seeding error:", e);
+        nmToast('Seeding error: ' + e.message, 'error');
+      }
+    }
+  })();
+
+  // Auto-redirect if already logged in
+  const existing = nmGetSession();
+  if (existing) {
+    window.location.href = existing.role === 'admin' ? 'admin/index.html' : 'user/index.html';
+  }
+
+  // Toggle password visibility
+  const pwdInput = document.getElementById('login-password');
+  document.getElementById('toggle-pwd').addEventListener('click', () => {
+    pwdInput.type = pwdInput.type === 'password' ? 'text' : 'password';
+  });
+
+  // Fill demo credentials
+  function fillDemo(email, pwd) {
+    document.getElementById('login-email').value = email;
+    document.getElementById('login-password').value = pwd;
+    document.getElementById('login-email').focus();
+  }
+
+  // Login form submit
+  document.getElementById('login-form').addEventListener('submit', async e => {
+    e.preventDefault();
+    const btn = document.getElementById('login-submit-btn');
+    const errBox = document.getElementById('login-error');
+    const errMsg = document.getElementById('login-error-msg');
+
+    btn.disabled = true;
+    document.getElementById('login-btn-text').textContent = 'Signing in…';
+    errBox.classList.remove('show');
+
+    const email    = document.getElementById('login-email').value.trim();
+    const password = document.getElementById('login-password').value;
+
+    try {
+      const result = await nmLogin(email, password);
+      if (result.success) {
+        document.getElementById('login-btn-text').textContent = '✓ Success!';
+        setTimeout(() => {
+          window.location.href = result.user.role === 'admin' ? 'admin/index.html' : 'user/index.html';
+        }, 500);
+      } else {
+        errMsg.textContent = result.message;
+        errBox.classList.add('show');
+        btn.disabled = false;
+        document.getElementById('login-btn-text').textContent = 'Sign In →';
+        // Shake animation
+        document.querySelector('.login-card').style.animation = 'none';
+        document.querySelector('.login-card').offsetHeight;
+        document.querySelector('.login-card').style.animation = 'shake 0.4s ease';
+      }
+    } catch (err) {
+      console.error(err);
+      errMsg.textContent = 'An unexpected error occurred.';
+      errBox.classList.add('show');
+      btn.disabled = false;
+      document.getElementById('login-btn-text').textContent = 'Sign In →';
+    }
+  });
+</script>
+<style>
+  @keyframes shake {
+    0%,100%{transform:translateX(0)}
+    20%{transform:translateX(-10px)}
+    40%{transform:translateX(10px)}
+    60%{transform:translateX(-8px)}
+    80%{transform:translateX(8px)}
+  }
+</style>
+</body>
+</html>
