@@ -139,3 +139,25 @@ function nmConfirm(msg, okText = 'Delete', okClass = 'btn-danger') {
 function nmDebounce(fn, ms) {
   let t; return (...args) => { clearTimeout(t); t = setTimeout(() => fn(...args), ms); };
 }
+
+/** Theme Initialization & Toggle */
+function nmInitTheme() {
+  const theme = localStorage.getItem('nm_theme') || 'light';
+  document.documentElement.setAttribute('data-theme', theme);
+  const toggles = document.querySelectorAll('.theme-toggle-cb');
+  toggles.forEach(t => t.checked = (theme === 'dark'));
+}
+
+function nmToggleTheme() {
+  const current = document.documentElement.getAttribute('data-theme');
+  const newTheme = current === 'dark' ? 'light' : 'dark';
+  document.documentElement.setAttribute('data-theme', newTheme);
+  localStorage.setItem('nm_theme', newTheme);
+  const toggles = document.querySelectorAll('.theme-toggle-cb');
+  toggles.forEach(t => t.checked = (newTheme === 'dark'));
+}
+
+// Apply theme immediately on load
+if (typeof document !== 'undefined') {
+  nmInitTheme();
+}

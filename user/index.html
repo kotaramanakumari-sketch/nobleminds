@@ -49,6 +49,7 @@
       <div class="nav-item" onclick="showSection('counselling',this)"><span class="nav-item-icon">🤝</span>Counselling</div>
       <div class="nav-item" onclick="showSection('movement',this)"><span class="nav-item-icon">🏃</span>Movement Record</div>
       <div class="nav-section-label">Account</div>
+      <div class="nav-item" onclick="showSection('settings',this)"><span class="nav-item-icon">⚙️</span>Settings</div>
       <div class="nav-item" onclick="nmLogout()"><span class="nav-item-icon">🚪</span>Logout</div>
     </nav>
     <div class="sidebar-footer">
@@ -492,6 +493,25 @@
         </div>
       </div>
 
+      <!-- SETTINGS -->
+      <div class="page-section" id="section-settings">
+        <div class="section-header">
+          <h2>⚙️ Settings</h2>
+        </div>
+        <div class="card mb-20" style="max-width: 600px;">
+          <h3 style="margin-bottom:16px;">Appearance</h3>
+          <div style="display:flex;align-items:center;justify-content:space-between;padding:16px;background:var(--clr-surface2);border:1px solid var(--clr-border);border-radius:var(--radius-sm);">
+            <div>
+              <div style="font-weight:600;font-size:1rem;">Dark Theme</div>
+              <div style="font-size:0.85rem;color:var(--clr-text-2);">Enable dark mode for a low-light interface.</div>
+            </div>
+            <label class="theme-switch" style="cursor:pointer;display:flex;align-items:center;gap:8px;">
+              <input type="checkbox" class="theme-toggle-cb" style="width:20px;height:20px;accent-color:var(--clr-primary);cursor:pointer;" onchange="nmToggleTheme()">
+            </label>
+          </div>
+        </div>
+      </div>
+
     </div>
   </div>
 </div>
@@ -669,7 +689,7 @@ async function init() {
 }
 
 // ── Navigation ────────────────────────────────────────────────────────────────
-const pageTitles = { dashboard:'Dashboard', students:'Students', 'add-student':'Add Student', import:'Bulk Import', observations:'Observations', counselling:'Counselling', movement:'Movement Record' };
+const pageTitles = { dashboard:'Dashboard', students:'Students', 'add-student':'Add Student', import:'Bulk Import', observations:'Observations', counselling:'Counselling', movement:'Movement Record', settings:'Settings' };
 function toggleMobileMenu() {
   document.querySelector('.sidebar').classList.toggle('open');
 }

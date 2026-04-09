@@ -15,7 +15,7 @@
       position: fixed; top: 0; left: 0; right: 0; z-index: 200;
       display: flex; align-items: center; justify-content: space-between;
       padding: 0 60px; height: 70px;
-      background: rgba(13,13,26,0.8); backdrop-filter: blur(16px);
+      background: var(--clr-surface); backdrop-filter: blur(16px);
       border-bottom: 1px solid var(--clr-border);
     }
     .nav-logo { display: flex; align-items: center; gap: 12px; }
@@ -310,6 +310,7 @@
   </div>
 </footer>
 
+<script src="js/utils.js"></script>
 <script>
   // Smooth scroll for anchor links
   document.querySelectorAll('a[href^="#"]').forEach(a => {
