@@ -213,8 +213,8 @@
 
     try {
       await nmSignUp(data);
-      nmToast('Registration successful! You can now log in.', 'success');
-      setTimeout(() => { window.location.href = 'login.html'; }, 2000);
+      nmToast('Registration request sent! Please wait for admin approval before logging in.', 'success');
+      setTimeout(() => { window.location.href = 'login.html'; }, 3000);
     } catch (err) {
       console.error(err);
       nmToast('Registration failed: ' + err.message, 'error');

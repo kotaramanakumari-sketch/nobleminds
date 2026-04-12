@@ -664,11 +664,22 @@ async function init() {
   await nmInitAuth();
   const session = nmRequireAuth('user');
   if (session) {
-    schoolId = session.school_id || session.schoolId;
+    schoolId = session.school_id || session.school_id; // Check both cases
     document.getElementById('user-name-disp').textContent = session.name;
     document.getElementById('user-avatar').textContent    = nmGetInitials(session.name);
     document.getElementById('sb-school-name').textContent = session.school_name || session.schoolName || 'School Portal';
   }
+
+  // Set up Realtime Subscriptions
+  const refreshUI = nmDebounce(() => {
+    const activeSection = document.querySelector('.page-section.active').id.replace('section-', '');
+    showSection(activeSection);
+  }, 1000);
+
+  nmSubscribe('students', schoolId, refreshUI);
+  nmSubscribe('observations', schoolId, refreshUI);
+  nmSubscribe('counselling_records', schoolId, refreshUI);
+  nmSubscribe('movements', schoolId, refreshUI);
   
   // Handle URL params
   const params = new URLSearchParams(window.location.search);

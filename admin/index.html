@@ -400,6 +400,18 @@ async function init() {
     document.getElementById('admin-name').textContent = session.name;
     document.getElementById('admin-avatar').textContent = nmGetInitials(session.name);
   }
+
+  // Set up Realtime Subscriptions (Global for Admin)
+  const refreshUI = nmDebounce(() => {
+    const activeSection = document.querySelector('.page-section.active').id.replace('section-', '');
+    showSection(activeSection);
+  }, 1000);
+
+  nmSubscribe('schools', null, refreshUI);
+  nmSubscribe('profiles', null, refreshUI);
+  nmSubscribe('registration_requests', null, refreshUI);
+  nmSubscribe('students', null, refreshUI);
+
   await showSection('dashboard');
 }
 

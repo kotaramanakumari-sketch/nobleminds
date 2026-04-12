@@ -140,6 +140,18 @@ function nmDebounce(fn, ms) {
   let t; return (...args) => { clearTimeout(t); t = setTimeout(() => fn(...args), ms); };
 }
 
+/** Simple throttle function */
+function nmThrottle(fn, ms) {
+  let last = 0;
+  return (...args) => {
+    const now = Date.now();
+    if (now - last >= ms) {
+      fn(...args);
+      last = now;
+    }
+  };
+}
+
 /** Theme Initialization & Toggle */
 function nmInitTheme() {
   const theme = localStorage.getItem('nm_theme') || 'light';

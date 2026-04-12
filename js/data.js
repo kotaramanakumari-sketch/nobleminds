@@ -5,10 +5,47 @@
  * All functions are now ASYNCHRONOUS.
  */
 
+// ─── CACHE & REALTIME ──────────────────────────────────────────────────────────
+const nmCache = {
+  students: {},    // { [schoolId]: { data: [], timestamp: 0 } }
+  schools: { data: [], timestamp: 0 },
+  stats: { data: {}, timestamp: 0 }
+};
+const CACHE_TTL = 30000; // 30 seconds
+
+/** Generic subscription helper */
+function nmSubscribe(table, schoolId, callback) {
+  const channel = sb.channel(`public:${table}`)
+    .on('postgres_changes', { 
+      event: '*', 
+      schema: 'public', 
+      table: table,
+      filter: schoolId ? `school_id=eq.${schoolId}` : undefined
+    }, (payload) => {
+      console.log(`[Realtime] ${table} changed:`, payload);
+      // Invalidate cache for this school/table
+      if (schoolId) delete nmCache.students[schoolId];
+      else if (table === 'schools') nmCache.schools.timestamp = 0;
+      
+      callback(payload);
+    })
+    .subscribe();
+    
+  return channel;
+}
+
 // ─── SCHOOLS ──────────────────────────────────────────────────────────────────
-async function nmGetSchools() {
+async function nmGetSchools(force = false) {
+  const now = Date.now();
+  if (!force && nmCache.schools.data.length && (now - nmCache.schools.timestamp < CACHE_TTL)) {
+    return nmCache.schools.data;
+  }
+
   const { data, error } = await sb.from('schools').select('*').order('name');
   if (error) { console.error('Error fetching schools:', error); return []; }
+  
+  nmCache.schools.data = data;
+  nmCache.schools.timestamp = now;
   return data;
 }
 
@@ -42,11 +79,21 @@ async function nmDeleteSchool(id) {
 }
 
 // ─── STUDENTS ─────────────────────────────────────────────────────────────────
-async function nmGetStudents(schoolId) {
+async function nmGetStudents(schoolId, force = false) {
+  const now = Date.now();
+  const cacheKey = schoolId || 'all';
+  
+  if (!force && nmCache.students[cacheKey] && (now - nmCache.students[cacheKey].timestamp < CACHE_TTL)) {
+    return nmCache.students[cacheKey].data;
+  }
+
   let query = sb.from('students').select('*').order('full_name');
   if (schoolId) query = query.eq('school_id', schoolId);
+  
   const { data, error } = await query;
   if (error) { console.error('Error fetching students:', error); return []; }
+  
+  nmCache.students[cacheKey] = { data, timestamp: now };
   return data;
 }
 
@@ -207,15 +254,27 @@ async function nmGetRegistrationRequests() {
   return data || [];
 }
 async function nmSaveRegistrationRequest(req) {
-  const { data, error } = await sb.from('registration_requests').insert([req]).select();
+  const payload = {
+    udise:       req.udise,
+    school_name: req.schoolName || req.school_name,
+    address:     req.address,
+    admin_name:  req.name || req.admin_name,
+    email:       req.email,
+    phone:       req.phone,
+    status:      'pending'
+  };
+  const { data, error } = await sb.from('registration_requests').insert([payload]).select();
   if (error) throw error;
   return data[0];
 }
-async function nmProcessRegistrationRequest(id, approve = true) {
+async function nmProcessRegistrationRequest(requestId, approve = true) {
   if (approve) {
-    const { data: req } = await sb.from('registration_requests').select('*').eq('id', id).single();
+    const { data: req, error: fetchErr } = await sb.from('registration_requests').select('*').eq('id', requestId).single();
+    if (fetchErr) throw fetchErr;
+
     if (req) {
-      await nmSaveSchool({
+      // 1. Create the School record
+      const school = await nmSaveSchool({
         name: req.school_name,
         udise: req.udise,
         address: req.address,
@@ -223,28 +282,70 @@ async function nmProcessRegistrationRequest(id, approve = true) {
         phone: req.phone,
         principal: req.admin_name
       });
-      // Logic for creating auth user would go here or handled by Supabase Auth
+
+      // 2. Create/Update the Profile record for the administrator
+      // We look for the profile by email since we don't have the UID in the request.
+      const { data: profile, error: pError } = await sb.from('profiles').select('*').eq('email', req.email).single();
+      
+      if (profile) {
+        await sb.from('profiles').update({
+          school_id: school.id,
+          school_name: school.name,
+          role: 'user' // School admin
+        }).eq('id', profile.id);
+      } else {
+        console.warn('No profile found for email:', req.email);
+        // If profile doesn't exist yet, it will be created when they sign up or we can't do much here.
+      }
+      console.log('Processed school and profile linking for request:', school.id);
     }
   }
-  await sb.from('registration_requests').update({ status: approve ? 'approved' : 'rejected' }).eq('id', id);
+  const { error: updErr } = await sb.from('registration_requests').update({ status: approve ? 'approved' : 'rejected' }).eq('id', requestId);
+  if (updErr) throw updErr;
 }
 
 // ─── STATS ────────────────────────────────────────────────────────────────────
 async function nmGetStats(schoolId) {
-  const schools = await nmGetSchools();
-  const students = await nmGetStudents(schoolId);
-  const { count: usersCount } = await sb.from('profiles').select('*', { count: 'exact', head: true });
-  const { count: cnsCount } = await sb.from('counselling_records').select('*', { count: 'exact', head: true });
+  // Use head=true for exact counts without fetching data rows (Very fast)
+  const studentQuery = sb.from('students').select('*', { count: 'exact', head: true });
+  if (schoolId) studentQuery.eq('school_id', schoolId);
   
-  const male = students.filter(s => s.gender === 'Male').length;
-  const female = students.filter(s => s.gender === 'Female').length;
+  const schoolQuery = sb.from('schools').select('*', { count: 'exact', head: true });
+  const userQuery = sb.from('profiles').select('*', { count: 'exact', head: true });
+  
+  const cnsQuery = sb.from('counselling_records').select('*', { count: 'exact', head: true });
+  if (schoolId) cnsQuery.eq('school_id', schoolId);
+  
+  const fuQuery = sb.from('counselling_records').select('*', { count: 'exact', head: true }).eq('follow_up', true);
+  if (schoolId) fuQuery.eq('school_id', schoolId);
+
+  const maleQuery = sb.from('students').select('*', { count: 'exact', head: true }).eq('gender', 'Male');
+  if (schoolId) maleQuery.eq('school_id', schoolId);
+
+  const femaleQuery = sb.from('students').select('*', { count: 'exact', head: true }).eq('gender', 'Female');
+  if (schoolId) femaleQuery.eq('school_id', schoolId);
+
+  const [
+    { count: totalStudents },
+    { count: totalSchools },
+    { count: totalUsers },
+    { count: cnsCount },
+    { count: fuCount },
+    { count: maleCount },
+    { count: femaleCount }
+  ] = await Promise.all([
+    studentQuery, schoolQuery, userQuery, cnsQuery, fuQuery, maleQuery, femaleQuery
+  ]);
 
   return {
-    total: students.length,
-    schools: schools.length,
-    users: usersCount || 0,
-    counselling: { total: cnsCount || 0 },
-    genders: { Male: male, Female: female }
+    total: totalStudents || 0,
+    schools: totalSchools || 0,
+    users: totalUsers || 0,
+    counselling: { 
+      total: cnsCount || 0,
+      followUps: fuCount || 0 
+    },
+    genders: { Male: maleCount || 0, Female: femaleCount || 0 }
   };
 }
 

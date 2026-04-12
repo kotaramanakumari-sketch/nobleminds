@@ -1,0 +1,8 @@
+{
+  "dependencies": {
+    "@supabase/supabase-js": "^2.102.1"
+  },
+  "scripts": {
+    "dev": "npx serve ."
+  }
+}

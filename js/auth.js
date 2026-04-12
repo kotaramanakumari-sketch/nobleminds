@@ -47,27 +47,35 @@ async function nmSignUp(data) {
   if (authError) throw authError;
   if (!authData.user) throw new Error('Sign up failed');
 
-  // 2. Create the School record (since this is an admin signing up)
-  const { data: school, error: scError } = await sb.from('schools').insert([{
-    name: schoolName,
-    udise: udise,
-    address: address,
-    phone: phone,
-    email: email
-  }]).select().single();
-
-  if (scError) throw scError;
-
-  // 3. Create the Profile record
+  // 2. Create a "Pending Approval" profile
+  // No school_id assigned yet.
   const { error: profError } = await sb.from('profiles').insert([{
     id: authData.user.id,
     name: name,
-    role: email.toLowerCase() === 'kotaramanakumari@gmail.com' ? 'admin' : 'user', // Super admin override
-    school_id: school.id,
-    school_name: school.name
+    email: email, // Assuming email column exists
+    role: email.toLowerCase() === 'kotaramanakumari@gmail.com' ? 'admin' : 'user',
+    school_id: null,
+    school_name: 'Pending Approval'
   }]);
 
-  if (profError) throw profError;
+  if (profError) {
+    console.warn('Profile creation error (might already exist):', profError);
+  }
+
+  // 3. Create the registration request for Admin review
+  const { error: reqError } = await sb.from('registration_requests').insert([{
+    udise:      udise,
+    school_name: schoolName,
+    address:    address,
+    admin_name: name,
+    email:      email,
+    phone:      phone,
+    status:     'pending'
+  }]);
+
+  if (reqError) {
+    console.error('Request creation error:', reqError);
+  }
 
   return { success: true, user: authData.user };
 }
