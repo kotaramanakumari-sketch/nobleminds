@@ -372,3 +372,36 @@ async function nmGetUsers() {
   if (error) { console.error('Error fetching users:', error); return []; }
   return data;
 }
+
+// ─── SUPPORT QUERIES ─────────────────────────────────────────────────────────
+async function nmGetSupportQueries() {
+  const { data, error } = await sb.from('support_queries').select('*').order('created_at', { ascending: false });
+  if (error) { console.error('Error fetching support queries:', error); return []; }
+  return data || [];
+}
+
+async function nmSaveSupportQuery(q) {
+  const payload = {
+    school_name: q.schoolName || q.school_name,
+    user_name:   q.userName || q.user_name,
+    email:       q.email,
+    phone:       q.phone,
+    query:       q.query,
+    status:      q.status || 'pending'
+  };
+  
+  if (q.id) {
+    const { data, error } = await sb.from('support_queries').update(payload).eq('id', q.id).select();
+    if (error) throw error;
+    return data[0];
+  } else {
+    const { data, error } = await sb.from('support_queries').insert([payload]).select();
+    if (error) throw error;
+    return data[0];
+  }
+}
+
+async function nmDeleteSupportQuery(id) {
+  const { error } = await sb.from('support_queries').delete().eq('id', id);
+  if (error) throw error;
+}

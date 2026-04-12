@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Support — NobleMinds</title>
+  <meta name="description" content="Get support for NobleMinds platform.">
+  <link rel="stylesheet" href="styles/global.css">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <style>
+    body { display: flex; align-items: center; justify-content: center; min-height: 100vh; overflow-y: auto; position: relative; padding: 40px 20px; }
+
+    .login-bg { position: fixed; inset: 0; z-index: 0; }
+    .grid-lines {
+      position: absolute; inset: 0;
+      background-image: linear-gradient(rgba(108,99,255,0.06) 1px, transparent 1px),
+                        linear-gradient(90deg, rgba(108,99,255,0.06) 1px, transparent 1px);
+      background-size: 60px 60px;
+    }
+
+    .login-wrap {
+      position: relative; z-index: 1;
+      width: 100%; max-width: 500px;
+    }
+
+    .login-card {
+      background: var(--clr-surface);
+      border: 1px solid var(--clr-border);
+      border-radius: 24px;
+      backdrop-filter: blur(24px);
+      -webkit-backdrop-filter: blur(24px);
+      padding: 44px 40px;
+      box-shadow: 0 32px 80px rgba(0,0,0,0.6);
+      animation: loginAppear 0.5s ease both;
+    }
+    @keyframes loginAppear {
+      from { opacity:0; transform: translateY(40px) scale(0.95); }
+      to   { opacity:1; transform: translateY(0) scale(1); }
+    }
+
+    .login-logo {
+      display: flex; align-items: center; gap: 12px;
+      margin-bottom: 32px; justify-content: center;
+    }
+    .login-logo-text { font-size: 1.5rem; font-weight: 800; }
+    .login-logo-text span { color: var(--clr-accent); }
+
+    .login-title { font-size: 1.5rem; font-weight: 800; text-align: center; margin-bottom: 6px; }
+    .login-sub { text-align: center; color: var(--clr-text-2); font-size: 0.9rem; margin-bottom: 32px; }
+
+    .input-wrapper {
+      position: relative;
+      display: flex; align-items: center;
+    }
+    .input-wrapper .form-control { padding-left: 44px; }
+    .input-icon {
+      position: absolute; left: 14px;
+      font-size: 1rem; color: var(--clr-text-3); pointer-events: none;
+      z-index:1;
+    }
+
+    .login-btn {
+      width: 100%; padding: 14px; font-size: 1rem; font-weight: 700;
+      letter-spacing: 0.02em; margin-top: 8px;
+      background: linear-gradient(135deg, var(--clr-primary), #8b7cf8);
+      color: #fff; border: none; border-radius: var(--radius-sm);
+      cursor: pointer; transition: var(--transition);
+      box-shadow: 0 6px 24px rgba(108,99,255,0.4);
+    }
+    .login-btn:hover { transform: translateY(-2px); box-shadow: 0 10px 32px rgba(108,99,255,0.55); }
+
+    .back-link {
+      display: flex; align-items: center; justify-content: center;
+      gap: 6px; margin-top: 20px;
+      font-size: 0.85rem; color: var(--clr-text-3); transition: color 0.2s;
+    }
+    .back-link:hover { color: var(--clr-text); }
+  </style>
+</head>
+<body>
+
+<div class="login-bg">
+  <div class="blob blob-1" style="opacity:0.18;"></div>
+  <div class="blob blob-2" style="opacity:0.15;"></div>
+  <div class="grid-lines"></div>
+</div>
+
+<div class="login-wrap">
+  <div class="login-card">
+    <!-- Logo -->
+    <div class="login-logo">
+      <img src="assets/logo.png" alt="NobleMinds" style="width:48px;height:48px;border-radius:14px;object-fit:contain;background:#fff;padding:4px;box-shadow: 0 8px 24px rgba(108,99,255,0.2);">
+      <span class="login-logo-text">Noble<span>Minds</span></span>
+    </div>
+
+    <h1 class="login-title">Support & Help</h1>
+    <p class="login-sub">How can we help you today?</p>
+
+    <form id="support-form" autocomplete="off">
+      <div class="form-group mb-16">
+        <label class="form-label">School Name <span class="required">*</span></label>
+        <div class="input-wrapper">
+          <span class="input-icon">🏫</span>
+          <input type="text" id="sup-school" class="form-control" placeholder="Name of your institution" required>
+        </div>
+      </div>
+
+      <div class="form-group mb-16">
+        <label class="form-label">User Name <span class="required">*</span></label>
+        <div class="input-wrapper">
+          <span class="input-icon">👤</span>
+          <input type="text" id="sup-name" class="form-control" placeholder="Your full name" required>
+        </div>
+      </div>
+
+      <div class="form-group mb-16">
+        <label class="form-label">Email Address</label>
+        <div class="input-wrapper">
+          <span class="input-icon">✉</span>
+          <input type="email" id="sup-email" class="form-control" placeholder="your@email.com">
+        </div>
+      </div>
+
+      <div class="form-group mb-16">
+        <label class="form-label">Phone Number</label>
+        <div class="input-wrapper">
+          <span class="input-icon">📞</span>
+          <input type="tel" id="sup-phone" class="form-control" placeholder="10-digit mobile number" maxlength="10">
+        </div>
+      </div>
+
+      <div class="form-group mb-16">
+        <label class="form-label">Query / Problem / Issue <span class="required">*</span></label>
+        <div class="input-wrapper">
+          <span class="input-icon" style="top: 14px;">📝</span>
+          <textarea id="sup-query" class="form-control" rows="4" style="padding-left: 44px; padding-top: 12px;" placeholder="Describe your issue in detail..." required></textarea>
+        </div>
+      </div>
+
+      <button type="submit" class="login-btn" id="sup-btn">
+        Submit Request
+      </button>
+    </form>
+
+    <a href="index.html" class="back-link">← Back to Home</a>
+  </div>
+</div>
+
+<script src="js/supabase.js"></script>
+<script src="js/data.js"></script>
+<script src="js/utils.js"></script>
+<script src="js/auth.js"></script>
+<script>
+  async function initSupport() {
+    await nmInitAuth();
+    const session = nmGetSession();
+    if (session) {
+      document.getElementById('sup-school').value = session.school_name || '';
+      document.getElementById('sup-name').value   = session.name || '';
+      document.getElementById('sup-email').value  = session.email || '';
+    }
+  }
+
+  document.getElementById('support-form').addEventListener('submit', async e => {
+    e.preventDefault();
+    
+    const data = {
+      schoolName: document.getElementById('sup-school').value.trim(),
+      userName:   document.getElementById('sup-name').value.trim(),
+      email:      document.getElementById('sup-email').value.trim(),
+      phone:      document.getElementById('sup-phone').value.trim(),
+      query:      document.getElementById('sup-query').value.trim()
+    };
+
+    const btn = document.getElementById('sup-btn');
+    btn.disabled = true;
+    btn.textContent = 'Sending...';
+
+    try {
+      await nmSaveSupportQuery(data);
+      nmToast('Your support request has been sent! We will get back to you soon.', 'success');
+      setTimeout(() => { window.location.href = 'index.html'; }, 3000);
+    } catch (err) {
+      console.error(err);
+      nmToast('Failed to send request: ' + err.message, 'error');
+      btn.disabled = false;
+      btn.textContent = 'Submit Request';
+    }
+  });
+
+  initSupport();
+</script>
+</body>
+</html>

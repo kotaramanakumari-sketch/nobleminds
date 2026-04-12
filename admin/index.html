@@ -140,6 +140,7 @@
             <button class="btn btn-ghost active" onclick="switchMgmtTab('schools', this)">🏫 Schools</button>
             <button class="btn btn-ghost" onclick="switchMgmtTab('users', this)">👥 Users</button>
             <button class="btn btn-ghost" onclick="switchMgmtTab('requests', this)" id="tab-btn-requests">📩 Requests <span id="req-badge" class="badge badge-pink" style="display:none;margin-left:4px;">0</span></button>
+            <button class="btn btn-ghost" onclick="switchMgmtTab('support', this)" id="tab-btn-support">🎧 Support <span id="sup-badge" class="badge badge-amber" style="display:none;margin-left:4px;">0</span></button>
           </div>
         </div>
 
@@ -216,6 +217,28 @@
             <div id="requests-empty" class="empty-state">
               <div class="empty-state-icon">📩</div>
               <h3>No pending requests</h3>
+            </div>
+          </div>
+        </div>
+
+        <!-- Support Sub-section -->
+        <div id="mgmt-support" class="mgmt-tab-content" style="display:none;">
+          <div class="mb-16">
+            <p style="font-size:0.9rem; color:var(--clr-text-2);">User queries and support requests.</p>
+          </div>
+
+          <div class="card" style="padding:0;overflow:hidden;">
+            <div class="table-wrapper">
+              <table class="data-table">
+                <thead>
+                  <tr><th>School / User</th><th>Query</th><th>Date</th><th>Status</th><th>Actions</th></tr>
+                </thead>
+                <tbody id="support-tbody"></tbody>
+              </table>
+            </div>
+            <div id="support-empty" class="empty-state">
+              <div class="empty-state-icon">🎧</div>
+              <h3>No support queries</h3>
             </div>
           </div>
         </div>
@@ -410,6 +433,7 @@ async function init() {
   nmSubscribe('schools', null, refreshUI);
   nmSubscribe('profiles', null, refreshUI);
   nmSubscribe('registration_requests', null, refreshUI);
+  nmSubscribe('support_queries', null, refreshUI);
   nmSubscribe('students', null, refreshUI);
 
   await showSection('dashboard');
@@ -435,7 +459,7 @@ async function showSection(id, el) {
   document.getElementById('topbar-title').textContent = titles[id] || id;
 
   if (id === 'dashboard') await renderDashboard();
-  if (id === 'management') { await renderSchools(); await renderUsers(); await renderRequests(); }
+  if (id === 'management') { await renderSchools(); await renderUsers(); await renderRequests(); await renderSupportQueries(); }
   if (id === 'school-data') await populateSchoolDropdowns();
 }
 
@@ -445,6 +469,55 @@ async function switchMgmtTab(tab, btn) {
   document.querySelectorAll('.tab-controls .btn').forEach(b => b.classList.remove('active'));
   btn.classList.add('active');
   if (tab === 'requests') await renderRequests();
+  if (tab === 'support')  await renderSupportQueries();
+}
+
+async function renderSupportQueries() {
+  const queries = await nmGetSupportQueries();
+  const tbody = document.getElementById('support-tbody');
+  const empty = document.getElementById('support-empty');
+  const badge = document.getElementById('sup-badge');
+  
+  if (badge) {
+    const pending = queries.filter(q => q.status === 'pending').length;
+    badge.textContent = pending;
+    badge.style.display = pending ? 'inline-flex' : 'none';
+  }
+
+  if (!queries.length) {
+    tbody.innerHTML = ''; empty.classList.remove('hidden'); return;
+  }
+  empty.classList.add('hidden');
+  tbody.innerHTML = queries.map(q => `<tr>
+    <td>
+      <div style="font-weight:600;">${q.school_name || '—'}</div>
+      <div style="font-size:0.75rem; color:var(--clr-text-2);">${q.user_name || '—'}</div>
+      <div style="font-size:0.75rem; color:var(--clr-text-3);">${q.email || ''} ${q.phone || ''}</div>
+    </td>
+    <td><div style="max-width:300px; white-space:normal; font-size:0.85rem;">${q.query}</div></td>
+    <td>${nmFmtDate(q.created_at)}</td>
+    <td><span class="badge ${q.status === 'pending' ? 'badge-amber' : 'badge-green'}">${q.status}</span></td>
+    <td><div class="action-btns">
+      ${q.status === 'pending' ? `<button class="btn btn-success btn-sm" onclick="resolveQuery('${q.id}')">✓ Resolve</button>` : ''}
+      <button class="btn btn-danger btn-sm btn-icon" title="Delete" onclick="deleteQuery('${q.id}')">🗑</button>
+    </div></td>
+  </tr>`).join('');
+}
+
+async function resolveQuery(id) {
+  const ok = await nmConfirm('Mark this query as resolved?');
+  if (!ok) return;
+  await nmSaveSupportQuery({ id, status: 'resolved' });
+  await renderSupportQueries();
+  nmToast('Query marked as resolved.', 'success');
+}
+
+async function deleteQuery(id) {
+  const ok = await nmConfirm('Permanently delete this support query?');
+  if (!ok) return;
+  await nmDeleteSupportQuery(id);
+  await renderSupportQueries();
+  nmToast('Query deleted.', 'info');
 }
 
 async function renderRequests() {

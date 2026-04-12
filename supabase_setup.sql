@@ -7,6 +7,7 @@
 DROP TABLE IF EXISTS movements             CASCADE;
 DROP TABLE IF EXISTS counselling_records   CASCADE;
 DROP TABLE IF EXISTS observations          CASCADE;
+DROP TABLE IF EXISTS support_queries       CASCADE;
 DROP TABLE IF EXISTS registration_requests CASCADE;
 DROP TABLE IF EXISTS profiles              CASCADE;
 DROP TABLE IF EXISTS students              CASCADE;
@@ -113,6 +114,18 @@ CREATE TABLE registration_requests (
     created_at  TIMESTAMPTZ DEFAULT NOW()
 );
 
+-- 7. SUPPORT QUERIES
+CREATE TABLE support_queries (
+    id           UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    school_name  TEXT,
+    user_name    TEXT,
+    email        TEXT,
+    phone        TEXT,
+    query        TEXT,
+    status       TEXT DEFAULT 'pending',
+    created_at   TIMESTAMPTZ DEFAULT NOW()
+);
+
 -- 7. PROFILES (extends Supabase Auth)
 CREATE TABLE profiles (
     id          UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
@@ -132,6 +145,7 @@ ALTER TABLE observations          ENABLE ROW LEVEL SECURITY;
 ALTER TABLE counselling_records   ENABLE ROW LEVEL SECURITY;
 ALTER TABLE movements             ENABLE ROW LEVEL SECURITY;
 ALTER TABLE registration_requests ENABLE ROW LEVEL SECURITY;
+ALTER TABLE support_queries       ENABLE ROW LEVEL SECURITY;
 ALTER TABLE profiles              ENABLE ROW LEVEL SECURITY;
 
 -- ============================================================
@@ -164,6 +178,14 @@ CREATE POLICY "Allow all for authenticated" ON movements
 -- REGISTRATION REQUESTS
 CREATE POLICY "Allow all" ON registration_requests
     FOR ALL TO authenticated, anon USING (true) WITH CHECK (true);
+
+-- SUPPORT QUERIES
+CREATE POLICY "Allow all for authenticated" ON support_queries
+    FOR ALL TO authenticated USING (true) WITH CHECK (true);
+CREATE POLICY "Allow anon insert support" ON support_queries
+    FOR INSERT TO anon WITH CHECK (true);
+CREATE POLICY "Allow anon read support" ON support_queries
+    FOR SELECT TO anon USING (true);
 
 -- PROFILES
 CREATE POLICY "Users can read own profile" ON profiles
