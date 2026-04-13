@@ -1019,9 +1019,21 @@ document.querySelectorAll('.modal-overlay').forEach(o => o.addEventListener('cli
 
 // ── Dashboard ─────────────────────────────────────────────────────────────────
 async function renderDashboard() {
+  if (!schoolId) {
+    document.getElementById('dash-school-label').innerHTML = `<span style="color:#d9534f;font-weight:600;">⚠ Account Not Linked</span> &nbsp;&mdash;&nbsp; Your account has not been linked to a school. Please contact the Super Admin.`;
+    document.getElementById('ds-total').textContent = '0';
+    document.getElementById('ds-sessions').textContent = '0';
+    document.getElementById('ds-followups').textContent = '0';
+    document.getElementById('ds-activities').textContent = '0';
+    document.getElementById('recent-table').innerHTML = '<div class="empty-state" style="padding:32px;"><div class="empty-state-icon">🚫</div><h3>No School Assigned</h3><p>Data will appear here once an admin assigns you to a school.</p></div>';
+    document.getElementById('recent-cns-list').innerHTML = '<div class="empty-state" style="padding:20px;"><p>No records found.</p></div>';
+    document.getElementById('nb-count').textContent = '0';
+    return;
+  }
+
   const stats = await nmGetStats(schoolId, currentYearId);
-  const students = await nmGetStudents(schoolId, currentYearId);
-  const counselling = await nmGetCounselling(schoolId);
+  const students = (await nmGetStudents(schoolId, currentYearId)) || [];
+  const counselling = (await nmGetCounselling(schoolId)) || [];
   
   document.getElementById('ds-total').textContent    = stats.total;
   document.getElementById('ds-sessions').textContent = stats.counselling.total;
