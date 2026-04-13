@@ -26,7 +26,7 @@ BEGIN
         -- Create a default year for this school if no year exists
         IF NOT EXISTS (SELECT 1 FROM academic_years WHERE school_id = school_record.id) THEN
             INSERT INTO academic_years (school_id, name, is_active)
-            VALUES (school_record.id, '2023-2024', TRUE)
+            VALUES (school_record.id, '2026-2027', TRUE)
             RETURNING id INTO year_id;
             
             -- Link all existing students from this school to this new academic year
