@@ -448,6 +448,9 @@ async function nmGetUsers() {
 async function nmUpdateProfile(id, updates) {
   const { data, error } = await sb.from('profiles').update(updates).eq('id', id).select();
   if (error) { console.error('Error updating profile:', error); throw error; }
+  if (!data || data.length === 0) {
+    throw new Error('Update rejected by Database. You must run fix_profiles_rls.sql in Supabase SQL Editor to grant admin permissions.');
+  }
   return data[0];
 }
 
