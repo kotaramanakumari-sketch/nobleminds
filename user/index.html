@@ -755,8 +755,24 @@ async function init() {
 // ── Academic Years ────────────────────────────────────────────────────────────
 async function loadAcademicYears() {
   allYears = await nmGetAcademicYears(schoolId);
+  
+  let y26 = allYears.find(y => y.name === '2026-2027');
+  
+  // Migration: If 2026-2027 is missing or not active, force it.
+  if (!y26) {
+    try {
+      await nmSaveAcademicYear({ school_id: schoolId, name: '2026-2027', is_active: true });
+      allYears = await nmGetAcademicYears(schoolId); // Refresh
+      y26 = allYears.find(y => y.name === '2026-2027');
+    } catch(e) { console.error('Auto-year creation failed:', e); }
+  } else if (!y26.is_active) {
+    try {
+      await nmSetDefaultYear(y26.id, schoolId);
+      allYears = await nmGetAcademicYears(schoolId); // Refresh
+    } catch(e) { console.error('Auto-year activation failed:', e); }
+  }
+
   if (allYears.length) {
-    // Priority: 1. Manually set Active year, 2. "2026-2027" year, 3. First year found
     const active = allYears.find(y => y.is_active) || allYears.find(y => y.name === '2026-2027') || allYears[0];
     currentYearId = active.id;
   }
