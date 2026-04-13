@@ -11,22 +11,20 @@ DROP POLICY IF EXISTS "Users and Admins can update profiles" ON profiles;
 DROP POLICY IF EXISTS "Admins can delete profiles" ON profiles;
 
 -- 2. Create foolproof Update policy: 
--- Users can update themselves, OR super admin (via JWT email) can update anyone.
--- This avoids recursive queries to the profiles table.
-CREATE POLICY "Users and Admins can update profiles" ON profiles
+-- Users can always update their OWN profile.
+-- The Super Admin (checked via email claim to avoid recursion) can update ANY profile.
+CREATE POLICY "Users can update own profile" ON profiles
     FOR UPDATE TO authenticated
-    USING (
-        auth.uid() = id 
-        OR lower(auth.jwt() ->> 'email') = 'kotaramanakumari@gmail.com'
-    )
-    WITH CHECK (
-        auth.uid() = id 
-        OR lower(auth.jwt() ->> 'email') = 'kotaramanakumari@gmail.com'
-    );
+    USING (auth.uid() = id)
+    WITH CHECK (auth.uid() = id);
+
+CREATE POLICY "Super Admin can update all profiles" ON profiles
+    FOR UPDATE TO authenticated
+    USING (lower(auth.jwt() ->> 'email') = 'kotaramanakumari@gmail.com')
+    WITH CHECK (lower(auth.jwt() ->> 'email') = 'kotaramanakumari@gmail.com');
 
 -- 3. Create Delete policy:
-CREATE POLICY "Admins can delete profiles" ON profiles
+CREATE POLICY "Super Admin can delete profiles" ON profiles
     FOR DELETE TO authenticated
-    USING (
-        lower(auth.jwt() ->> 'email') = 'kotaramanakumari@gmail.com'
-    );
+    USING (lower(auth.jwt() ->> 'email') = 'kotaramanakumari@gmail.com');
+
