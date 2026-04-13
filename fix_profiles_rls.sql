@@ -17,16 +17,16 @@ CREATE POLICY "Users and Admins can update profiles" ON profiles
     FOR UPDATE TO authenticated
     USING (
         auth.uid() = id 
-        OR auth.jwt() ->> 'email' = 'kotaramanakumari@gmail.com'
+        OR lower(auth.jwt() ->> 'email') = 'kotaramanakumari@gmail.com'
     )
     WITH CHECK (
         auth.uid() = id 
-        OR auth.jwt() ->> 'email' = 'kotaramanakumari@gmail.com'
+        OR lower(auth.jwt() ->> 'email') = 'kotaramanakumari@gmail.com'
     );
 
 -- 3. Create Delete policy:
 CREATE POLICY "Admins can delete profiles" ON profiles
     FOR DELETE TO authenticated
     USING (
-        auth.jwt() ->> 'email' = 'kotaramanakumari@gmail.com'
+        lower(auth.jwt() ->> 'email') = 'kotaramanakumari@gmail.com'
     );
