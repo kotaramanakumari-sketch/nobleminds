@@ -373,6 +373,12 @@ async function nmGetUsers() {
   return data;
 }
 
+async function nmUpdateProfile(id, updates) {
+  const { data, error } = await sb.from('profiles').update(updates).eq('id', id).select();
+  if (error) { console.error('Error updating profile:', error); throw error; }
+  return data[0];
+}
+
 // ─── SUPPORT QUERIES ─────────────────────────────────────────────────────────
 async function nmGetSupportQueries() {
   const { data, error } = await sb.from('support_queries').select('*').order('created_at', { ascending: false });
