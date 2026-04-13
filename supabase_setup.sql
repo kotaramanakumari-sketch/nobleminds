@@ -4,6 +4,7 @@
 -- ============================================================
 
 -- STEP 1: DROP all existing tables (must be in child-first order)
+DROP TABLE IF EXISTS teacher_diaries     CASCADE;
 DROP TABLE IF EXISTS movements             CASCADE;
 DROP TABLE IF EXISTS counselling_records   CASCADE;
 DROP TABLE IF EXISTS observations          CASCADE;
@@ -112,6 +113,25 @@ CREATE TABLE movements (
     created_at   TIMESTAMPTZ DEFAULT NOW()
 );
 
+-- 8. TEACHER DIARIES
+CREATE TABLE teacher_diaries (
+    id               UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    school_id        UUID REFERENCES schools(id) ON DELETE CASCADE,
+    user_id          UUID REFERENCES auth.users(id) ON DELETE SET NULL,
+    teacher_name     TEXT,
+    diary_date       DATE DEFAULT CURRENT_DATE,
+    period           TEXT,
+    class            TEXT,
+    section          TEXT,
+    total_students   INTEGER DEFAULT 0,
+    present          INTEGER DEFAULT 0,
+    leave            INTEGER DEFAULT 0,
+    on_duty          INTEGER DEFAULT 0,
+    not_reported     INTEGER DEFAULT 0,
+    topic_discussed  TEXT,
+    created_at       TIMESTAMPTZ DEFAULT NOW()
+);
+
 -- 6. REGISTRATION REQUESTS
 CREATE TABLE registration_requests (
     id          UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -159,6 +179,7 @@ ALTER TABLE counselling_records   ENABLE ROW LEVEL SECURITY;
 ALTER TABLE movements             ENABLE ROW LEVEL SECURITY;
 ALTER TABLE registration_requests ENABLE ROW LEVEL SECURITY;
 ALTER TABLE support_queries       ENABLE ROW LEVEL SECURITY;
+ALTER TABLE teacher_diaries       ENABLE ROW LEVEL SECURITY;
 ALTER TABLE profiles              ENABLE ROW LEVEL SECURITY;
 
 -- ============================================================
@@ -190,6 +211,10 @@ CREATE POLICY "Allow all for authenticated" ON counselling_records
 
 -- MOVEMENTS
 CREATE POLICY "Allow all for authenticated" ON movements
+    FOR ALL TO authenticated USING (true) WITH CHECK (true);
+
+-- TEACHER DIARIES
+CREATE POLICY "Allow all for authenticated" ON teacher_diaries
     FOR ALL TO authenticated USING (true) WITH CHECK (true);
 
 -- REGISTRATION REQUESTS
@@ -250,5 +275,12 @@ BEGIN
         WHERE pubname = 'supabase_realtime' AND tablename = 'movements'
     ) THEN
         ALTER PUBLICATION supabase_realtime ADD TABLE movements;
+    END IF;
+
+    IF NOT EXISTS (
+        SELECT 1 FROM pg_publication_tables
+        WHERE pubname = 'supabase_realtime' AND tablename = 'teacher_diaries'
+    ) THEN
+        ALTER PUBLICATION supabase_realtime ADD TABLE teacher_diaries;
     END IF;
 END $$;

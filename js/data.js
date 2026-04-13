@@ -483,3 +483,47 @@ async function nmDeleteSupportQuery(id) {
   const { error } = await sb.from('support_queries').delete().eq('id', id);
   if (error) throw error;
 }
+
+// ─── TEACHER DIARIES ──────────────────────────────────────────────────────────
+async function nmGetTeacherDiaries(userId, schoolId) {
+  let query = sb.from('teacher_diaries').select('*').order('diary_date', { ascending: false });
+  if (userId) query = query.eq('user_id', userId);
+  if (schoolId) query = query.eq('school_id', schoolId);
+  
+  const { data, error } = await query;
+  if (error) { console.error('Error fetching teacher diaries:', error); return []; }
+  return data || [];
+}
+
+async function nmSaveTeacherDiary(diary) {
+  const payload = {
+    school_id: diary.schoolId,
+    user_id: diary.userId,
+    teacher_name: diary.teacherName,
+    diary_date: diary.diaryDate || nmToday(),
+    period: diary.period,
+    class: diary.class,
+    section: diary.section,
+    total_students: diary.totalStudents,
+    present: diary.present,
+    leave: diary.leave,
+    on_duty: diary.onDuty,
+    not_reported: diary.notReported,
+    topic_discussed: diary.topicDiscussed
+  };
+  
+  if (diary.id) {
+    const { data, error } = await sb.from('teacher_diaries').update(payload).eq('id', diary.id).select();
+    if (error) throw error;
+    return data[0];
+  } else {
+    const { data, error } = await sb.from('teacher_diaries').insert([payload]).select();
+    if (error) throw error;
+    return data[0];
+  }
+}
+
+async function nmDeleteTeacherDiary(id) {
+  const { error } = await sb.from('teacher_diaries').delete().eq('id', id);
+  if (error) throw error;
+}

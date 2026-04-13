@@ -48,6 +48,7 @@
       <div class="nav-item" onclick="showSection('observations',this)"><span class="nav-item-icon">👁‍🗨</span>Observations</div>
       <div class="nav-item" onclick="showSection('counselling',this)"><span class="nav-item-icon">🤝</span>Counselling</div>
       <div class="nav-item" onclick="showSection('movement',this)"><span class="nav-item-icon">🏃</span>Movement Record</div>
+      <div class="nav-item" onclick="showSection('teacher-diary',this)"><span class="nav-item-icon">📓</span>Teacher Diary</div>
       <div class="nav-section-label">Account</div>
       <div class="nav-item" onclick="showSection('settings',this)"><span class="nav-item-icon">⚙️</span>Settings</div>
       <div class="nav-item" onclick="nmLogout()"><span class="nav-item-icon">🚪</span>Logout</div>
@@ -501,6 +502,42 @@
         </div>
       </div>
 
+      <!-- TEACHER DIARY -->
+      <div class="page-section" id="section-teacher-diary">
+        <div class="section-header">
+          <h2>📓 Teacher Diary</h2>
+          <button class="btn btn-primary" onclick="openDiaryModal()">+ Add Entry</button>
+        </div>
+        <div class="filter-bar mb-20">
+          <div class="search-input-wrapper" style="flex:1;">
+            <span>🔍</span><input type="text" id="diary-search" placeholder="Search topic or class..." oninput="renderTeacherDiaries()">
+          </div>
+          <button class="btn btn-ghost btn-sm" onclick="exportTeacherDiaries()">⬇ Export Excel</button>
+        </div>
+        <div class="card" style="padding:0;overflow:hidden;">
+          <div class="table-wrapper">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>Date</th>
+                  <th>Period</th>
+                  <th>Class & Section</th>
+                  <th>Attendance Summary</th>
+                  <th>Topic Discussed</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody id="diary-tbody"></tbody>
+            </table>
+          </div>
+          <div id="diary-empty" class="empty-state hidden">
+            <div class="empty-state-icon">📓</div>
+            <h3>No diary entries</h3>
+            <p>Start logging your daily classroom activities.</p>
+          </div>
+        </div>
+      </div>
+
       <!-- SETTINGS -->
       <div class="page-section" id="section-settings">
         <div class="section-header">
@@ -730,7 +767,78 @@
   </div>
 </div>
 
-<script src="../js/supabase.js"></script>
+<!-- TEACHER DIARY MODAL -->
+<div class="modal-overlay" id="diary-modal">
+  <div class="modal">
+    <div class="modal-header">
+      <span class="modal-title" id="diary-modal-title">Add Diary Entry</span>
+      <button class="modal-close" onclick="closeModal('diary-modal')">✕</button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="d-id">
+      <div class="form-grid mb-16">
+        <div class="form-group">
+          <label class="form-label">Date <span class="required">*</span></label>
+          <input type="date" id="d-date" class="form-control">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Period <span class="required">*</span></label>
+          <select id="d-period" class="form-control">
+            <option value="">— Select Period —</option>
+            <option>1</option><option>2</option><option>3</option><option>4</option>
+            <option>5</option><option>6</option><option>7</option><option>8</option>
+            <option>Remedial</option><option>Superwise</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-grid mb-16">
+        <div class="form-group">
+          <label class="form-label">Class <span class="required">*</span></label>
+          <input type="text" id="d-class" class="form-control" placeholder="e.g. 5, 10">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Section <span class="required">*</span></label>
+          <input type="text" id="d-section" class="form-control" placeholder="e.g. A, B">
+        </div>
+      </div>
+      <div class="card mb-16" style="background:var(--clr-surface);border:1px solid var(--clr-border);">
+        <h4 style="margin-bottom:12px;font-size:0.9rem;">👥 Attendance Summary</h4>
+        <div class="form-grid mb-12">
+          <div class="form-group">
+            <label class="form-label">Present</label>
+            <input type="number" id="d-present" class="form-control" value="0" min="0">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Leave</label>
+            <input type="number" id="d-leave" class="form-control" value="0" min="0">
+          </div>
+        </div>
+        <div class="form-grid mb-0">
+          <div class="form-group">
+            <label class="form-label">On Duty</label>
+            <input type="number" id="d-onduty" class="form-control" value="0" min="0">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Not Reported</label>
+            <input type="number" id="d-notreported" class="form-control" value="0" min="0">
+          </div>
+        </div>
+        <div class="mt-12" style="padding:10px; background:rgba(108,99,255,0.08); border-radius:var(--radius-sm); border:1px solid rgba(108,99,255,0.2); font-size:0.85rem;">
+          <strong>Total Students: </strong> <span id="d-total-calc" style="font-weight:700; color:var(--clr-primary);">0</span>
+          <br><span style="font-size:0.7rem; color:var(--clr-text-2);">(Automatically calculated from inputs above)</span>
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Topic Discussed <span class="required">*</span></label>
+        <textarea id="d-topic" class="form-control" rows="4" placeholder="Briefly describe the topics covered..."></textarea>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('diary-modal')">Cancel</button>
+      <button class="btn btn-primary" onclick="saveTeacherDiary()">Save Entry</button>
+    </div>
+  </div>
+</div>
 <script src="../js/auth.js"></script>
 <script src="../js/data.js"></script>
 <script src="../js/utils.js"></script>
@@ -752,7 +860,7 @@ async function init() {
 
   // Set up Realtime Subscriptions
   const refreshUI = nmDebounce(() => {
-    const activeSection = document.querySelector('.page-section.active').id.replace('section-', '');
+    const activeSection = document.querySelector('.page-section.active')?.id.replace('section-', '') || 'dashboard';
     showSection(activeSection);
   }, 1000);
 
@@ -760,6 +868,7 @@ async function init() {
   nmSubscribe('observations', schoolId, refreshUI);
   nmSubscribe('counselling_records', schoolId, refreshUI);
   nmSubscribe('movements', schoolId, refreshUI);
+  nmSubscribe('teacher_diaries', schoolId, refreshUI);
   
   // Handle URL params
   const params = new URLSearchParams(window.location.search);
@@ -2047,28 +2156,194 @@ async function deleteMovementRecord(id) {
   }
 }
 
-async function exportMovements() {
-  const list = await nmGetMovements(schoolId);
-  const students = await nmGetStudents(schoolId, currentYearId);
-  if (!list.length) { nmToast('No records to export', 'info'); return; }
-  const data = list.map(m => {
-    const s = students.find(x => x.id === (m.student_id || m.studentId)) || {};
-    return {
-      'Date of Leaving': m.leave_date || m.leaveDate,
-      'Student Name': s.full_name || s.fullName || 'Unknown',
-      'Admission Number': s.admission_number || s.admissionNumber || '',
-      'Class': s.class || '',
-      'Section': s.section || '',
-      'House': s.house || '',
-      'Reason for Leave': m.reason,
-      'Date of Reporting': m.report_date || m.reportDate,
-      'Escort Name': m.escort_name || m.escortName,
-      'Relationship': m.relationship,
-      'Phone Number': m.phone
-    };
-  });
-  nmExportExcel(data, `NobleMinds_Movements_${new Date().toISOString().split('T')[0]}.xlsx`);
+function exportMovements() {
+  // ... existing exportMovements body ...
 }
+
+// ── Teacher Diary Logic ───────────────────────────────────────────────────────
+
+async function renderTeacherDiaries() {
+  const q = (document.getElementById('diary-search')?.value||'').toLowerCase();
+  
+  // Wait for session user_id to be available (from init)
+  const session = await sb.auth.getSession();
+  const userId = session.data.session?.user?.id;
+  
+  const diaries = await nmGetTeacherDiaries(userId, schoolId);
+  
+  const list = diaries.filter(d => {
+    return !q || 
+           (d.topic_discussed||'').toLowerCase().includes(q) || 
+           (d.class||'').toLowerCase().includes(q) ||
+           (d.section||'').toLowerCase().includes(q);
+  });
+  
+  const tbody = document.getElementById('diary-tbody');
+  const empty = document.getElementById('diary-empty');
+  if (!list.length) { tbody.innerHTML=''; empty.classList.remove('hidden'); return; }
+  empty.classList.add('hidden');
+  
+  tbody.innerHTML = list.map(d => {
+    return `<tr>
+      <td><div style="font-weight:600;color:var(--clr-primary);">${nmFmtDate(d.diary_date)}</div></td>
+      <td><span class="badge badge-purple">${d.period}</span></td>
+      <td>
+        <div style="font-weight:600;">Class ${d.class}</div>
+        <div style="font-size:0.75rem;color:var(--clr-text-2);">Section ${d.section}</div>
+      </td>
+      <td>
+        <div style="font-size:0.8rem; display:grid; grid-template-columns:1fr 1fr; gap:4px;">
+          <div><span style="color:var(--clr-success);">■</span> P: ${d.present}</div>
+          <div><span style="color:var(--clr-danger);">■</span> L: ${d.leave}</div>
+          <div><span style="color:var(--clr-amber);">■</span> OD: ${d.on_duty}</div>
+          <div><span style="color:var(--clr-text-3);">■</span> NR: ${d.not_reported}</div>
+        </div>
+        <div style="font-size:0.75rem;font-weight:700;margin-top:4px;">Total: ${d.total_students}</div>
+      </td>
+      <td style="max-width:200px;font-size:0.85rem;">${d.topic_discussed}</td>
+      <td>
+        <div style="display:flex;gap:4px;">
+          <button class="btn btn-ghost btn-sm" onclick="openDiaryModal('${d.id}')">✏️ Edit</button>
+          <button class="btn btn-danger btn-sm btn-icon" onclick="deleteTeacherDiary('${d.id}')" title="Delete">🗑</button>
+        </div>
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+function updateDiaryTotal() {
+  const p = parseInt(document.getElementById('d-present').value) || 0;
+  const l = parseInt(document.getElementById('d-leave').value) || 0;
+  const od = parseInt(document.getElementById('d-onduty').value) || 0;
+  const nr = parseInt(document.getElementById('d-notreported').value) || 0;
+  document.getElementById('d-total-calc').textContent = p + l + od + nr;
+}
+
+// Add event listeners to attendance fields to update total dynamically
+document.querySelectorAll('#diary-modal input[type="number"]').forEach(input => {
+  input.addEventListener('input', updateDiaryTotal);
+});
+
+async function openDiaryModal(id) {
+  const dId = document.getElementById('d-id');
+  const dDate = document.getElementById('d-date');
+  const dPeriod = document.getElementById('d-period');
+  const dClass = document.getElementById('d-class');
+  const dSection = document.getElementById('d-section');
+  const dPresent = document.getElementById('d-present');
+  const dLeave = document.getElementById('d-leave');
+  const dOnduty = document.getElementById('d-onduty');
+  const dNotreported = document.getElementById('d-notreported');
+  const dTopic = document.getElementById('d-topic');
+
+  if (id) {
+    const session = await sb.auth.getSession();
+    const userId = session.data.session?.user?.id;
+    const diaries = await nmGetTeacherDiaries(userId, schoolId);
+    const d = diaries.find(x => x.id === id);
+    if (!d) return;
+    
+    document.getElementById('diary-modal-title').textContent = 'Edit Diary Entry';
+    dId.value = d.id;
+    dDate.value = d.diary_date;
+    dPeriod.value = d.period;
+    dClass.value = d.class;
+    dSection.value = d.section;
+    dPresent.value = d.present;
+    dLeave.value = d.leave;
+    dOnduty.value = d.on_duty;
+    dNotreported.value = d.not_reported;
+    dTopic.value = d.topic_discussed;
+  } else {
+    document.getElementById('diary-modal-title').textContent = 'Add Diary Entry';
+    dId.value = '';
+    dDate.value = nmToday();
+    dPeriod.value = '';
+    dClass.value = '';
+    dSection.value = '';
+    dPresent.value = '0';
+    dLeave.value = '0';
+    dOnduty.value = '0';
+    dNotreported.value = '0';
+    dTopic.value = '';
+  }
+  updateDiaryTotal();
+  openModal('diary-modal');
+}
+
+async function saveTeacherDiary() {
+  const idValue = document.getElementById('d-id').value;
+  const date = document.getElementById('d-date').value;
+  const period = document.getElementById('d-period').value;
+  const cls = document.getElementById('d-class').value.trim();
+  const sec = document.getElementById('d-section').value.trim();
+  const present = parseInt(document.getElementById('d-present').value) || 0;
+  const leave = parseInt(document.getElementById('d-leave').value) || 0;
+  const onduty = parseInt(document.getElementById('d-onduty').value) || 0;
+  const notreported = parseInt(document.getElementById('d-notreported').value) || 0;
+  const topic = document.getElementById('d-topic').value.trim();
+
+  if (!date || !period || !cls || !sec || !topic) {
+    nmToast('Please fill all required fields', 'error'); return;
+  }
+
+  const session = await sb.auth.getSession();
+  const userId = session.data.session?.user?.id;
+  const userName = document.getElementById('user-name-disp').textContent;
+
+  await nmSaveTeacherDiary({
+    id: idValue || undefined,
+    schoolId: schoolId,
+    userId: userId,
+    teacherName: userName,
+    diaryDate: date,
+    period: period,
+    class: cls,
+    section: sec,
+    totalStudents: present + leave + onduty + notreported,
+    present: present,
+    leave: leave,
+    onDuty: onduty,
+    notReported: notreported,
+    topicDiscussed: topic
+  });
+  
+  closeModal('diary-modal');
+  nmToast('Diary entry saved successfully!', 'success');
+  await renderTeacherDiaries();
+}
+
+async function deleteTeacherDiary(id) {
+  if (await nmConfirm('Delete this diary entry?')) {
+    await nmDeleteTeacherDiary(id);
+    await renderTeacherDiaries();
+    nmToast('Entry deleted', 'info');
+  }
+}
+
+async function exportTeacherDiaries() {
+  const session = await sb.auth.getSession();
+  const userId = session.data.session?.user?.id;
+  const diaries = await nmGetTeacherDiaries(userId, schoolId);
+  
+  if (!diaries.length) { nmToast('No diary entries to export', 'info'); return; }
+  
+  const data = diaries.map(d => ({
+    'Date': d.diary_date,
+    'Period': d.period,
+    'Class': d.class,
+    'Section': d.section,
+    'Total Students': d.total_students,
+    'Present': d.present,
+    'Leave': d.leave,
+    'On Duty': d.on_duty,
+    'Not Reported': d.not_reported,
+    'Topic Discussed': d.topic_discussed
+  }));
+  
+  nmExportExcel(data, `Teacher_Diary_${new Date().toISOString().split('T')[0]}.xlsx`);
+}
+
 
 </script>
 <!-- PRINT SECTION (Hidden in UI, visible in Print) -->
