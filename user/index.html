@@ -67,7 +67,12 @@
   <div class="main-content">
     <div class="topbar">
       <button class="mobile-menu-btn" onclick="toggleMobileMenu()">☰</button>
-      <div class="topbar-title" id="topbar-title">Dashboard</div>
+      <div style="display:flex; align-items:center; gap:16px;">
+        <div class="topbar-title" id="topbar-title">Dashboard</div>
+        <select id="topbar-year-sel" class="filter-select" style="padding: 4px 8px; font-size: 0.8rem; height: 32px; min-width: 120px;" onchange="changeYear(this.value)">
+          <option value="">Year...</option>
+        </select>
+      </div>
       <div class="topbar-right">
         <button class="btn btn-ghost btn-sm" onclick="window.print()">🖨 Print Page</button>
       </div>
@@ -124,6 +129,7 @@
             <option value="">All Genders</option><option>Male</option><option>Female</option>
           </select>
           <button class="btn btn-ghost btn-sm" onclick="exportStudents()">⬇ Export Excel</button>
+          <button class="btn btn-primary btn-sm" style="background:#6c63ff; border-color:#6c63ff;" onclick="openPromotionModal()">⬆ Promote Students</button>
         </div>
         <div class="card" style="padding:0;overflow:hidden;">
           <div class="table-wrapper">
@@ -499,6 +505,16 @@
           <h2>⚙️ Settings</h2>
         </div>
         <div class="card mb-20" style="max-width: 600px;">
+          <h3 style="margin-bottom:16px;">Academic Years</h3>
+          <div id="ay-list" style="margin-bottom:16px; border:1px solid var(--clr-border); border-radius:var(--radius-sm); overflow:hidden;"></div>
+          <div style="display:flex; gap:12px;">
+            <input type="text" id="ay-name-new" class="form-control" placeholder="e.g. 2024-2025" style="max-width:200px;">
+            <button class="btn btn-primary" onclick="addAcademicYear()">Add Year</button>
+          </div>
+          <p style="font-size:0.75rem; color:var(--clr-text-3); margin-top:12px;">The active year is the default view for all school staff.</p>
+        </div>
+
+        <div class="card mb-20" style="max-width: 600px;">
           <h3 style="margin-bottom:16px;">Appearance</h3>
           <div style="display:flex;align-items:center;justify-content:space-between;padding:16px;background:var(--clr-surface2);border:1px solid var(--clr-border);border-radius:var(--radius-sm);">
             <div>
@@ -602,47 +618,44 @@
 
 <!-- MOVEMENT MODAL -->
 <div class="modal-overlay" id="movement-modal">
+      </div>
+      <div class="modal-footer"><button class="btn btn-ghost" onclick="closeModal('mov-modal')">Cancel</button><button class="btn btn-primary" onclick="saveMovement()">Save Record</button></div>
+    </div>
+  </div>
+</div>
+
+<!-- PROMOTION MODAL -->
+<div class="modal-overlay" id="promotion-modal">
   <div class="modal">
     <div class="modal-header">
-      <span class="modal-title" id="mov-modal-title">Add Movement Record</span>
-      <button class="modal-close" onclick="closeModal('movement-modal')">✕</button>
+      <span class="modal-title">Bulk Student Promotion</span>
+      <button class="modal-close" onclick="closeModal('promotion-modal')">✕</button>
     </div>
     <div class="modal-body">
-      <input type="hidden" id="mov-id">
+      <div style="font-size:0.85rem; background:rgba(108,99,255,0.08); border:1px solid rgba(108,99,255,0.2); padding:12px; border-radius:var(--radius-sm); color:var(--clr-text); margin-bottom:20px;">
+        <strong>Info:</strong> Promotion will <strong>Clone</strong> selected students into a new academic year. Existing classes will automatically increment (e.g., Class 4 → Class 5).
+      </div>
+      
       <div class="form-group mb-16">
-        <label class="form-label">Select Student <span class="required">*</span></label>
-        <select id="m-student" class="form-control"><option value="">— Choose Student —</option></select>
+        <label class="form-label">Step 1: Target Academic Year <span class="required">*</span></label>
+        <select id="p-target-year" class="form-control">
+          <option value="">— Select Target Year —</option>
+        </select>
       </div>
-      <div class="form-group mb-16">
-        <label class="form-label">Reason for Leave <span class="required">*</span></label>
-        <input type="text" id="m-reason" class="form-control" placeholder="e.g. Visiting home for holidays">
-      </div>
-      <div class="form-grid mb-16">
-        <div class="form-group">
-          <label class="form-label">Date of Leaving <span class="required">*</span></label>
-          <input type="date" id="m-leave-date" class="form-control">
-        </div>
-        <div class="form-group">
-          <label class="form-label">Date of Reporting <span class="required">*</span></label>
-          <input type="date" id="m-report-date" class="form-control">
+
+      <div class="form-group">
+        <label class="form-label">Step 2: Selection Summary</label>
+        <div id="p-selection-info" style="font-size:0.9rem; font-weight:600; padding:15px; background:var(--clr-surface2); border:1px solid var(--clr-border); border-radius:var(--radius-sm); border-left:4px solid #6c63ff;">
+          Loading...
         </div>
       </div>
-      <div class="card mb-16" style="background:var(--clr-surface);border:1px solid var(--clr-border);">
-        <h4 style="margin-bottom:12px;font-size:0.9rem;">👤 Escort Information</h4>
-        <div class="form-grid mb-0">
-          <div class="form-group">
-            <label class="form-label">Escort Name <span class="required">*</span></label>
-            <input type="text" id="m-escort-name" class="form-control">
-          </div>
-          <div class="form-group">
-            <label class="form-label">Relationship <span class="required">*</span></label>
-            <input type="text" id="m-relationship" class="form-control">
-          </div>
-        </div>
-        <div class="form-group mt-12">
-          <label class="form-label">Phone Number <span class="required">*</span></label>
-          <input type="tel" id="m-phone" class="form-control">
-        </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('promotion-modal')">Cancel</button>
+      <button class="btn btn-primary" onclick="confirmPromotion()" id="p-btn">Confirm Promotion (Clone)</button>
+    </div>
+  </div>
+</div>
       </div>
     </div>
     <div class="modal-footer">
@@ -658,7 +671,7 @@
 <script src="../js/utils.js"></script>
 <script>
 // ── Auth ──────────────────────────────────────────────────────────────────────
-let schoolId = '', currentStudentId = '', excelParsed = [], currentStep = 1;
+let schoolId = '', currentYearId = '', allYears = [], currentStudentId = '', excelParsed = [], currentStep = 1;
 
 async function init() {
   await nmInitAuth();
@@ -668,6 +681,8 @@ async function init() {
     document.getElementById('user-name-disp').textContent = session.name;
     document.getElementById('user-avatar').textContent    = nmGetInitials(session.name);
     document.getElementById('sb-school-name').textContent = session.school_name || session.schoolName || 'School Portal';
+    
+    await loadAcademicYears();
   }
 
   // Set up Realtime Subscriptions
@@ -699,6 +714,80 @@ async function init() {
   }
 }
 
+// ── Academic Years ────────────────────────────────────────────────────────────
+async function loadAcademicYears() {
+  allYears = await nmGetAcademicYears(schoolId);
+  if (allYears.length) {
+    const active = allYears.find(y => y.is_active) || allYears[0];
+    currentYearId = active.id;
+  }
+  renderYearSelector();
+}
+
+function renderYearSelector() {
+  const el = document.getElementById('topbar-year-sel');
+  if (!el) return;
+  if (!allYears.length) {
+    el.innerHTML = '<option value="">No years found</option>';
+    return;
+  }
+  el.innerHTML = allYears.map(y => `
+    <option value="${y.id}" ${y.id === currentYearId ? 'selected' : ''}>
+      ${y.name} ${y.is_active ? ' (Active)' : ''}
+    </option>
+  `).join('');
+}
+
+async function changeYear(yearId) {
+  currentYearId = yearId;
+  const activeSection = document.querySelector('.page-section.active').id.replace('section-', '');
+  await showSection(activeSection);
+}
+
+async function renderAcademicYears() {
+  const years = await nmGetAcademicYears(schoolId);
+  const list = document.getElementById('ay-list');
+  if (!list) return;
+  list.innerHTML = years.map(y => `
+    <div style="display:flex; align-items:center; justify-content:space-between; padding:12px; background:var(--clr-surface); border-bottom:1px solid var(--clr-border);">
+      <div>
+        <div style="font-weight:700; font-size:0.95rem;">Academic Year ${y.name}</div>
+        <div style="font-size:0.75rem; color:var(--clr-text-3);">Created ${nmFmtDate(y.created_at)}</div>
+      </div>
+      <div>
+        ${y.is_active ? '<span class="badge badge-green">Active Default</span>' : `<button class="btn btn-ghost btn-sm" onclick="setActiveYear('${y.id}')">Set as Active</button>`}
+      </div>
+    </div>
+  `).join('');
+}
+
+async function addAcademicYear() {
+  const name = document.getElementById('ay-name-new').value.trim();
+  if (!name) return nmToast('Year name is required','error');
+  try {
+    await nmSaveAcademicYear({ school_id: schoolId, name, is_active: false });
+    document.getElementById('ay-name-new').value = '';
+    await loadAcademicYears();
+    await renderAcademicYears();
+    nmToast('Academic Year added successfully','success');
+  } catch(e) { 
+    nmToast('Error adding year: ' + e.message, 'error'); 
+  }
+}
+
+async function setActiveYear(id) {
+  if (await nmConfirm('Making this the active year will set it as the default for all portal users. Continue?')) {
+    try {
+      await nmSetDefaultYear(id, schoolId);
+      await loadAcademicYears();
+      await renderAcademicYears();
+      nmToast('Global active year updated','success');
+    } catch(e) {
+      nmToast('Error: ' + e.message, 'error');
+    }
+  }
+}
+
 // ── Navigation ────────────────────────────────────────────────────────────────
 const pageTitles = { dashboard:'Dashboard', students:'Students', 'add-student':'Add Student', import:'Bulk Import', observations:'Observations', counselling:'Counselling', movement:'Movement Record', settings:'Settings' };
 function toggleMobileMenu() {
@@ -717,6 +806,7 @@ async function showSection(id, el) {
   if (id === 'observations') await renderObservations();
   if (id === 'counselling')  await renderCounselling();
   if (id === 'movement')     await renderMovements();
+  if (id === 'settings')     await renderAcademicYears();
 }
 function openModal(id)  { document.getElementById(id).classList.add('active'); }
 function closeModal(id) { document.getElementById(id).classList.remove('active'); }
@@ -724,8 +814,8 @@ document.querySelectorAll('.modal-overlay').forEach(o => o.addEventListener('cli
 
 // ── Dashboard ─────────────────────────────────────────────────────────────────
 async function renderDashboard() {
-  const stats = await nmGetStats(schoolId);
-  const students = await nmGetStudents(schoolId);
+  const stats = await nmGetStats(schoolId, currentYearId);
+  const students = await nmGetStudents(schoolId, currentYearId);
   const counselling = await nmGetCounselling(schoolId);
   
   document.getElementById('ds-total').textContent    = stats.total;
@@ -777,7 +867,7 @@ async function renderStudents() {
   const fs = document.getElementById('f-section')?.value||'';
   const fg = document.getElementById('f-gender')?.value||'';
   
-  let list = await nmGetStudents(schoolId);
+  let list = await nmGetStudents(schoolId, currentYearId);
   const totalCount = list.length;
   
   if (q)  list = list.filter(s=>(s.full_name||s.fullName||'').toLowerCase().includes(q)||(s.admission_number||s.admissionNumber||'').toLowerCase().includes(q));
@@ -805,11 +895,66 @@ async function renderStudents() {
 }
 
 function exportStudents() {
-  const list = nmGetStudents(schoolId);
-  if (!list.length) { nmToast('No students to export','info'); return; }
-  const safe = list.map(s => { const c={...s}; delete c.photo; delete c.fatherPhoto; delete c.motherPhoto; return c; });
-  nmExportExcel(safe, `students_${session?.schoolName?.replace(/\s+/g,'_')||'export'}.xlsx`);
-  nmToast('Exported successfully!','success');
+  nmGetStudents(schoolId, currentYearId).then(list => {
+    if (!list.length) { nmToast('No students to export','info'); return; }
+    const safe = list.map(s => { const c={...s}; delete c.photo; delete c.fatherPhoto; delete c.motherPhoto; return c; });
+    nmExportExcel(safe, `students_${session?.schoolName?.replace(/\s+/g,'_')||'export'}.xlsx`);
+    nmToast('Exported successfully!','success');
+  });
+}
+
+// ── Student Promotion ──────────────────────────────────────────────────────────
+async function openPromotionModal() {
+  const currentList = await getFilteredStudentList();
+  if (!currentList.length) return nmToast('No students matching current filters to promote','error');
+  
+  const years = allYears.filter(y => y.id !== currentYearId);
+  if (!years.length) return nmToast('Please create a target Academic Year first in Settings.', 'info');
+
+  const sel = document.getElementById('p-target-year');
+  sel.innerHTML = '<option value="">— Select Target Year —</option>' + years.map(y => `<option value="${y.id}">${y.name}</option>`).join('');
+  
+  document.getElementById('p-selection-info').textContent = `Promoting ${currentList.length} students from the current filtered list.`;
+  openModal('promotion-modal');
+}
+
+async function getFilteredStudentList() {
+  const q  = (document.getElementById('std-search')?.value||'').toLowerCase();
+  const fc = document.getElementById('f-class')?.value||'';
+  const fs = document.getElementById('f-section')?.value||'';
+  const fg = document.getElementById('f-gender')?.value||'';
+  
+  let list = await nmGetStudents(schoolId, currentYearId);
+  if (q)  list = list.filter(s=>(s.full_name||s.fullName||'').toLowerCase().includes(q)||(s.admission_number||s.admissionNumber||'').toLowerCase().includes(q));
+  if (fc) list = list.filter(s=>s.class===fc);
+  if (fs) list = list.filter(s=>s.section===fs);
+  if (fg) list = list.filter(s=>s.gender===fg);
+  return list;
+}
+
+async function confirmPromotion() {
+  const targetYearId = document.getElementById('p-target-year').value;
+  if (!targetYearId) return nmToast('Please select a target year','error');
+  
+  const list = await getFilteredStudentList();
+  const msg = `Are you sure? You are about to clone ${list.length} students to the new year. Their classes will be incremented automatically (e.g. 4 -> 5).`;
+  
+  if (await nmConfirm(msg)) {
+    const btn = document.getElementById('p-btn');
+    btn.disabled = true; btn.textContent = 'Processing Promotion...';
+    
+    try {
+      const ids = list.map(s => s.id);
+      await nmPromoteStudents(ids, targetYearId);
+      closeModal('promotion-modal');
+      nmToast(`Successfully promoted ${list.length} students!`,'success');
+      await renderStudents();
+    } catch(e) {
+      nmToast('Promotion failed: ' + e.message, 'error');
+    } finally {
+      btn.disabled = false; btn.textContent = 'Confirm Promotion (Clone)';
+    }
+  }
 }
 
 // ── View Student ──────────────────────────────────────────────────────────────
@@ -907,7 +1052,7 @@ function iI(k,v){return`<div class="info-item"><div class="key">${k}</div><div c
 async function quickAddObservation(id) {
   closeModal('student-modal');
   openModal('obs-modal');
-  const students = await nmGetStudents(schoolId);
+  const students = await nmGetStudents(schoolId, currentYearId);
   const s = students.find(x => x.id === id);
   document.getElementById('obs-modal-title').textContent = 'Add Observation';
   document.getElementById('o-id').value = '';
@@ -966,7 +1111,7 @@ function resetPhotoBox(id, label) {
 }
 
 async function editStudent(id) {
-  const students = await nmGetStudents(schoolId);
+  const students = await nmGetStudents(schoolId, currentYearId);
   const s = students.find(x => x.id === id);
   if (!s) return;
   editingId = id;
@@ -1088,6 +1233,7 @@ async function submitStudent() {
   const student = {
     id: editingId || undefined,
     school_id: schoolId,
+    academic_year_id: currentYearId,
     admission_number: g('f-adm'),
     full_name: g('f-name'),
     class: g('f-class-val'),
@@ -1177,6 +1323,7 @@ async function confirmImport() {
     
     await nmSaveStudent({
       school_id: schoolId,
+      academic_year_id: currentYearId,
       admission_number: row.admissionNumber||row['Admission Number']||row['Admission No']||'',
       full_name:   row.fullName||row['Full Name']||row['Student Name']||'',
       class:      row.class||row['Class']||'',
@@ -1223,7 +1370,7 @@ renderDashboard();
 let selectedObsStudents = [];
 async function renderObservations() {
   const q = (document.getElementById('obs-search')?.value||'').toLowerCase();
-  const students = await nmGetStudents(schoolId);
+  const students = await nmGetStudents(schoolId, currentYearId);
   const obs = await nmGetObservations(schoolId);
   
   const list = obs.filter(o => {
@@ -1293,7 +1440,7 @@ async function openObservationModal(id) {
 
 async function searchStudentsForObs() {
   const q = document.getElementById('o-std-search').value.toLowerCase();
-  const all = await nmGetStudents(schoolId);
+  const all = await nmGetStudents(schoolId, currentYearId);
   const students = all.filter(s => (s.full_name||s.fullName).toLowerCase().includes(q) || (s.admission_number||s.admissionNumber).toLowerCase().includes(q));
   const list = document.getElementById('o-std-list');
   list.innerHTML = students.map(s => `
@@ -1340,7 +1487,7 @@ async function saveObservation() {
 
 async function exportObservations() {
   const list = await nmGetObservations(schoolId);
-  const students = await nmGetStudents(schoolId);
+  const students = await nmGetStudents(schoolId, currentYearId);
   if (!list.length) { nmToast('No observations to export', 'info'); return; }
   const data = list.map(o => {
     const s = students.find(x => x.id === (o.student_id || o.studentId)) || {};
@@ -1368,7 +1515,7 @@ async function deleteObservationRecord(id) {
 // ── Counselling Logic ─────────────────────────────────────────────────────────
 async function renderCounselling() {
   const q = (document.getElementById('cns-search')?.value||'').toLowerCase();
-  const students = await nmGetStudents(schoolId);
+  const students = await nmGetStudents(schoolId, currentYearId);
   const cns = await nmGetCounselling(schoolId);
   
   const list = cns.filter(c => {
@@ -1397,7 +1544,7 @@ async function renderCounselling() {
 }
 
 async function openCounsellingModal(id) {
-  const students = await nmGetStudents(schoolId);
+  const students = await nmGetStudents(schoolId, currentYearId);
   const sel = document.getElementById('c-student');
   sel.innerHTML = '<option value="">— Choose Student —</option>' + students.map(s => `<option value="${s.id}">${s.full_name||s.fullName} (${s.admission_number||s.admissionNumber})</option>`).join('');
 
@@ -1463,7 +1610,7 @@ async function deleteCounsellingRecord(id) {
 
 async function exportCounselling() {
   const list = await nmGetCounselling(schoolId);
-  const students = await nmGetStudents(schoolId);
+  const students = await nmGetStudents(schoolId, currentYearId);
   if (!list.length) { nmToast('No records to export', 'info'); return; }
   const data = list.map(c => {
     const s = students.find(x => x.id === (c.student_id || c.studentId)) || {};
@@ -1603,7 +1750,7 @@ init();
 // ── Movement Logic ────────────────────────────────────────────────────────────
 async function renderMovements() {
   const q = (document.getElementById('mov-search')?.value||'').toLowerCase();
-  const students = await nmGetStudents(schoolId);
+  const students = await nmGetStudents(schoolId, currentYearId);
   const mov = await nmGetMovements(schoolId);
   
   const list = mov.filter(m => {
@@ -1642,7 +1789,7 @@ async function renderMovements() {
 }
 
 async function openMovementModal(id) {
-  const students = await nmGetStudents(schoolId);
+  const students = await nmGetStudents(schoolId, currentYearId);
   const sel = document.getElementById('m-student');
   sel.innerHTML = '<option value="">— Choose Student —</option>' + 
     students.map(s => `<option value="${s.id}">${s.full_name||s.fullName} (${s.admission_number||s.admissionNumber})</option>`).join('');
@@ -1716,7 +1863,7 @@ async function deleteMovementRecord(id) {
 
 async function exportMovements() {
   const list = await nmGetMovements(schoolId);
-  const students = await nmGetStudents(schoolId);
+  const students = await nmGetStudents(schoolId, currentYearId);
   if (!list.length) { nmToast('No records to export', 'info'); return; }
   const data = list.map(m => {
     const s = students.find(x => x.id === (m.student_id || m.studentId)) || {};

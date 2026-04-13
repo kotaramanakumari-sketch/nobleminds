@@ -11,6 +11,7 @@ DROP TABLE IF EXISTS support_queries       CASCADE;
 DROP TABLE IF EXISTS registration_requests CASCADE;
 DROP TABLE IF EXISTS profiles              CASCADE;
 DROP TABLE IF EXISTS students              CASCADE;
+DROP TABLE IF EXISTS academic_years        CASCADE;
 DROP TABLE IF EXISTS schools               CASCADE;
 
 -- STEP 2: CREATE tables
@@ -29,10 +30,20 @@ CREATE TABLE schools (
     created_at  TIMESTAMPTZ DEFAULT NOW()
 );
 
--- 2. STUDENTS
+-- 2. ACADEMIC YEARS
+CREATE TABLE academic_years (
+    id           UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    school_id    UUID REFERENCES schools(id) ON DELETE CASCADE,
+    name         TEXT NOT NULL,
+    is_active    BOOLEAN DEFAULT FALSE,
+    created_at   TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- 3. STUDENTS
 CREATE TABLE students (
     id               UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     school_id        UUID REFERENCES schools(id) ON DELETE CASCADE,
+    academic_year_id UUID REFERENCES academic_years(id) ON DELETE SET NULL,
     admission_number TEXT,
     full_name        TEXT NOT NULL,
     class            TEXT,
@@ -141,6 +152,7 @@ CREATE TABLE profiles (
 -- STEP 3: Enable Row Level Security (RLS) on all tables
 -- ============================================================
 ALTER TABLE schools               ENABLE ROW LEVEL SECURITY;
+ALTER TABLE academic_years        ENABLE ROW LEVEL SECURITY;
 ALTER TABLE students              ENABLE ROW LEVEL SECURITY;
 ALTER TABLE observations          ENABLE ROW LEVEL SECURITY;
 ALTER TABLE counselling_records   ENABLE ROW LEVEL SECURITY;
@@ -159,6 +171,10 @@ CREATE POLICY "Allow all for authenticated" ON schools
     FOR ALL TO authenticated USING (true) WITH CHECK (true);
 CREATE POLICY "Allow anon read schools" ON schools
     FOR SELECT TO anon USING (true);
+
+-- ACADEMIC YEARS
+CREATE POLICY "Allow all for authenticated" ON academic_years
+    FOR ALL TO authenticated USING (true) WITH CHECK (true);
 
 -- STUDENTS
 CREATE POLICY "Allow all for authenticated" ON students
@@ -220,6 +236,13 @@ BEGIN
         WHERE pubname = 'supabase_realtime' AND tablename = 'counselling_records'
     ) THEN
         ALTER PUBLICATION supabase_realtime ADD TABLE counselling_records;
+    END IF;
+
+    IF NOT EXISTS (
+        SELECT 1 FROM pg_publication_tables
+        WHERE pubname = 'supabase_realtime' AND tablename = 'academic_years'
+    ) THEN
+        ALTER PUBLICATION supabase_realtime ADD TABLE academic_years;
     END IF;
 
     IF NOT EXISTS (
