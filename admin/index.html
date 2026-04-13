@@ -870,10 +870,11 @@ async function saveUser() {
       if (!password || password.length < 6) { nmToast('Password required (min 6 chars)', 'error'); return; }
       await nmSignUp({
         name, email, password,
+        schoolId: schoolId || null,
         schoolName: schoolName || 'Pending',
         udise: '', phone: '', address: '' 
       });
-      nmToast('User registration request created!', 'success');
+      nmToast(schoolId ? 'User account created and linked to school!' : 'User account and request created!', 'success');
     }
     closeModal('user-modal');
     await renderUsers();

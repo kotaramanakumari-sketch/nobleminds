@@ -33,7 +33,7 @@ async function nmGetProfile(userId) {
  * Used by register.html for instant school setup
  */
 async function nmSignUp(data) {
-  const { email, password, name, schoolName, udise, phone, address } = data;
+  const { email, password, name, schoolName, schoolId, udise, phone, address } = data;
 
   // 1. Create the Auth User
   const { data: authData, error: authError } = await sb.auth.signUp({
@@ -47,34 +47,35 @@ async function nmSignUp(data) {
   if (authError) throw authError;
   if (!authData.user) throw new Error('Sign up failed');
 
-  // 2. Create a "Pending Approval" profile
-  // No school_id assigned yet.
+  // 2. Create the profile
   const { error: profError } = await sb.from('profiles').insert([{
     id: authData.user.id,
     name: name,
-    email: email, // Assuming email column exists
+    email: email,
     role: email.toLowerCase() === 'kotaramanakumari@gmail.com' ? 'admin' : 'user',
-    school_id: null,
-    school_name: 'Pending Approval'
+    school_id: schoolId || null,
+    school_name: schoolId ? schoolName : 'Pending Approval'
   }]);
 
   if (profError) {
     console.warn('Profile creation error (might already exist):', profError);
   }
 
-  // 3. Create the registration request for Admin review
-  const { error: reqError } = await sb.from('registration_requests').insert([{
-    udise:      udise,
-    school_name: schoolName,
-    address:    address,
-    admin_name: name,
-    email:      email,
-    phone:      phone,
-    status:     'pending'
-  }]);
+  // 3. Create the registration request ONLY if it's a new school signup
+  if (!schoolId) {
+    const { error: reqError } = await sb.from('registration_requests').insert([{
+      udise:      udise,
+      school_name: schoolName,
+      address:    address,
+      admin_name: name,
+      email:      email,
+      phone:      phone,
+      status:     'pending'
+    }]);
 
-  if (reqError) {
-    console.error('Request creation error:', reqError);
+    if (reqError) {
+      console.error('Request creation error:', reqError);
+    }
   }
 
   return { success: true, user: authData.user };
