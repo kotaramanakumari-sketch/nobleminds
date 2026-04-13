@@ -129,6 +129,7 @@ CREATE TABLE support_queries (
 -- 7. PROFILES (extends Supabase Auth)
 CREATE TABLE profiles (
     id          UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
+    email       TEXT,
     name        TEXT,
     role        TEXT DEFAULT 'user',
     school_id   UUID REFERENCES schools(id) ON DELETE SET NULL,

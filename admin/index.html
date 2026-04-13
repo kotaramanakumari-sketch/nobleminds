@@ -410,10 +410,10 @@
   </div>
 </div>
 
-<script src="../js/supabase.js"></script>
-<script src="../js/utils.js"></script>
-<script src="../js/auth.js"></script>
-<script src="../js/data.js"></script>
+<script src="../js/supabase.js?v=1.0.1"></script>
+<script src="../js/utils.js?v=1.0.1"></script>
+<script src="../js/auth.js?v=1.0.1"></script>
+<script src="../js/data.js?v=1.0.1"></script>
 <script>
 // ─── Auth Guard ───────────────────────────────────────────────────────────────
 async function init() {
@@ -740,15 +740,94 @@ async function renderUsers() {
   </tr>`).join('');
 }
 
-function openUserModal(user) {
-  nmToast('User management handled via Supabase Auth.', 'info');
+// Helper to populate school select in modals
+async function populateSchoolSelects() {
+  const schools = await nmGetSchools();
+  const opts = schools.map(s => `<option value="${s.id}">${s.name}</option>`).join('');
+  
+  const selects = ['user-school', 'user-school-filter', 'view-school-select'];
+  selects.forEach(id => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    const prev = el.value;
+    const prefix = id === 'user-school-filter' ? '<option value="">All Schools</option>' :
+                   id === 'view-school-select'  ? '<option value="">— Choose a school —</option>' :
+                   '<option value="">— Select school —</option>';
+    el.innerHTML = prefix + opts;
+    if (prev) el.value = prev;
+  });
+}
+
+async function openUserModal(user) {
+  await populateSchoolSelects();
+  user = user || {};
+  
+  document.getElementById('user-modal-title').textContent = user.id ? 'Edit User' : 'Create New User';
+  document.getElementById('user-id').value = user.id || '';
+  document.getElementById('user-name').value = user.name || '';
+  document.getElementById('user-email').value = user.email || '';
+  document.getElementById('user-school').value = user.school_id || '';
+  
+  // Hide password field for existing users (handled via Auth reset)
+  const passGroup = document.getElementById('user-password').closest('.form-group');
+  if (user.id) passGroup.style.display = 'none';
+  else passGroup.style.display = 'block';
+  
+  document.getElementById('user-password').value = '';
+  openModal('user-modal');
+}
+
+async function saveUser() {
+  const id = document.getElementById('user-id').value;
+  const name = document.getElementById('user-name').value.trim();
+  const email = document.getElementById('user-email').value.trim();
+  const schoolId = document.getElementById('user-school').value;
+  const password = document.getElementById('user-password').value;
+
+  if (!name || !email) { nmToast('Name and Email are required', 'error'); return; }
+
+  // Get matching school name
+  let schoolName = '';
+  if (schoolId) {
+    const schools = await nmGetSchools();
+    const sch = schools.find(s => s.id === schoolId);
+    if (sch) schoolName = sch.name;
+  }
+
+  try {
+    if (id) {
+      // Update existing profile
+      await nmUpdateProfile(id, {
+        name,
+        school_id: schoolId || null,
+        school_name: schoolName || 'Independent'
+      });
+      nmToast('User profile updated!', 'success');
+    } else {
+      // Create new user (requires signing them up)
+      if (!password || password.length < 6) { nmToast('Password required (min 6 chars)', 'error'); return; }
+      await nmSignUp({
+        name, email, password,
+        schoolName: schoolName || 'Pending',
+        udise: '', phone: '', address: '' 
+      });
+      nmToast('User registration request created!', 'success');
+    }
+    closeModal('user-modal');
+    await renderUsers();
+  } catch (err) {
+    console.error('[saveUser] Fatal Error:', err);
+    alert('Failed to save user!\n\nReason: ' + err.message + '\n\nCheck the browser console (F12) for more details.');
+  }
 }
 
 async function deleteUser(id) {
-  const ok = await nmConfirm('Delete this user account? They will no longer be able to log in.');
+  const ok = await nmConfirm('Delete this user profile? Note: This does not delete their Auth account.');
   if (!ok) return;
-  // Note: deleting auth users usually requires admin server-side or Edge functions
-  nmToast('Deleting users requires administrative privileges in Supabase Dashboard.', 'warning');
+  const { error } = await sb.from('profiles').delete().eq('id', id);
+  if (error) { nmToast(error.message, 'error'); return; }
+  await renderUsers();
+  nmToast('User profile removed from NobleMinds.', 'info');
 }
 
 function exportStudents() {
