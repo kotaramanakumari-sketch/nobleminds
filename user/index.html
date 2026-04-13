@@ -627,25 +627,52 @@
     </div>
     <div class="modal-body">
       <input type="hidden" id="mov-id">
-      <div class="form-group mb-16">
-        <label class="form-label">Select Student <span class="required">*</span></label>
-        <select id="m-student" class="form-control"><option value="">— Choose Student —</option></select>
+      <input type="hidden" id="mov-mode" value="outgoing">
+
+      <!-- Tab Switcher -->
+      <div class="mb-20" style="display:flex; background:var(--clr-surface); padding:4px; border-radius:var(--radius-md); border:1px solid var(--clr-border);">
+        <button id="btn-mov-outgoing" class="btn btn-sm" style="flex:1; border-radius:var(--radius-sm); border:none;" onclick="changeMovementMode('outgoing')">Outgoing</button>
+        <button id="btn-mov-incoming" class="btn btn-sm" style="flex:1; border-radius:var(--radius-sm); border:none;" onclick="changeMovementMode('incoming')">Incoming</button>
       </div>
-      <div class="form-group mb-16">
-        <label class="form-label">Reason for Leave <span class="required">*</span></label>
-        <input type="text" id="m-reason" class="form-control" placeholder="e.g. Visiting home for holidays">
+
+      <!-- Outgoing Search -->
+      <div id="mov-outgoing-fields">
+        <div class="form-group mb-16">
+          <label class="form-label">Select Student <span class="required">*</span></label>
+          <div class="search-input-wrapper mb-8"><span>🔍</span><input type="text" id="m-std-search" placeholder="Search by name or admission no..." oninput="searchStudentsForMovement()"></div>
+          <div id="m-std-list" style="max-height:150px;overflow-y:auto;border:1px solid var(--clr-border);border-radius:var(--radius-sm);background:var(--clr-surface2);"></div>
+          <div id="m-selected-name" style="margin-top:8px;font-size:0.85rem;color:var(--clr-primary);font-weight:600;"></div>
+          <input type="hidden" id="m-student-id">
+        </div>
       </div>
+
+      <!-- Incoming Search -->
+      <div id="mov-incoming-fields" style="display:none;">
+        <div class="form-group mb-16">
+          <label class="form-label">Search from Outgoing Students <span class="required">*</span></label>
+          <div class="search-input-wrapper mb-8"><span>🔍</span><input type="text" id="m-outgoing-search" placeholder="Type student name..." oninput="searchOutgoingRecords()"></div>
+          <div id="m-outgoing-list" style="max-height:150px;overflow-y:auto;border:1px solid var(--clr-border);border-radius:var(--radius-sm);background:var(--clr-surface2);"></div>
+          <div id="m-selected-outgoing" style="margin-top:8px;font-size:0.85rem;color:var(--clr-primary);font-weight:600;"></div>
+        </div>
+      </div>
+
       <div class="form-grid mb-16">
         <div class="form-group">
-          <label class="form-label">Date of Leaving <span class="required">*</span></label>
+          <label class="form-label" id="lbl-date-1">Date of Leaving <span class="required">*</span></label>
           <input type="date" id="m-leave-date" class="form-control">
         </div>
-        <div class="form-group">
+        <div class="form-group" id="group-report-date" style="display:none;">
           <label class="form-label">Date of Reporting <span class="required">*</span></label>
           <input type="date" id="m-report-date" class="form-control">
         </div>
       </div>
-      <div class="card mb-16" style="background:var(--clr-surface);border:1px solid var(--clr-border);">
+
+      <div class="form-group mb-16">
+        <label class="form-label">Reason for Leave <span class="required">*</span></label>
+        <input type="text" id="m-reason" class="form-control" placeholder="e.g. Visiting home for holidays">
+      </div>
+
+      <div class="card mb-0" style="background:var(--clr-surface);border:1px solid var(--clr-border);">
         <h4 style="margin-bottom:12px;font-size:0.9rem;">👤 Escort Information</h4>
         <div class="form-grid mb-0">
           <div class="form-group">
@@ -1817,6 +1844,7 @@ async function nmPreparePrintProfile(id) {
 init();
 
 // ── Movement Logic ────────────────────────────────────────────────────────────
+// ── Movement Logic ────────────────────────────────────────────────────────────
 async function renderMovements() {
   const q = (document.getElementById('mov-search')?.value||'').toLowerCase();
   const students = await nmGetStudents(schoolId, currentYearId);
@@ -1835,6 +1863,7 @@ async function renderMovements() {
   
   tbody.innerHTML = list.map(m => {
     const s = students.find(x => x.id === (m.student_id || m.studentId)) || { full_name: 'Unknown', class:'?', section:'?', house:'?' };
+    const isIncoming = !!(m.report_date || m.reportDate);
     return `<tr>
       <td><div style="font-weight:600;color:var(--clr-primary);">${nmFmtDate(m.leave_date||m.leaveDate)}</div></td>
       <td>
@@ -1842,7 +1871,9 @@ async function renderMovements() {
         <div style="font-size:0.75rem;color:var(--clr-text-2);">Class ${s.class} · ${s.section} · ${s.house} House</div>
       </td>
       <td style="max-width:200px;font-size:0.85rem;">${m.reason}</td>
-      <td>${nmFmtDate(m.report_date||m.reportDate)}</td>
+      <td>
+        ${isIncoming ? `<div style="font-weight:600;color:var(--clr-success);">${nmFmtDate(m.report_date||m.reportDate)}</div>` : `<span class="badge" style="background:rgba(255,193,7,0.1);color:#ffc107;">Away</span>`}
+      </td>
       <td>
         <div style="font-weight:500;">${m.escort_name||m.escortName}</div>
         <div style="font-size:0.75rem;color:var(--clr-text-2);">${m.relationship} · ${m.phone}</div>
@@ -1857,12 +1888,84 @@ async function renderMovements() {
   }).join('');
 }
 
-async function openMovementModal(id) {
-  const students = await nmGetStudents(schoolId, currentYearId);
-  const sel = document.getElementById('m-student');
-  sel.innerHTML = '<option value="">— Choose Student —</option>' + 
-    students.map(s => `<option value="${s.id}">${s.full_name||s.fullName} (${s.admission_number||s.admissionNumber})</option>`).join('');
+function changeMovementMode(mode) {
+  const isOut = mode === 'outgoing';
+  document.getElementById('mov-mode').value = mode;
+  document.getElementById('mov-outgoing-fields').style.display = isOut ? 'block' : 'none';
+  document.getElementById('mov-incoming-fields').style.display = isOut ? 'none' : 'block';
+  document.getElementById('group-report-date').style.display = isOut ? 'none' : 'block';
+  document.getElementById('lbl-date-1').textContent = isOut ? 'Date of Leaving *' : 'Date of Leaving (Auto)';
+  document.getElementById('m-leave-date').readOnly = !isOut;
+  document.getElementById('m-reason').readOnly = !isOut;
 
+  const btnOut = document.getElementById('btn-mov-outgoing');
+  const btnIn = document.getElementById('btn-mov-incoming');
+  
+  if (isOut) {
+    btnOut.style.background = 'var(--clr-primary)'; btnOut.style.color = '#fff';
+    btnIn.style.background = 'transparent'; btnIn.style.color = 'inherit';
+  } else {
+    btnIn.style.background = 'var(--clr-primary)'; btnIn.style.color = '#fff';
+    btnOut.style.background = 'transparent'; btnOut.style.color = 'inherit';
+    searchOutgoingRecords();
+  }
+}
+
+async function searchStudentsForMovement() {
+  const q = document.getElementById('m-std-search').value.toLowerCase();
+  const all = await nmGetStudents(schoolId, currentYearId);
+  const students = all.filter(s => (s.full_name||s.fullName).toLowerCase().includes(q) || (s.admission_number||s.admissionNumber).toLowerCase().includes(q));
+  const list = document.getElementById('m-std-list');
+  list.innerHTML = students.map(s => `
+    <div style="padding:8px 10px;border-bottom:1px solid var(--clr-border);cursor:pointer;" onclick="toggleMovStudent('${s.id}', '${s.full_name||s.fullName}', '${s.admission_number||s.admissionNumber}')">
+      <div style="font-size:0.85rem;font-weight:600;">${s.full_name||s.fullName}</div>
+      <div style="font-size:0.7rem;color:var(--clr-text-2);">${s.admission_number||s.admissionNumber} · Class ${s.class}</div>
+    </div>
+  `).join('') || '<div style="padding:10px;font-size:0.8rem;color:var(--clr-text-3);">No students found</div>';
+}
+
+function toggleMovStudent(id, name, adm) {
+  document.getElementById('m-student-id').value = id;
+  document.getElementById('m-selected-name').textContent = `Selected: ${name} (${adm})`;
+  document.getElementById('m-std-list').innerHTML = '';
+  document.getElementById('m-std-search').value = '';
+}
+
+async function searchOutgoingRecords() {
+  const q = document.getElementById('m-outgoing-search').value.toLowerCase();
+  const students = await nmGetStudents(schoolId, currentYearId);
+  const movs = await nmGetMovements(schoolId);
+  const outgoing = movs.filter(m => !(m.report_date || m.reportDate));
+  
+  const filtered = outgoing.filter(m => {
+    const s = students.find(x => x.id === (m.student_id || m.studentId));
+    return !q || (s && (s.full_name||s.fullName).toLowerCase().includes(q));
+  });
+
+  const list = document.getElementById('m-outgoing-list');
+  list.innerHTML = filtered.map(m => {
+    const s = students.find(x => x.id === (m.student_id || m.studentId)) || { full_name: 'Unknown' };
+    return `
+      <div style="padding:8px 10px;border-bottom:1px solid var(--clr-border);cursor:pointer;" onclick="selectOutgoingRecord('${m.id}', '${s.id}', '${s.full_name||s.fullName}', '${s.admission_number||s.admissionNumber}', '${m.leave_date||m.leaveDate}', '${m.reason}')">
+        <div style="font-size:0.85rem;font-weight:600;">${s.full_name||s.fullName}</div>
+        <div style="font-size:0.7rem;color:var(--clr-text-2);">Left on: ${nmFmtDate(m.leave_date||m.leaveDate)} · ${m.reason}</div>
+      </div>
+    `;
+  }).join('') || '<div style="padding:10px;font-size:0.8rem;color:var(--clr-text-3);">No students currently away</div>';
+}
+
+function selectOutgoingRecord(recordId, studentId, name, adm, leaveDate, reason) {
+  document.getElementById('mov-id').value = recordId;
+  document.getElementById('m-student-id').value = studentId;
+  document.getElementById('m-selected-outgoing').textContent = `Selected: ${name} (${adm})`;
+  document.getElementById('m-leave-date').value = leaveDate;
+  document.getElementById('m-reason').value = reason;
+  document.getElementById('m-outgoing-list').innerHTML = '';
+  document.getElementById('m-outgoing-search').value = '';
+  document.getElementById('m-report-date').value = nmToday();
+}
+
+async function openMovementModal(id) {
   const mId = document.getElementById('mov-id');
   const mReason = document.getElementById('m-reason');
   const mLeave = document.getElementById('m-leave-date');
@@ -1870,6 +1973,15 @@ async function openMovementModal(id) {
   const mEscort = document.getElementById('m-escort-name');
   const mRel = document.getElementById('m-relationship');
   const mPhone = document.getElementById('m-phone');
+  const mSid = document.getElementById('m-student-id');
+  const outSel = document.getElementById('m-selected-name');
+  const inSel = document.getElementById('m-selected-outgoing');
+
+  mId.value = ''; mReason.value = ''; mLeave.value = nmToday(); mReport.value = '';
+  mEscort.value = ''; mRel.value = ''; mPhone.value = ''; mSid.value = '';
+  outSel.textContent = ''; inSel.textContent = '';
+  document.getElementById('m-std-list').innerHTML = '';
+  document.getElementById('m-outgoing-list').innerHTML = '';
 
   if (id) {
     const list = await nmGetMovements(schoolId);
@@ -1877,29 +1989,31 @@ async function openMovementModal(id) {
     if (!m) return;
     document.getElementById('mov-modal-title').textContent = 'Edit Movement Record';
     mId.value = m.id;
-    sel.value = m.student_id || m.studentId;
+    mSid.value = m.student_id || m.studentId;
     mReason.value = m.reason;
     mLeave.value = m.leave_date || m.leaveDate;
     mReport.value = m.report_date || m.reportDate;
     mEscort.value = m.escort_name || m.escortName;
     mRel.value = m.relationship;
     mPhone.value = m.phone;
+    
+    document.querySelector('.modal-body > .mb-20').style.display = 'none';
+    document.getElementById('mov-outgoing-fields').style.display = 'none';
+    document.getElementById('mov-incoming-fields').style.display = 'none';
+    document.getElementById('group-report-date').style.display = 'block';
+    mLeave.readOnly = false; mReason.readOnly = false;
   } else {
     document.getElementById('mov-modal-title').textContent = 'Add Movement Record';
-    mId.value = '';
-    sel.value = '';
-    mReason.value = '';
-    mLeave.value = nmToday();
-    mReport.value = '';
-    mEscort.value = '';
-    mRel.value = '';
-    mPhone.value = '';
+    document.querySelector('.modal-body > .mb-20').style.display = 'flex';
+    changeMovementMode('outgoing');
   }
   openModal('movement-modal');
 }
 
 async function saveMovement() {
-  const sid = document.getElementById('m-student').value;
+  const mode = document.getElementById('mov-mode').value;
+  const rid = document.getElementById('mov-id').value;
+  const sid = document.getElementById('m-student-id').value;
   const reason = document.getElementById('m-reason').value.trim();
   const leave = document.getElementById('m-leave-date').value;
   const report = document.getElementById('m-report-date').value;
@@ -1907,18 +2021,21 @@ async function saveMovement() {
   const rel = document.getElementById('m-relationship').value.trim();
   const phone = document.getElementById('m-phone').value.trim();
 
-  if (!sid || !reason || !leave || !report || !escort || !rel || !phone) {
-    nmToast('Please fill all required fields','error'); return;
+  if (mode === 'outgoing' && (!sid || !leave || !reason || !escort)) {
+     nmToast('Please fill all required fields for Outgoing','error'); return;
+  }
+  if (mode === 'incoming' && (!rid || !report || !escort)) {
+     nmToast('Please select a student and enter report date/escort','error'); return;
   }
 
   await nmSaveMovement({
-    id: document.getElementById('mov-id').value || undefined,
-    school_id: schoolId, student_id: sid, reason, leave_date: leave, report_date: report,
+    id: rid || undefined,
+    school_id: schoolId, student_id: sid, reason, leave_date: leave, report_date: report || null,
     escort_name: escort, relationship: rel, phone
   });
   
   closeModal('movement-modal');
-  nmToast('Movement record saved successfully','success');
+  nmToast('Movement record saved','success');
   await renderMovements();
 }
 
