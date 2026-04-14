@@ -23,9 +23,20 @@ function nmSubscribe(table, schoolId, callback) {
       filter: schoolId ? `school_id=eq.${schoolId}` : undefined
     }, (payload) => {
       console.log(`[Realtime] ${table} changed:`, payload);
-      // Invalidate cache for this school/table
-      if (schoolId) delete nmCache.students[schoolId];
-      else if (table === 'schools') nmCache.schools.timestamp = 0;
+      // Invalidate cache
+      if (table === 'students') {
+        if (schoolId) {
+          // Clear specific students cache keys for this school
+          Object.keys(nmCache.students).forEach(key => {
+            if (key.startsWith(schoolId + '_')) delete nmCache.students[key];
+          });
+        } else {
+          // Global subscription: Clear ALL students cache
+          nmCache.students = {};
+        }
+      } else if (table === 'schools') {
+        nmCache.schools.timestamp = 0;
+      }
       
       callback(payload);
     })

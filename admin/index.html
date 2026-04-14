@@ -440,9 +440,20 @@ async function init() {
   await loadAdminYears();
 
   // Set up Realtime Subscriptions (Global for Admin)
-  const refreshUI = nmDebounce(() => {
-    const activeSection = document.querySelector('.page-section.active').id.replace('section-', '');
-    showSection(activeSection);
+  const refreshUI = nmDebounce(async () => {
+    const activeSection = document.querySelector('.page-section.active')?.id.replace('section-', '') || 'dashboard';
+    console.log('[Realtime-Admin] Refreshing active section:', activeSection);
+    
+    if (activeSection === 'dashboard') await renderDashboard();
+    else if (activeSection === 'management') {
+      const activeTab = document.querySelector('.tab-controls .btn.active')?.onclick?.toString().match(/'(.*?)'/)[1];
+      if (activeTab === 'schools') await renderSchools();
+      else if (activeTab === 'users') await renderUsers();
+      else if (activeTab === 'requests') await renderRequests();
+      else if (activeTab === 'support') await renderSupportQueries();
+      else { await renderSchools(); await renderUsers(); await renderRequests(); await renderSupportQueries(); }
+    }
+    else if (activeSection === 'school-data') renderSchoolStudents();
   }, 1000);
 
   nmSubscribe('schools', null, refreshUI);
@@ -1073,7 +1084,7 @@ async function nmPreparePrintProfile(id) {
       </div>
     </div>
 
-    <div style="display:flex; gap:30px; margin-bottom:30px;">
+    <div class="print-row">
       <div class="print-photo-wrap">
         <img src="${s.photo || '../assets/logo.png'}" class="print-photo">
       </div>
@@ -1104,7 +1115,7 @@ async function nmPreparePrintProfile(id) {
       ${infoRow('Residential Address', s.address)}
     </div>
 
-    <div style="display:grid; grid-template-columns: 1fr 1fr; gap:30px; margin-top:20px;">
+    <div class="print-grid" style="margin-top:20px;">
       <div>
         <h3 class="print-section-title">Father's Info</h3>
         ${infoRow('Name', s.father_name)}

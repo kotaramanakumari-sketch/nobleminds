@@ -116,11 +116,15 @@ async function nmLogin(email, password) {
 
 /** Logout */
 async function nmLogout() {
-  await sb.auth.signOut();
+  try {
+    await sb.auth.signOut();
+  } catch(e) {
+    console.error('Sign out error:', e);
+  }
   sessionStorage.removeItem(NM_SESSION_KEY);
   const inSub = window.location.pathname.includes('/admin/') ||
                 window.location.pathname.includes('/user/');
-  window.location.href = inSub ? '../login.html' : 'login.html';
+  window.location.replace(inSub ? '../login.html' : 'login.html');
 }
 
 /** Get current session (from sessionStorage or Supabase) */
@@ -137,15 +141,15 @@ function nmRequireAuth(requiredRole) {
                 window.location.pathname.includes('/user/');
                 
   if (!session) {
-    window.location.href = inSub ? '../login.html' : 'login.html';
+    window.location.replace(inSub ? '../login.html' : 'login.html');
     return null;
   }
   
   if (requiredRole && session.role !== requiredRole) {
     if (session.role === 'admin')
-      window.location.href = inSub ? '../admin/' : 'admin/';
+      window.location.replace(inSub ? '../admin/' : 'admin/');
     else
-      window.location.href = inSub ? '../user/' : 'user/';
+      window.location.replace(inSub ? '../user/' : 'user/');
     return null;
   }
   return session;

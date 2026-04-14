@@ -860,9 +860,17 @@ async function init() {
   }
 
   // Set up Realtime Subscriptions
-  const refreshUI = nmDebounce(() => {
+  const refreshUI = nmDebounce(async () => {
     const activeSection = document.querySelector('.page-section.active')?.id.replace('section-', '') || 'dashboard';
-    showSection(activeSection);
+    console.log('[Realtime] Refreshing active section:', activeSection);
+    
+    // Efficiently refresh only data, not the whole section layout
+    if (activeSection === 'dashboard') await renderDashboard();
+    else if (activeSection === 'students') await renderStudents();
+    else if (activeSection === 'observations') await renderObservations();
+    else if (activeSection === 'counselling') await renderCounselling();
+    else if (activeSection === 'movement') await renderMovements();
+    else if (activeSection === 'teacher-diary') await renderTeacherDiaries();
   }, 1000);
 
   nmSubscribe('students', schoolId, refreshUI);
@@ -1874,7 +1882,7 @@ async function nmPreparePrintProfile(id) {
       </div>
     </div>
 
-    <div style="display:flex; gap:30px; margin-bottom:30px;">
+    <div class="print-row">
       <div class="print-photo-wrap">
         <img src="${s.photo || '../assets/logo.png'}" class="print-photo">
       </div>
@@ -1905,7 +1913,7 @@ async function nmPreparePrintProfile(id) {
       ${infoRow('Residential Address', s.address)}
     </div>
 
-    <div style="display:grid; grid-template-columns: 1fr 1fr; gap:30px; margin-top:20px;">
+    <div class="print-grid" style="margin-top:20px;">
       <div>
         <h3 class="print-section-title">Father's Info</h3>
         ${infoRow('Name', s.father_name || s.fatherName)}
