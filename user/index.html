@@ -599,7 +599,7 @@
       <div class="form-group mb-16" id="o-student-select-wrap">
         <label class="form-label">Search & Select Students <span class="required">*</span></label>
         <div class="search-input-wrapper mb-8"><span>🔍</span><input type="text" id="o-std-search" placeholder="Type name..." oninput="searchStudentsForObs()"></div>
-        <div id="o-std-list" style="max-height:150px;overflow-y:auto;border:1px solid var(--clr-border);border-radius:var(--radius-sm);background:var(--clr-surface2);"></div>
+        <div id="o-std-list" class="std-search-results" style="max-height:200px;overflow-y:auto;border:1px solid var(--clr-border);border-radius:var(--radius-sm);background:var(--clr-surface2);"></div>
         <div id="o-selected-names" style="margin-top:8px;font-size:0.75rem;color:var(--clr-primary);font-weight:600;"></div>
       </div>
       <div class="form-group mb-16" id="o-student-edit-wrap" style="display:none;">
@@ -677,7 +677,7 @@
         <div class="form-group mb-16">
           <label class="form-label">Select Student <span class="required">*</span></label>
           <div class="search-input-wrapper mb-8"><span>🔍</span><input type="text" id="m-std-search" placeholder="Search by name or admission no..." oninput="searchStudentsForMovement()"></div>
-          <div id="m-std-list" style="max-height:150px;overflow-y:auto;border:1px solid var(--clr-border);border-radius:var(--radius-sm);background:var(--clr-surface2);"></div>
+          <div id="m-std-list" class="std-search-results" style="max-height:200px;overflow-y:auto;border:1px solid var(--clr-border);border-radius:var(--radius-sm);background:var(--clr-surface2);"></div>
           <div id="m-selected-name" style="margin-top:8px;font-size:0.85rem;color:var(--clr-primary);font-weight:600;"></div>
           <input type="hidden" id="m-student-id">
         </div>
@@ -688,7 +688,7 @@
         <div class="form-group mb-16">
           <label class="form-label">Search from Outgoing Students <span class="required">*</span></label>
           <div class="search-input-wrapper mb-8"><span>🔍</span><input type="text" id="m-outgoing-search" placeholder="Type student name..." oninput="searchOutgoingRecords()"></div>
-          <div id="m-outgoing-list" style="max-height:150px;overflow-y:auto;border:1px solid var(--clr-border);border-radius:var(--radius-sm);background:var(--clr-surface2);"></div>
+          <div id="m-outgoing-list" class="std-search-results" style="max-height:200px;overflow-y:auto;border:1px solid var(--clr-border);border-radius:var(--radius-sm);background:var(--clr-surface2);"></div>
           <div id="m-selected-outgoing" style="margin-top:8px;font-size:0.85rem;color:var(--clr-primary);font-weight:600;"></div>
         </div>
       </div>
@@ -801,7 +801,7 @@
           <input type="text" id="d-section" class="form-control" placeholder="e.g. A, B">
         </div>
       </div>
-      <div class="card mb-16" style="background:var(--clr-surface);border:1px solid var(--clr-border);">
+      <div class="card mb-16 modal-nested-card" style="background:var(--clr-surface);border:1px solid var(--clr-border);">
         <h4 style="margin-bottom:12px;font-size:0.9rem;">👥 Attendance Summary</h4>
         <div class="form-grid mb-12">
           <div class="form-group">

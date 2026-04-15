@@ -263,7 +263,8 @@ textarea.form-control { resize: vertical; min-height: 90px; }
   background: var(--clr-bg2); border: 1px solid var(--clr-border);
   border-radius: var(--radius-xl); width: 100%; max-width: 600px;
   max-height: 90vh; overflow-y: auto;
-  transform: translateY(30px) scale(0.97); transition: transform 0.3s;
+  transform: translateY(30px) scale(0.97); transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  display: flex; flex-direction: column;
 }
 .modal-overlay.active .modal { transform: translateY(0) scale(1); }
 .modal-lg { max-width: 860px; }
@@ -273,11 +274,11 @@ textarea.form-control { resize: vertical; min-height: 90px; }
   position: sticky; top: 0; background: var(--clr-bg2); z-index: 1;
 }
 .modal-title { font-size: 1.1rem; font-weight: 700; }
-.modal-body { padding: 28px; }
+.modal-body { padding: 28px; flex: 1; overflow-y: auto; }
 .modal-footer {
   padding: 20px 28px; border-top: 1px solid var(--clr-border);
   display: flex; justify-content: flex-end; gap: 12px;
-  background: var(--clr-bg2); position: sticky; bottom: 0;
+  background: var(--clr-bg2); position: sticky; bottom: 0; z-index: 1;
 }
 .modal-close {
   width: 32px; height: 32px; border-radius: 50%;
@@ -605,6 +606,17 @@ textarea.form-control { resize: vertical; min-height: 90px; }
 .status-resolved { background: rgba(74,222,128,0.15); color: var(--clr-success); }
 .status-followup { background: rgba(248,113,113,0.15); color: var(--clr-danger); }
 
+/* Modal Search Results & Nested UI */
+.std-search-results > div { 
+  padding: 12px 16px; border-bottom: 1px solid var(--clr-border); cursor: pointer; transition: var(--transition);
+}
+.std-search-results > div:hover { background: var(--clr-surface); }
+.std-search-results > div:last-child { border-bottom: none; }
+
+@media only screen and (max-width: 768px) {
+  .modal-nested-card { padding: 16px !important; margin: 0 -4px 16px -4px !important; border-radius: var(--radius-md) !important; background: var(--clr-bg) !important; }
+}
+
 @media only screen and (max-width: 768px) {
   .sidebar { transform: translateX(-100%); width: 280px; box-shadow: 10px 0 30px rgba(0,0,0,0.5); }
   .sidebar.open { transform: translateX(0); }
@@ -614,6 +626,25 @@ textarea.form-control { resize: vertical; min-height: 90px; }
   .topbar { padding: 0 16px; justify-content: flex-start; gap: 16px; }
   .topbar-title { flex: 1; }
   .mobile-menu-btn { display: block; }
+
+  /* Mobile Modal Redesign (Bottom Sheet) */
+  .modal-overlay { align-items: flex-end; padding: 0; }
+  .modal { 
+    max-width: 100%; 
+    max-height: 96vh; 
+    border-radius: var(--radius-xl) var(--radius-xl) 0 0;
+    transform: translateY(100%);
+    border-bottom: none;
+  }
+  .modal-overlay.active .modal { transform: translateY(0); }
+  .modal-header { padding: 16px 20px; }
+  .modal-body { padding: 20px; }
+  .modal-footer { padding: 16px 20px; }
+  
+  .modal .form-grid { grid-template-columns: 1fr; }
+  .modal .form-grid-3 { grid-template-columns: 1fr; }
+  
+  .modal-lg { max-width: 100%; height: 96vh; }
 }
 @media only screen and (max-width: 480px) {
   .form-grid { grid-template-columns: 1fr; }
