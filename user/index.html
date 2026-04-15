@@ -726,20 +726,19 @@
       </div>
 
       <div id="mov-outgoing-fields">
-        <div class="form-grid mb-16">
-          <div class="form-group">
-            <label class="form-label" id="lbl-date-1">Date of Leaving <span class="required">*</span></label>
-            <input type="date" id="m-leave-date" class="form-control">
-          </div>
-          <div class="form-group" id="group-report-date" style="display:none;">
-            <label class="form-label">Date of Reporting <span class="required">*</span></label>
-            <input type="date" id="m-report-date" class="form-control">
-          </div>
+        <div class="form-group mb-16">
+          <label class="form-label" id="lbl-date-1">Date of Leaving <span class="required">*</span></label>
+          <input type="date" id="m-leave-date" class="form-control">
         </div>
       </div>
 
       <div id="mov-incoming-fields" style="display:none;">
         <p style="font-size:0.8rem; color:var(--clr-text-2); margin-bottom:12px;">Searching for students who are currently marked as "Away".</p>
+      </div>
+
+      <div class="form-group mb-16" id="group-report-date" style="display:none;">
+        <label class="form-label">Date of Reporting <span class="required">*</span></label>
+        <input type="date" id="m-report-date" class="form-control">
       </div>
 
       <div class="form-group mb-16">
@@ -1827,13 +1826,12 @@ async function saveObservation() {
     // If editing a single record, we update it. If multiple students selected, we create new records for each.
     if (idValue && selected.length === 1) {
       await nmSaveObservation({ 
-        id: idValue, student_id: selected[0].id, date, observation: text 
+        id: idValue, student_id: selected[0].id, observation_date: date, observation: text 
       });
     } else {
-      // Create new records for each student
       for (const s of selected) {
         await nmSaveObservation({ 
-          school_id: schoolId, student_id: s.id, date, observation: text 
+          school_id: schoolId, student_id: s.id, observation_date: date, observation: text 
         });
       }
     }
