@@ -1312,35 +1312,18 @@ function iI(k,v){return`<div class="info-item"><div class="key">${k}</div><div c
 // ── Quick Actions from Profile ────────────────────────────────────────────────
 async function quickAddObservation(id) {
   closeModal('student-modal');
-  openModal('obs-modal');
-  const students = await nmGetStudents(schoolId, currentYearId);
-  const s = students.find(x => x.id === id);
-  document.getElementById('obs-modal-title').textContent = 'Add Observation';
-  document.getElementById('o-id').value = '';
-  document.getElementById('o-date').value = nmToday();
-  document.getElementById('o-text').value = '';
-  document.getElementById('o-student-select-wrap').style.display = 'none';
-  document.getElementById('o-student-edit-wrap').style.display = 'block';
-  document.getElementById('o-edit-name').textContent = s?.full_name || s?.fullName || 'Selected Student';
-  selectedObsStudents = [id];
+  await openObservationModal();
+  handleStudentSelect('o', id, true);
 }
-function quickAddCounselling(id) {
+async function quickAddCounselling(id) {
   closeModal('student-modal');
-  openCounsellingModal();
-  nmGetStudents(schoolId, currentYearId).then(students => {
-    const s = students.find(x => x.id === id);
-    if (s) {
-       document.getElementById('c-student-select-wrap').style.display = 'none';
-       document.getElementById('c-student-edit-wrap').style.display = 'block';
-       document.getElementById('c-edit-name').textContent = s.full_name || s.fullName;
-       document.getElementById('c-student-id').value = id;
-    }
-  });
+  await openCounsellingModal();
+  handleStudentSelect('c', id, false);
 }
-function quickAddMovement(id) {
+async function quickAddMovement(id) {
   closeModal('student-modal');
-  openMovementModal();
-  setTimeout(() => { document.getElementById('m-student').value = id; }, 50);
+  await openMovementModal();
+  handleStudentSelect('m', id, false);
 }
 
 async function deleteStudentRow(id, fromModal) {
@@ -1808,17 +1791,22 @@ async function openObservationModal(id) {
     const list = await nmGetObservations(schoolId);
     const o = list.find(x => x.id === id);
     if (!o) return;
+    const s = allCachedStudents.find(x => x.id === (o.student_id || o.studentId));
+    
     document.getElementById('obs-modal-title').textContent = 'Edit Observation';
     document.getElementById('o-id').value = o.id;
     document.getElementById('o-date').value = o.observation_date || o.date || '';
-    document.getElementById('o-student').value = o.student_id || o.studentId;
     document.getElementById('o-text').value = o.observation;
+    
+    selectedStudentsMap.o = s ? [s] : [];
+    renderSelectedChips('o');
   } else {
     document.getElementById('obs-modal-title').textContent = 'Add Observation';
     document.getElementById('o-id').value = '';
     document.getElementById('o-date').value = nmToday();
-    document.getElementById('o-student').value = '';
     document.getElementById('o-text').value = '';
+    selectedStudentsMap.o = [];
+    renderSelectedChips('o');
   }
   openModal('obs-modal');
 }
