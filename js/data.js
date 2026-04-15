@@ -137,8 +137,8 @@ async function nmGetStudents(schoolId, academicYearId, force = false) {
   }
 
   let query = sb.from('students').select('*').order('full_name');
-  if (schoolId && schoolId.length > 5) query = query.eq('school_id', schoolId);
-  if (academicYearId && academicYearId.length > 5) query = query.eq('academic_year_id', academicYearId);
+  if (schoolId) query = query.eq('school_id', schoolId);
+  if (academicYearId) query = query.eq('academic_year_id', academicYearId);
   
   const { data, error } = await query;
   if (error) { console.error('Error fetching students:', error); return []; }
@@ -386,27 +386,27 @@ async function nmProcessRegistrationRequest(requestId, approve = true) {
 async function nmGetStats(schoolId, academicYearId) {
   // Use head=true for exact counts without fetching data rows (Very fast)
   const studentQuery = sb.from('students').select('*', { count: 'exact', head: true });
-  if (schoolId && schoolId.length > 5) studentQuery.eq('school_id', schoolId);
-  if (academicYearId && academicYearId.length > 5) studentQuery.eq('academic_year_id', academicYearId);
+  if (schoolId) studentQuery.eq('school_id', schoolId);
+  if (academicYearId) studentQuery.eq('academic_year_id', academicYearId);
   
   const schoolQuery = sb.from('schools').select('*', { count: 'exact', head: true });
   const userQuery = sb.from('profiles').select('*', { count: 'exact', head: true });
   
   const cnsQuery = sb.from('counselling_records').select('*', { count: 'exact', head: true });
-  if (schoolId && schoolId.length > 5) cnsQuery.eq('school_id', schoolId);
+  if (schoolId) cnsQuery.eq('school_id', schoolId);
   // Counselling is student-linked, but we might want to filter by year if it was year-bound.
   // Currently, history stays linked to the student record of that year.
   
   const fuQuery = sb.from('counselling_records').select('*', { count: 'exact', head: true }).eq('follow_up', true);
-  if (schoolId && schoolId.length > 5) fuQuery.eq('school_id', schoolId);
+  if (schoolId) fuQuery.eq('school_id', schoolId);
 
   const maleQuery = sb.from('students').select('*', { count: 'exact', head: true }).eq('gender', 'Male');
-  if (schoolId && schoolId.length > 5) maleQuery.eq('school_id', schoolId);
-  if (academicYearId && academicYearId.length > 5) maleQuery.eq('academic_year_id', academicYearId);
+  if (schoolId) maleQuery.eq('school_id', schoolId);
+  if (academicYearId) maleQuery.eq('academic_year_id', academicYearId);
 
   const femaleQuery = sb.from('students').select('*', { count: 'exact', head: true }).eq('gender', 'Female');
-  if (schoolId && schoolId.length > 5) femaleQuery.eq('school_id', schoolId);
-  if (academicYearId && academicYearId.length > 5) femaleQuery.eq('academic_year_id', academicYearId);
+  if (schoolId) femaleQuery.eq('school_id', schoolId);
+  if (academicYearId) femaleQuery.eq('academic_year_id', academicYearId);
 
   const [
     { count: totalStudents },

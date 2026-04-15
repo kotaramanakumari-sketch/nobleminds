@@ -61,15 +61,6 @@
           <div class="sidebar-user-role">School Staff</div>
         </div>
       </div>
-      <div style="margin-top:12px; font-size:0.65rem; color:var(--clr-text-3); display:flex; justify-content:space-between; align-items:center;">
-        <span>v2.1.0-prod</span>
-        <a href="javascript:void(0)" onclick="toggleDebugInfo()" style="color:var(--clr-primary); text-decoration:none;">⚙️ Debug System</a>
-      </div>
-      <div id="debug-panel" style="display:none; margin-top:10px; padding:8px; background:rgba(0,0,0,0.05); border-radius:4px; font-family:monospace; font-size:0.6rem; word-break:break-all; border:1px solid var(--clr-border);">
-        <strong>School ID:</strong> <span id="dbg-school-id">None</span><br>
-        <strong>Year ID:</strong> <span id="dbg-year-id">None</span><br>
-        <strong>Role:</strong> <span id="dbg-role">None</span>
-      </div>
     </div>
   </aside>
 
@@ -94,13 +85,7 @@
       <div class="page-section active" id="section-dashboard">
         <div class="mb-24">
           <h2 style="font-size:1.5rem;font-weight:900;">Welcome back! 👋</h2>
-          <div id="admin-school-picker" style="display:none; margin-top:16px; padding:20px; background:rgba(108,99,255,0.08); border:1px solid rgba(108,99,255,0.2); border-radius:var(--radius-lg);">
-            <p style="font-weight:600; margin-bottom:12px; font-size:0.9rem;">Admin Mode: Select a school to view its dashboard</p>
-            <select id="admin-school-sel" class="form-control" style="max-width:400px;" onchange="switchAdminSchool(this.value)">
-              <option value="">— Select School —</option>
-            </select>
-          </div>
-          <p id="dash-school-label" style="margin-top:8px;">Loading your school data…</p>
+          <p id="dash-school-label">Loading your school data…</p>
         </div>
         <div class="stat-cards mb-24">
           <div class="stat-card"><div class="stat-icon green">🎓</div><div><div class="stat-value" id="ds-total">0</div><div class="stat-label">Total Students</div></div></div>
@@ -611,15 +596,11 @@
         <label class="form-label">Date <span class="required">*</span></label>
         <input type="date" id="o-date" class="form-control">
       </div>
-      <div class="form-group mb-16" id="o-student-select-wrap">
-        <label class="form-label">Search & Select Students <span class="required">*</span></label>
-        <div class="search-input-wrapper mb-8"><span>🔍</span><input type="text" id="o-std-search" placeholder="Type name..." oninput="searchStudentsForObs()"></div>
-        <div id="o-std-list" class="std-search-results" style="max-height:200px;overflow-y:auto;border:1px solid var(--clr-border);border-radius:var(--radius-sm);background:var(--clr-surface2);"></div>
-        <div id="o-selected-names" style="margin-top:8px;font-size:0.75rem;color:var(--clr-primary);font-weight:600;"></div>
-      </div>
-      <div class="form-group mb-16" id="o-student-edit-wrap" style="display:none;">
-        <label class="form-label">Student</label>
-        <div id="o-edit-name" style="font-weight:600;padding:8px;background:var(--clr-surface);border-radius:var(--radius-sm);"></div>
+      <div class="form-group mb-16">
+        <label class="form-label">Student <span class="required">*</span></label>
+        <select id="o-student" class="form-control">
+          <option value="">Select student</option>
+        </select>
       </div>
       <div class="form-group">
         <label class="form-label">Observation <span class="required">*</span></label>
@@ -640,12 +621,11 @@
         <label class="form-label">Date <span class="required">*</span></label>
         <input type="date" id="c-date" class="form-control">
       </div>
-      <div class="form-group mb-16" id="c-student-select-wrap">
-        <label class="form-label">Search & Select Student <span class="required">*</span></label>
-        <div class="search-input-wrapper mb-8"><span>🔍</span><input type="text" id="c-std-search" placeholder="Type name..." oninput="searchStudentsForCns()"></div>
-        <div id="c-std-list" class="std-search-results" style="max-height:200px;overflow-y:auto;border:1px solid var(--clr-border);border-radius:var(--radius-sm);background:var(--clr-surface2);"></div>
-        <div id="c-selected-name" style="margin-top:8px;font-size:0.75rem;color:var(--clr-primary);font-weight:600;"></div>
-        <input type="hidden" id="c-student-id">
+      <div class="form-group mb-16">
+        <label class="form-label">Student <span class="required">*</span></label>
+        <select id="c-student" class="form-control">
+          <option value="">Select student</option>
+        </select>
       </div>
       <div class="form-group mb-16" id="c-student-edit-wrap" style="display:none;">
         <label class="form-label">Student</label>
@@ -686,33 +666,12 @@
     </div>
     <div class="modal-body">
       <input type="hidden" id="mov-id">
-      <input type="hidden" id="mov-mode" value="outgoing">
 
-      <!-- Tab Switcher -->
-      <div class="mb-20" style="display:flex; background:var(--clr-surface); padding:4px; border-radius:var(--radius-md); border:1px solid var(--clr-border);">
-        <button id="btn-mov-outgoing" class="btn btn-sm" style="flex:1; border-radius:var(--radius-sm); border:none;" onclick="changeMovementMode('outgoing')">Outgoing</button>
-        <button id="btn-mov-incoming" class="btn btn-sm" style="flex:1; border-radius:var(--radius-sm); border:none;" onclick="changeMovementMode('incoming')">Incoming</button>
-      </div>
-
-      <!-- Outgoing Search -->
-      <div id="mov-outgoing-fields">
-        <div class="form-group mb-16">
-          <label class="form-label">Select Student <span class="required">*</span></label>
-          <div class="search-input-wrapper mb-8"><span>🔍</span><input type="text" id="m-std-search" placeholder="Search by name or admission no..." oninput="searchStudentsForMovement()"></div>
-          <div id="m-std-list" class="std-search-results" style="max-height:200px;overflow-y:auto;border:1px solid var(--clr-border);border-radius:var(--radius-sm);background:var(--clr-surface2);"></div>
-          <div id="m-selected-name" style="margin-top:8px;font-size:0.85rem;color:var(--clr-primary);font-weight:600;"></div>
-          <input type="hidden" id="m-student-id">
-        </div>
-      </div>
-
-      <!-- Incoming Search -->
-      <div id="mov-incoming-fields" style="display:none;">
-        <div class="form-group mb-16">
-          <label class="form-label">Search from Outgoing Students <span class="required">*</span></label>
-          <div class="search-input-wrapper mb-8"><span>🔍</span><input type="text" id="m-outgoing-search" placeholder="Type student name..." oninput="searchOutgoingRecords()"></div>
-          <div id="m-outgoing-list" class="std-search-results" style="max-height:200px;overflow-y:auto;border:1px solid var(--clr-border);border-radius:var(--radius-sm);background:var(--clr-surface2);"></div>
-          <div id="m-selected-outgoing" style="margin-top:8px;font-size:0.85rem;color:var(--clr-primary);font-weight:600;"></div>
-        </div>
+      <div class="form-group mb-16">
+        <label class="form-label">Student <span class="required">*</span></label>
+        <select id="m-student" class="form-control">
+          <option value="">Select student</option>
+        </select>
       </div>
 
       <div class="form-grid mb-16">
@@ -870,32 +829,16 @@
 let schoolId = '', currentYearId = '', allYears = [], currentStudentId = '', excelParsed = [], currentStep = 1;
 
 async function init() {
-  try {
-    await nmInitAuth();
-    const session = nmRequireAuth('user');
-    if (session) {
-      schoolId = session.school_id || session.schoolId || '';
-      document.getElementById('user-name-disp').textContent = session.name;
-      document.getElementById('user-avatar').textContent    = nmGetInitials(session.name);
-      document.getElementById('sb-school-name').textContent = session.school_name || session.schoolName || 'School Portal';
-      
-      // Admin Logic: Show school picker if Super Admin
-      if (session.role === 'admin') {
-        document.getElementById('admin-school-picker').style.display = 'block';
-        await populateAdminSchoolPicker();
-      }
-
-      await loadAcademicYears();
-
-      // Update Debug Info
-      document.getElementById('dbg-school-id').textContent = schoolId || 'Missing';
-      document.getElementById('dbg-role').textContent = session.role || 'user';
-      document.getElementById('dbg-year-id').textContent = currentYearId || 'None';
-    }
-  } catch(e) { console.error('[init] startup error:', e); }
-
-  // Expose for console debugging
-  window.nmState = { schoolId, currentYearId, allYears };
+  await nmInitAuth();
+  const session = nmRequireAuth('user');
+  if (session) {
+    schoolId = session.school_id || session.school_id; // Check both cases
+    document.getElementById('user-name-disp').textContent = session.name;
+    document.getElementById('user-avatar').textContent    = nmGetInitials(session.name);
+    document.getElementById('sb-school-name').textContent = session.school_name || session.schoolName || 'School Portal';
+    
+    await loadAcademicYears();
+  }
 
   // Set up Realtime Subscriptions
   try {
@@ -938,38 +881,38 @@ async function init() {
 
 // ── Academic Years ────────────────────────────────────────────────────────────
 async function loadAcademicYears() {
-  try {
-    allYears = await nmGetAcademicYears(schoolId);
-    if (window.nmState) window.nmState.allYears = allYears;
-    
-    let y26 = allYears.find(y => y.name === '2026-2027');
-    let y23 = allYears.find(y => y.name === '2023-2024');
+  allYears = await nmGetAcademicYears(schoolId);
+  
+  let y26 = allYears.find(y => y.name === '2026-2027');
+  let y23 = allYears.find(y => y.name === '2023-2024');
 
-    if (!y26 && schoolId) {
-      try {
-        await nmSaveAcademicYear({ school_id: schoolId, name: '2026-2027', is_active: true });
-        allYears = await nmGetAcademicYears(schoolId);
-        y26 = allYears.find(y => y.name === '2026-2027');
-      } catch(e) { console.error('Academic year setup failed:', e); }
-    }
+  // 1. Create 2026-2027 if missing
+  if (!y26) {
+    try {
+      await nmSaveAcademicYear({ school_id: schoolId, name: '2026-2027', is_active: true });
+      allYears = await nmGetAcademicYears(schoolId);
+      y26 = allYears.find(y => y.name === '2026-2027');
+    } catch(e) { console.error('Academic year setup failed:', e); }
+  }
 
-    if (y23 && y26) {
-      try {
-        console.log('Migrating data to 2026-2027...');
-        await sb.from('students').update({ academic_year_id: y26.id }).eq('academic_year_id', y23.id);
-        await sb.from('students').update({ academic_year_id: y26.id }).eq('school_id', schoolId).is('academic_year_id', null);
-        await sb.from('academic_years').delete().eq('id', y23.id);
-        
-        allYears = await nmGetAcademicYears(schoolId);
-        y26 = allYears.find(y => y.name === '2026-2027');
-      } catch(e) { console.error('Manual migration failed:', e); }
-    }
+  // 2. Aggressive Migration: If 2023-2024 exists, MOVE all students to 2026-2027 and delete old year.
+  if (y23 && y26) {
+    try {
+      console.log('Migrating data to 2026-2027...');
+      await sb.from('students').update({ academic_year_id: y26.id }).eq('academic_year_id', y23.id);
+      await sb.from('students').update({ academic_year_id: y26.id }).eq('school_id', schoolId).is('academic_year_id', null);
+      await sb.from('academic_years').delete().eq('id', y23.id);
+      
+      allYears = await nmGetAcademicYears(schoolId);
+      y26 = allYears.find(y => y.name === '2026-2027');
+      nmToast('Academic Year migrated to 2026-2027 successfully!', 'success');
+    } catch(e) { console.error('Manual migration failed:', e); }
+  }
 
-    if (allYears.length) {
-      const active = allYears.find(y => y.is_active) || y26 || allYears[0];
-      currentYearId = active.id;
-    }
-  } catch(e) { console.error('[loadAcademicYears] fatal:', e); }
+  if (allYears.length) {
+    const active = allYears.find(y => y.is_active) || y26 || allYears[0];
+    currentYearId = active.id;
+  }
   renderYearSelector();
 }
 
@@ -1063,39 +1006,29 @@ document.querySelectorAll('.modal-overlay').forEach(o => o.addEventListener('cli
 
 // ── Dashboard ─────────────────────────────────────────────────────────────────
 async function renderDashboard() {
-  const label = document.getElementById('dash-school-label');
-  
   if (!schoolId) {
-    label.innerHTML = `<div style="padding:12px; background:rgba(217,83,79,0.1); border-radius:var(--radius-sm); border:1px solid rgba(217,83,79,0.3);">
-      <span style="color:#d9534f;font-weight:700;display:block;margin-bottom:4px;">⚠ Account Not Linked</span>
-      <p style="font-size:0.85rem;color:var(--clr-text-2);">Your account is not currently linked to a school. ${window.nmState?.role === 'admin' ? 'Please use the <strong>Select School</strong> dropdown above to view data.' : 'Please contact the Super Admin.'}</p>
-    </div>`;
+    document.getElementById('dash-school-label').innerHTML = `<span style="color:#d9534f;font-weight:600;">⚠ Account Not Linked</span> &nbsp;&mdash;&nbsp; Your account has not been linked to a school. Please contact the Super Admin.`;
     document.getElementById('ds-total').textContent = '0';
     document.getElementById('ds-sessions').textContent = '0';
     document.getElementById('ds-followups').textContent = '0';
     document.getElementById('ds-activities').textContent = '0';
+    document.getElementById('recent-table').innerHTML = '<div class="empty-state" style="padding:32px;"><div class="empty-state-icon">🚫</div><h3>No School Assigned</h3><p>Data will appear here once an admin assigns you to a school.</p></div>';
+    document.getElementById('recent-cns-list').innerHTML = '<div class="empty-state" style="padding:20px;"><p>No records found.</p></div>';
     document.getElementById('nb-count').textContent = '0';
-    document.getElementById('recent-table').innerHTML = '';
-    document.getElementById('recent-cns-list').innerHTML = '';
     return;
   }
 
-  try {
-    const stats = await nmGetStats(schoolId, currentYearId);
-    const students = (await nmGetStudents(schoolId, currentYearId)) || [];
-    const counselling = (await nmGetCounselling(schoolId)) || [];
-    
-    document.getElementById('ds-total').textContent    = stats.total;
-    document.getElementById('ds-sessions').textContent = stats.counselling.total;
-    document.getElementById('ds-followups').textContent = stats.counselling.followUps;
-    document.getElementById('ds-activities').textContent = stats.total ? students.filter(s=>s.ncc||s.nss||s.sgfi||s.scouts).length : 0;
-    
-    document.getElementById('nb-count').textContent    = stats.total;
-    document.getElementById('dash-school-label').textContent = `School: ${document.getElementById('sb-school-name').textContent} · ${stats.total} students enrolled`;
-  } catch(e) {
-    console.error('renderDashboard error:', e);
-    document.getElementById('dash-school-label').innerHTML = `<span style="color:#d9534f;">⚠ Error loading dashboard. Please check your internet or refresh.</span>`;
-  }
+  const stats = await nmGetStats(schoolId, currentYearId);
+  const students = (await nmGetStudents(schoolId, currentYearId)) || [];
+  const counselling = (await nmGetCounselling(schoolId)) || [];
+  
+  document.getElementById('ds-total').textContent    = stats.total;
+  document.getElementById('ds-sessions').textContent = stats.counselling.total;
+  document.getElementById('ds-followups').textContent = stats.counselling.followUps;
+  document.getElementById('ds-activities').textContent = stats.total ? students.filter(s=>s.ncc||s.nss||s.sgfi||s.scouts).length : 0;
+  
+  document.getElementById('nb-count').textContent    = stats.total;
+  document.getElementById('dash-school-label').textContent = `School: ${document.getElementById('sb-school-name').textContent} · ${stats.total} students enrolled`;
   
   // Recent Students
   const recent = [...students].reverse().slice(0,5);
@@ -1680,95 +1613,37 @@ async function renderObservations() {
 }
 
 async function openObservationModal(id) {
-  const modal = document.getElementById('obs-modal');
-  const title = document.getElementById('obs-modal-title');
-  const oId = document.getElementById('o-id');
-  const oDate = document.getElementById('o-date');
-  const oText = document.getElementById('o-text');
-  const selWrap = document.getElementById('o-student-select-wrap');
-  const editWrap = document.getElementById('o-student-edit-wrap');
-  
   const students = await nmGetStudents(schoolId);
+  const sel = document.getElementById('o-student');
+  sel.innerHTML = '<option value="">Select student</option>' + students.map(s => `<option value="${s.id}">${s.full_name||s.fullName} (${s.admission_number||s.admissionNumber})</option>`).join('');
 
   if (id) {
     const list = await nmGetObservations(schoolId);
     const o = list.find(x => x.id === id);
     if (!o) return;
-    title.textContent = 'Edit Observation';
-    oId.value = o.id;
-    oDate.value = o.observation_date || o.date || '';
-    oText.value = o.observation;
-    selWrap.style.display = 'none';
-    editWrap.style.display = 'block';
-    const s = students.find(x => x.id === (o.student_id || o.studentId));
-    document.getElementById('o-edit-name').textContent = s ? `${s.full_name||s.fullName} (${s.admission_number||s.admissionNumber})` : 'Unknown Student';
+    document.getElementById('obs-modal-title').textContent = 'Edit Observation';
+    document.getElementById('o-id').value = o.id;
+    document.getElementById('o-date').value = o.observation_date || o.date || '';
+    document.getElementById('o-student').value = o.student_id || o.studentId;
+    document.getElementById('o-text').value = o.observation;
   } else {
-    title.textContent = 'Add Observation';
-    oId.value = '';
-    oDate.value = nmToday();
-    oText.value = '';
-    selWrap.style.display = 'block';
-    editWrap.style.display = 'none';
-    selectedObsStudents = [];
-    document.getElementById('o-selected-names').textContent = '';
-    document.getElementById('o-std-search').value = '';
-    await searchStudentsForObs();
+    document.getElementById('obs-modal-title').textContent = 'Add Observation';
+    document.getElementById('o-id').value = '';
+    document.getElementById('o-date').value = nmToday();
+    document.getElementById('o-student').value = '';
+    document.getElementById('o-text').value = '';
   }
   openModal('obs-modal');
 }
 
-async function searchStudentsForObs() {
-  const q = document.getElementById('o-std-search').value.toLowerCase();
-  const list = document.getElementById('o-std-list');
-  if (!q) {
-    list.innerHTML = '';
-    return;
-  }
-  const all = await nmGetStudents(schoolId, currentYearId);
-  const filtered = all.filter(s => (s.full_name||s.fullName).toLowerCase().includes(q) || (s.admission_number||s.admissionNumber).toLowerCase().includes(q));
-  const students = filtered.slice(0, 4);
-  const list = document.getElementById('o-std-list');
-  list.innerHTML = students.map(s => `
-    <div style="padding:10px;border-bottom:1px solid var(--clr-border);display:flex;align-items:center;gap:12px;">
-      <input type="checkbox" style="width:18px;height:18px;" value="${s.id}" ${selectedObsStudents.includes(s.id)?'checked':''} onchange="toggleObsStudent('${s.id}', this.checked)">
-      <div style="font-size:0.9rem;">${s.full_name||s.fullName} <span style="font-size:0.75rem;color:var(--clr-text-2);">(${s.admission_number||s.admissionNumber})</span></div>
-    </div>
-  `).join('') || '<div style="padding:10px;font-size:0.8rem;color:var(--clr-text-3);">No students found</div>';
-  
-  if (filtered.length > 4) {
-    list.innerHTML += `<div style="padding:10px;font-size:0.75rem;color:var(--clr-text-3);background:rgba(0,0,0,0.03);text-align:center;">Showing 4 of ${filtered.length} students. Refine search to see more.</div>`;
-  }
-}
-
-async function toggleObsStudent(id, checked) {
-  if (checked) { if(!selectedObsStudents.includes(id)) selectedObsStudents.push(id); }
-  else { selectedObsStudents = selectedObsStudents.filter(x => x !== id); }
-  const students = await nmGetStudents(schoolId);
-  const names = selectedObsStudents.map(sid => students.find(x=>x.id===sid)?.full_name || students.find(x=>x.id===sid)?.fullName).filter(Boolean);
-  document.getElementById('o-selected-names').textContent = names.length ? `Selected: ${names.join(', ')}` : '';
-}
-
 async function saveObservation() {
   const idValue = document.getElementById('o-id').value;
+  const sid = document.getElementById('o-student').value;
   const date = document.getElementById('o-date').value;
   const text = document.getElementById('o-text').value.trim();
-  if (!date) { nmToast('Please select a date','error'); return; }
-  if (!text) { nmToast('Observation text cannot be empty','error'); return; }
+  if (!sid || !date || !text) { nmToast('Please fill all required fields','error'); return; }
 
-  if (idValue) {
-    const list = await nmGetObservations(schoolId);
-    const o = list.find(x => x.id === idValue);
-    if (o) { 
-      o.date = date; 
-      o.observation = text; 
-      await nmSaveObservation(o); 
-    }
-  } else {
-    if (!selectedObsStudents.length) { nmToast('Please select at least one student','error'); return; }
-    for (const sid of selectedObsStudents) {
-      await nmSaveObservation({ school_id: schoolId, student_id: sid, date, observation: text });
-    }
-  }
+  await nmSaveObservation({ id: idValue || undefined, school_id: schoolId, student_id: sid, date, observation: text });
   closeModal('obs-modal');
   nmToast('Observation saved successfully','success');
   await renderObservations();
@@ -1833,84 +1708,37 @@ async function renderCounselling() {
 }
 
 async function openCounsellingModal(id) {
-  const cId = document.getElementById('c-id');
-  const cDate = document.getElementById('c-date');
-  const cIssue = document.getElementById('c-issue');
-  const cStatus = document.getElementById('c-status');
-  const cFollowup = document.getElementById('c-followup');
-  const cText = document.getElementById('c-text');
-
-  // Reset search UI
-  document.getElementById('c-std-search').value = '';
-  document.getElementById('c-std-list').innerHTML = '';
-  document.getElementById('c-selected-name').textContent = '';
-  document.getElementById('c-student-id').value = '';
-  document.getElementById('c-student-select-wrap').style.display = 'block';
-  document.getElementById('c-student-edit-wrap').style.display = 'none';
+  const students = await nmGetStudents(schoolId);
+  const sel = document.getElementById('c-student');
+  sel.innerHTML = '<option value="">Select student</option>' + students.map(s => `<option value="${s.id}">${s.full_name||s.fullName} (${s.admission_number||s.admissionNumber})</option>`).join('');
 
   if (id) {
     const list = await nmGetCounselling(schoolId);
     const c = list.find(x => x.id === id);
     if (!c) return;
     document.getElementById('cns-modal-title').textContent = 'Edit Counselling Record';
-    cId.value = c.id;
-    cDate.value = c.date;
-    cIssue.value = c.issue;
-    cStatus.value = c.status || 'Resolved';
-    cFollowup.checked = !!(c.follow_up || c.followUp);
-    cText.value = c.counselling;
-    
-    // For editing, we show a static student name
-    const students = await nmGetStudents(schoolId, currentYearId);
-    const s = students.find(x => x.id === (c.student_id || c.studentId));
-    document.getElementById('c-student-select-wrap').style.display = 'none';
-    document.getElementById('c-student-edit-wrap').style.display = 'block';
-    document.getElementById('c-edit-name').textContent = s?.full_name || s?.fullName || 'Selected Student';
-    document.getElementById('c-student-id').value = c.student_id || c.studentId;
+    document.getElementById('c-id').value = c.id;
+    document.getElementById('c-date').value = c.date;
+    document.getElementById('c-student').value = c.student_id || c.studentId;
+    document.getElementById('c-issue').value = c.issue;
+    document.getElementById('c-status').value = c.status || 'Resolved';
+    document.getElementById('c-followup').checked = !!(c.follow_up || c.followUp);
+    document.getElementById('c-text').value = c.counselling;
   } else {
     document.getElementById('cns-modal-title').textContent = 'Add Counselling Record';
-    cId.value = '';
-    cDate.value = nmToday();
-    cIssue.value = '';
-    cStatus.value = 'Resolved';
-    cFollowup.checked = false;
-    cText.value = '';
+    document.getElementById('c-id').value = '';
+    document.getElementById('c-date').value = nmToday();
+    document.getElementById('c-student').value = '';
+    document.getElementById('c-issue').value = '';
+    document.getElementById('c-status').value = 'Resolved';
+    document.getElementById('c-followup').checked = false;
+    document.getElementById('c-text').value = '';
   }
   openModal('cns-modal');
 }
 
-async function searchStudentsForCns() {
-  const q = document.getElementById('c-std-search').value.toLowerCase();
-  const list = document.getElementById('c-std-list');
-  if (!q) {
-    list.innerHTML = '';
-    return;
-  }
-  const all = await nmGetStudents(schoolId, currentYearId);
-  const filtered = all.filter(s => (s.full_name||s.fullName).toLowerCase().includes(q) || (s.admission_number||s.admissionNumber).toLowerCase().includes(q));
-  const students = filtered.slice(0, 4);
-  
-  list.innerHTML = students.map(s => `
-    <div style="padding:10px;border-bottom:1px solid var(--clr-border);cursor:pointer;display:flex;align-items:center;gap:12px;" onclick="toggleCnsStudent('${s.id}', '${s.full_name||s.fullName}', '${s.admission_number||s.admissionNumber}')">
-      <div class="avatar" style="width:24px;height:24px;font-size:0.6rem;">${(s.full_name||s.fullName||'?')[0]}</div>
-      <div style="font-size:0.85rem;">${s.full_name||s.fullName} <span style="font-size:0.7rem;color:var(--clr-text-2);">(${s.admission_number||s.admissionNumber})</span></div>
-    </div>
-  `).join('') || '<div style="padding:10px;font-size:0.8rem;color:var(--clr-text-3);">No matching students</div>';
-  
-  if (filtered.length > 4) {
-    list.innerHTML += `<div style="padding:10px;font-size:0.75rem;color:var(--clr-text-3);background:rgba(0,0,0,0.03);text-align:center;">Showing 4 of ${filtered.length}. Refine search.</div>`;
-  }
-}
-
-function toggleCnsStudent(id, name, adm) {
-  document.getElementById('c-student-id').value = id;
-  document.getElementById('c-selected-name').textContent = `Selected: ${name} (${adm})`;
-  document.getElementById('c-std-list').innerHTML = '';
-  document.getElementById('c-std-search').value = '';
-}
-
 async function saveCounselling() {
-  const sid = document.getElementById('c-student-id').value;
+  const sid = document.getElementById('c-student').value;
   const date = document.getElementById('c-date').value;
   const issue = document.getElementById('c-issue').value.trim();
   const status = document.getElementById('c-status').value;
@@ -2144,114 +1972,40 @@ function changeMovementMode(mode) {
   }
 }
 
-async function searchStudentsForMovement() {
-  const q = document.getElementById('m-std-search').value.toLowerCase();
-  const list = document.getElementById('m-std-list');
-  if (!q) {
-    list.innerHTML = '';
-    return;
-  }
-  const all = await nmGetStudents(schoolId, currentYearId);
-  const students = all.filter(s => (s.full_name||s.fullName).toLowerCase().includes(q) || (s.admission_number||s.admissionNumber).toLowerCase().includes(q));
-  const list = document.getElementById('m-std-list');
-  list.innerHTML = students.map(s => `
-    <div style="padding:8px 10px;border-bottom:1px solid var(--clr-border);cursor:pointer;" onclick="toggleMovStudent('${s.id}', '${s.full_name||s.fullName}', '${s.admission_number||s.admissionNumber}')">
-      <div style="font-size:0.85rem;font-weight:600;">${s.full_name||s.fullName}</div>
-      <div style="font-size:0.7rem;color:var(--clr-text-2);">${s.admission_number||s.admissionNumber} · Class ${s.class}</div>
-    </div>
-  `).join('') || '<div style="padding:10px;font-size:0.8rem;color:var(--clr-text-3);">No students found</div>';
-}
-
-function toggleMovStudent(id, name, adm) {
-  document.getElementById('m-student-id').value = id;
-  document.getElementById('m-selected-name').textContent = `Selected: ${name} (${adm})`;
-  document.getElementById('m-std-list').innerHTML = '';
-  document.getElementById('m-std-search').value = '';
-}
-
-async function searchOutgoingRecords() {
-  const q = document.getElementById('m-outgoing-search').value.toLowerCase();
-  const students = await nmGetStudents(schoolId, currentYearId);
-  const movs = await nmGetMovements(schoolId);
-  const outgoing = movs.filter(m => !(m.report_date || m.reportDate));
-  
-  const filtered = outgoing.filter(m => {
-    const s = students.find(x => x.id === (m.student_id || m.studentId));
-    return !q || (s && (s.full_name||s.fullName).toLowerCase().includes(q));
-  });
-
-  const list = document.getElementById('m-outgoing-list');
-  list.innerHTML = filtered.map(m => {
-    const s = students.find(x => x.id === (m.student_id || m.studentId)) || { full_name: 'Unknown' };
-    return `
-      <div style="padding:8px 10px;border-bottom:1px solid var(--clr-border);cursor:pointer;" onclick="selectOutgoingRecord('${m.id}', '${s.id}', '${s.full_name||s.fullName}', '${s.admission_number||s.admissionNumber}', '${m.leave_date||m.leaveDate}', '${m.reason}')">
-        <div style="font-size:0.85rem;font-weight:600;">${s.full_name||s.fullName}</div>
-        <div style="font-size:0.7rem;color:var(--clr-text-2);">Left on: ${nmFmtDate(m.leave_date||m.leaveDate)} · ${m.reason}</div>
-      </div>
-    `;
-  }).join('') || '<div style="padding:10px;font-size:0.8rem;color:var(--clr-text-3);">No students currently away</div>';
-}
-
-function selectOutgoingRecord(recordId, studentId, name, adm, leaveDate, reason) {
-  document.getElementById('mov-id').value = recordId;
-  document.getElementById('m-student-id').value = studentId;
-  document.getElementById('m-selected-outgoing').textContent = `Selected: ${name} (${adm})`;
-  document.getElementById('m-leave-date').value = leaveDate;
-  document.getElementById('m-reason').value = reason;
-  document.getElementById('m-outgoing-list').innerHTML = '';
-  document.getElementById('m-outgoing-search').value = '';
-  document.getElementById('m-report-date').value = nmToday();
-}
-
 async function openMovementModal(id) {
-  const mId = document.getElementById('mov-id');
-  const mReason = document.getElementById('m-reason');
-  const mLeave = document.getElementById('m-leave-date');
-  const mReport = document.getElementById('m-report-date');
-  const mEscort = document.getElementById('m-escort-name');
-  const mRel = document.getElementById('m-relationship');
-  const mPhone = document.getElementById('m-phone');
-  const mSid = document.getElementById('m-student-id');
-  const outSel = document.getElementById('m-selected-name');
-  const inSel = document.getElementById('m-selected-outgoing');
-
-  mId.value = ''; mReason.value = ''; mLeave.value = nmToday(); mReport.value = '';
-  mEscort.value = ''; mRel.value = ''; mPhone.value = ''; mSid.value = '';
-  outSel.textContent = ''; inSel.textContent = '';
-  document.getElementById('m-std-list').innerHTML = '';
-  document.getElementById('m-outgoing-list').innerHTML = '';
+  const students = await nmGetStudents(schoolId);
+  const sel = document.getElementById('m-student');
+  sel.innerHTML = '<option value="">Select student</option>' + students.map(s => `<option value="${s.id}">${s.full_name||s.fullName} (${s.admission_number||s.admissionNumber})</option>`).join('');
 
   if (id) {
     const list = await nmGetMovements(schoolId);
     const m = list.find(x => x.id === id);
     if (!m) return;
     document.getElementById('mov-modal-title').textContent = 'Edit Movement Record';
-    mId.value = m.id;
-    mSid.value = m.student_id || m.studentId;
-    mReason.value = m.reason;
-    mLeave.value = m.leave_date || m.leaveDate;
-    mReport.value = m.report_date || m.reportDate;
-    mEscort.value = m.escort_name || m.escortName;
-    mRel.value = m.relationship;
-    mPhone.value = m.phone;
-    
-    document.querySelector('.modal-body > .mb-20').style.display = 'none';
-    document.getElementById('mov-outgoing-fields').style.display = 'none';
-    document.getElementById('mov-incoming-fields').style.display = 'none';
-    document.getElementById('group-report-date').style.display = 'block';
-    mLeave.readOnly = false; mReason.readOnly = false;
+    document.getElementById('mov-id').value = m.id;
+    document.getElementById('m-student').value = m.student_id || m.studentId;
+    document.getElementById('m-reason').value = m.reason;
+    document.getElementById('m-leave-date').value = m.leave_date || m.leaveDate;
+    document.getElementById('m-report-date').value = m.report_date || m.reportDate;
+    document.getElementById('m-escort-name').value = m.escort_name || m.escortName;
+    document.getElementById('m-relationship').value = m.relationship;
+    document.getElementById('m-phone').value = m.phone;
   } else {
     document.getElementById('mov-modal-title').textContent = 'Add Movement Record';
-    document.querySelector('.modal-body > .mb-20').style.display = 'flex';
-    changeMovementMode('outgoing');
+    document.getElementById('mov-id').value = '';
+    document.getElementById('m-student').value = '';
+    document.getElementById('m-reason').value = '';
+    document.getElementById('m-leave-date').value = nmToday();
+    document.getElementById('m-report-date').value = '';
+    document.getElementById('m-escort-name').value = '';
+    document.getElementById('m-relationship').value = '';
+    document.getElementById('m-phone').value = '';
   }
   openModal('movement-modal');
 }
 
 async function saveMovement() {
-  const mode = document.getElementById('mov-mode').value;
-  const rid = document.getElementById('mov-id').value;
-  const sid = document.getElementById('m-student-id').value;
+  const sid = document.getElementById('m-student').value;
   const reason = document.getElementById('m-reason').value.trim();
   const leave = document.getElementById('m-leave-date').value;
   const report = document.getElementById('m-report-date').value;
@@ -2259,19 +2013,13 @@ async function saveMovement() {
   const rel = document.getElementById('m-relationship').value.trim();
   const phone = document.getElementById('m-phone').value.trim();
 
-  if (mode === 'outgoing' && (!sid || !leave || !reason || !escort)) {
-     nmToast('Please fill all required fields for Outgoing','error'); return;
-  }
-  if (mode === 'incoming' && (!rid || !report || !escort)) {
-     nmToast('Please select a student and enter report date/escort','error'); return;
-  }
+  if (!sid || !leave || !reason || !escort) { nmToast('Please fill all required fields','error'); return; }
 
   await nmSaveMovement({
-    id: rid || undefined,
+    id: document.getElementById('mov-id').value || undefined,
     school_id: schoolId, student_id: sid, reason, leave_date: leave, report_date: report || null,
     escort_name: escort, relationship: rel, phone
   });
-  
   closeModal('movement-modal');
   nmToast('Movement record saved','success');
   await renderMovements();
@@ -2474,40 +2222,6 @@ async function exportTeacherDiaries() {
 }
 
 
-async function populateAdminSchoolPicker() {
-  const schools = await nmGetSchools();
-  const sel = document.getElementById('admin-school-sel');
-  if (!sel) return;
-  sel.innerHTML = '<option value="">— Select School —</option>' + 
-    schools.map(s => `<option value="${s.id}">${s.name}</option>`).join('');
-  
-  if (schoolId) sel.value = schoolId;
-}
-
-async function switchAdminSchool(id) {
-  if (!id) return;
-  schoolId = id;
-  if (window.nmState) window.nmState.schoolId = id;
-  
-  const schools = await nmGetSchools();
-  const s = schools.find(x => x.id === id);
-  document.getElementById('sb-school-name').textContent = s ? s.name : 'School Portal';
-  document.getElementById('dbg-school-id').textContent = id;
-  
-  await loadAcademicYears();
-  await renderDashboard();
-  nmToast('Viewing dashboard for: ' + (s ? s.name : ''), 'info');
-}
-
-async function toggleDebugInfo() {
-  const p = document.getElementById('debug-panel');
-  p.style.display = p.style.display === 'none' ? 'block' : 'none';
-  if (window.nmState) {
-    document.getElementById('dbg-school-id').textContent = window.nmState.schoolId || 'Missing';
-    document.getElementById('dbg-year-id').textContent = window.nmState.currentYearId || 'None';
-    document.getElementById('dbg-role').textContent = window.nmState.role || 'user';
-  }
-}
 </script>
 <!-- PRINT SECTION (Hidden in UI, visible in Print) -->
 <div id="print-section" class="print-only" style="display:none;"></div>
