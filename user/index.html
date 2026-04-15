@@ -61,6 +61,15 @@
           <div class="sidebar-user-role">School Staff</div>
         </div>
       </div>
+      <div style="margin-top:12px; font-size:0.65rem; color:var(--clr-text-3); display:flex; justify-content:space-between; align-items:center;">
+        <span>v2.1.0-prod</span>
+        <a href="javascript:void(0)" onclick="toggleDebugInfo()" style="color:var(--clr-primary); text-decoration:none;">⚙️ Debug System</a>
+      </div>
+      <div id="debug-panel" style="display:none; margin-top:10px; padding:8px; background:rgba(0,0,0,0.05); border-radius:4px; font-family:monospace; font-size:0.6rem; word-break:break-all; border:1px solid var(--clr-border);">
+        <strong>School ID:</strong> <span id="dbg-school-id">None</span><br>
+        <strong>Year ID:</strong> <span id="dbg-year-id">None</span><br>
+        <strong>Role:</strong> <span id="dbg-role">None</span>
+      </div>
     </div>
   </aside>
 
@@ -865,8 +874,16 @@ async function init() {
       document.getElementById('sb-school-name').textContent = session.school_name || session.schoolName || 'School Portal';
       
       await loadAcademicYears();
+      
+      // Update Debug Info
+      document.getElementById('dbg-school-id').textContent = schoolId || 'Missing';
+      document.getElementById('dbg-role').textContent = session.role || 'user';
+      document.getElementById('dbg-year-id').textContent = currentYearId || 'None';
     }
   } catch(e) { console.error('[init] startup error:', e); }
+
+  // Expose for console debugging
+  window.nmState = { schoolId, currentYearId, allYears };
 
   // Set up Realtime Subscriptions
   try {
@@ -911,6 +928,7 @@ async function init() {
 async function loadAcademicYears() {
   try {
     allYears = await nmGetAcademicYears(schoolId);
+    if (window.nmState) window.nmState.allYears = allYears;
     
     let y26 = allYears.find(y => y.name === '2026-2027');
     let y23 = allYears.find(y => y.name === '2023-2024');
@@ -2439,6 +2457,13 @@ async function exportTeacherDiaries() {
 }
 
 
+async function toggleDebugInfo() {
+  const p = document.getElementById('debug-panel');
+  p.style.display = p.style.display === 'none' ? 'block' : 'none';
+  if (window.nmState) {
+    document.getElementById('dbg-year-id').textContent = window.nmState.currentYearId || 'None';
+  }
+}
 </script>
 <!-- PRINT SECTION (Hidden in UI, visible in Print) -->
 <div id="print-section" class="print-only" style="display:none;"></div>
