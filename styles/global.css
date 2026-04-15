@@ -627,24 +627,26 @@ textarea.form-control { resize: vertical; min-height: 90px; }
   .topbar-title { flex: 1; }
   .mobile-menu-btn { display: block; }
 
-  /* Mobile Modal Redesign (Bottom Sheet) */
-  .modal-overlay { align-items: flex-end; padding: 0; }
+  /* Mobile Modal Redesign (Full Screen) */
+  .modal-overlay { align-items: stretch; padding: 0; }
   .modal { 
+    width: 100%;
     max-width: 100%; 
-    max-height: 96vh; 
-    border-radius: var(--radius-xl) var(--radius-xl) 0 0;
+    height: 100%;
+    max-height: 100vh; 
+    border-radius: 0;
     transform: translateY(100%);
-    border-bottom: none;
+    border: none;
   }
   .modal-overlay.active .modal { transform: translateY(0); }
-  .modal-header { padding: 16px 20px; }
+  .modal-header { padding: 16px 20px; border-radius: 0; }
   .modal-body { padding: 20px; }
-  .modal-footer { padding: 16px 20px; }
+  .modal-footer { padding: 16px 20px; border-radius: 0; }
   
   .modal .form-grid { grid-template-columns: 1fr; }
   .modal .form-grid-3 { grid-template-columns: 1fr; }
   
-  .modal-lg { max-width: 100%; height: 96vh; }
+  .modal-lg { max-width: 100%; height: 100vh; border-radius: 0; }
 }
 @media only screen and (max-width: 480px) {
   .form-grid { grid-template-columns: 1fr; }

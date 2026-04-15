@@ -1667,14 +1667,19 @@ async function openObservationModal(id) {
 async function searchStudentsForObs() {
   const q = document.getElementById('o-std-search').value.toLowerCase();
   const all = await nmGetStudents(schoolId, currentYearId);
-  const students = all.filter(s => (s.full_name||s.fullName).toLowerCase().includes(q) || (s.admission_number||s.admissionNumber).toLowerCase().includes(q));
+  const filtered = all.filter(s => (s.full_name||s.fullName).toLowerCase().includes(q) || (s.admission_number||s.admissionNumber).toLowerCase().includes(q));
+  const students = filtered.slice(0, 4);
   const list = document.getElementById('o-std-list');
   list.innerHTML = students.map(s => `
-    <div style="padding:6px 10px;border-bottom:1px solid var(--clr-border);display:flex;align-items:center;gap:10px;">
-      <input type="checkbox" value="${s.id}" ${selectedObsStudents.includes(s.id)?'checked':''} onchange="toggleObsStudent('${s.id}', this.checked)">
-      <div style="font-size:0.85rem;">${s.full_name||s.fullName} <span style="font-size:0.7rem;color:var(--clr-text-2);">(${s.admission_number||s.admissionNumber})</span></div>
+    <div style="padding:10px;border-bottom:1px solid var(--clr-border);display:flex;align-items:center;gap:12px;">
+      <input type="checkbox" style="width:18px;height:18px;" value="${s.id}" ${selectedObsStudents.includes(s.id)?'checked':''} onchange="toggleObsStudent('${s.id}', this.checked)">
+      <div style="font-size:0.9rem;">${s.full_name||s.fullName} <span style="font-size:0.75rem;color:var(--clr-text-2);">(${s.admission_number||s.admissionNumber})</span></div>
     </div>
   `).join('') || '<div style="padding:10px;font-size:0.8rem;color:var(--clr-text-3);">No students found</div>';
+  
+  if (filtered.length > 4) {
+    list.innerHTML += `<div style="padding:10px;font-size:0.75rem;color:var(--clr-text-3);background:rgba(0,0,0,0.03);text-align:center;">Showing 4 of ${filtered.length} students. Refine search to see more.</div>`;
+  }
 }
 
 async function toggleObsStudent(id, checked) {
