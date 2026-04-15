@@ -625,9 +625,16 @@
         <label class="form-label">Date <span class="required">*</span></label>
         <input type="date" id="c-date" class="form-control">
       </div>
-      <div class="form-group mb-16">
-        <label class="form-label">Select Student <span class="required">*</span></label>
-        <select id="c-student" class="form-control"><option value="">— Choose Student —</option></select>
+      <div class="form-group mb-16" id="c-student-select-wrap">
+        <label class="form-label">Search & Select Student <span class="required">*</span></label>
+        <div class="search-input-wrapper mb-8"><span>🔍</span><input type="text" id="c-std-search" placeholder="Type name..." oninput="searchStudentsForCns()"></div>
+        <div id="c-std-list" class="std-search-results" style="max-height:200px;overflow-y:auto;border:1px solid var(--clr-border);border-radius:var(--radius-sm);background:var(--clr-surface2);"></div>
+        <div id="c-selected-name" style="margin-top:8px;font-size:0.75rem;color:var(--clr-primary);font-weight:600;"></div>
+        <input type="hidden" id="c-student-id">
+      </div>
+      <div class="form-group mb-16" id="c-student-edit-wrap" style="display:none;">
+        <label class="form-label">Student</label>
+        <div id="c-edit-name" style="font-weight:600;padding:8px;background:var(--clr-surface);border-radius:var(--radius-sm);"></div>
       </div>
       <div class="form-grid mb-16">
         <div class="form-group">
@@ -1292,7 +1299,15 @@ async function quickAddObservation(id) {
 function quickAddCounselling(id) {
   closeModal('student-modal');
   openCounsellingModal();
-  setTimeout(() => { document.getElementById('c-student').value = id; }, 50);
+  nmGetStudents(schoolId, currentYearId).then(students => {
+    const s = students.find(x => x.id === id);
+    if (s) {
+       document.getElementById('c-student-select-wrap').style.display = 'none';
+       document.getElementById('c-student-edit-wrap').style.display = 'block';
+       document.getElementById('c-edit-name').textContent = s.full_name || s.fullName;
+       document.getElementById('c-student-id').value = id;
+    }
+  });
 }
 function quickAddMovement(id) {
   closeModal('student-modal');
@@ -1666,6 +1681,11 @@ async function openObservationModal(id) {
 
 async function searchStudentsForObs() {
   const q = document.getElementById('o-std-search').value.toLowerCase();
+  const list = document.getElementById('o-std-list');
+  if (!q) {
+    list.innerHTML = '';
+    return;
+  }
   const all = await nmGetStudents(schoolId, currentYearId);
   const filtered = all.filter(s => (s.full_name||s.fullName).toLowerCase().includes(q) || (s.admission_number||s.admissionNumber).toLowerCase().includes(q));
   const students = filtered.slice(0, 4);
@@ -1775,16 +1795,20 @@ async function renderCounselling() {
 }
 
 async function openCounsellingModal(id) {
-  const students = await nmGetStudents(schoolId, currentYearId);
-  const sel = document.getElementById('c-student');
-  sel.innerHTML = '<option value="">— Choose Student —</option>' + students.map(s => `<option value="${s.id}">${s.full_name||s.fullName} (${s.admission_number||s.admissionNumber})</option>`).join('');
-
   const cId = document.getElementById('c-id');
   const cDate = document.getElementById('c-date');
   const cIssue = document.getElementById('c-issue');
   const cStatus = document.getElementById('c-status');
   const cFollowup = document.getElementById('c-followup');
   const cText = document.getElementById('c-text');
+
+  // Reset search UI
+  document.getElementById('c-std-search').value = '';
+  document.getElementById('c-std-list').innerHTML = '';
+  document.getElementById('c-selected-name').textContent = '';
+  document.getElementById('c-student-id').value = '';
+  document.getElementById('c-student-select-wrap').style.display = 'block';
+  document.getElementById('c-student-edit-wrap').style.display = 'none';
 
   if (id) {
     const list = await nmGetCounselling(schoolId);
@@ -1793,16 +1817,22 @@ async function openCounsellingModal(id) {
     document.getElementById('cns-modal-title').textContent = 'Edit Counselling Record';
     cId.value = c.id;
     cDate.value = c.date;
-    sel.value = c.student_id || c.studentId;
     cIssue.value = c.issue;
     cStatus.value = c.status || 'Resolved';
     cFollowup.checked = !!(c.follow_up || c.followUp);
     cText.value = c.counselling;
+    
+    // For editing, we show a static student name
+    const students = await nmGetStudents(schoolId, currentYearId);
+    const s = students.find(x => x.id === (c.student_id || c.studentId));
+    document.getElementById('c-student-select-wrap').style.display = 'none';
+    document.getElementById('c-student-edit-wrap').style.display = 'block';
+    document.getElementById('c-edit-name').textContent = s?.full_name || s?.fullName || 'Selected Student';
+    document.getElementById('c-student-id').value = c.student_id || c.studentId;
   } else {
     document.getElementById('cns-modal-title').textContent = 'Add Counselling Record';
     cId.value = '';
     cDate.value = nmToday();
-    sel.value = '';
     cIssue.value = '';
     cStatus.value = 'Resolved';
     cFollowup.checked = false;
@@ -1811,8 +1841,38 @@ async function openCounsellingModal(id) {
   openModal('cns-modal');
 }
 
+async function searchStudentsForCns() {
+  const q = document.getElementById('c-std-search').value.toLowerCase();
+  const list = document.getElementById('c-std-list');
+  if (!q) {
+    list.innerHTML = '';
+    return;
+  }
+  const all = await nmGetStudents(schoolId, currentYearId);
+  const filtered = all.filter(s => (s.full_name||s.fullName).toLowerCase().includes(q) || (s.admission_number||s.admissionNumber).toLowerCase().includes(q));
+  const students = filtered.slice(0, 4);
+  
+  list.innerHTML = students.map(s => `
+    <div style="padding:10px;border-bottom:1px solid var(--clr-border);cursor:pointer;display:flex;align-items:center;gap:12px;" onclick="toggleCnsStudent('${s.id}', '${s.full_name||s.fullName}', '${s.admission_number||s.admissionNumber}')">
+      <div class="avatar" style="width:24px;height:24px;font-size:0.6rem;">${(s.full_name||s.fullName||'?')[0]}</div>
+      <div style="font-size:0.85rem;">${s.full_name||s.fullName} <span style="font-size:0.7rem;color:var(--clr-text-2);">(${s.admission_number||s.admissionNumber})</span></div>
+    </div>
+  `).join('') || '<div style="padding:10px;font-size:0.8rem;color:var(--clr-text-3);">No matching students</div>';
+  
+  if (filtered.length > 4) {
+    list.innerHTML += `<div style="padding:10px;font-size:0.75rem;color:var(--clr-text-3);background:rgba(0,0,0,0.03);text-align:center;">Showing 4 of ${filtered.length}. Refine search.</div>`;
+  }
+}
+
+function toggleCnsStudent(id, name, adm) {
+  document.getElementById('c-student-id').value = id;
+  document.getElementById('c-selected-name').textContent = `Selected: ${name} (${adm})`;
+  document.getElementById('c-std-list').innerHTML = '';
+  document.getElementById('c-std-search').value = '';
+}
+
 async function saveCounselling() {
-  const sid = document.getElementById('c-student').value;
+  const sid = document.getElementById('c-student-id').value;
   const date = document.getElementById('c-date').value;
   const issue = document.getElementById('c-issue').value.trim();
   const status = document.getElementById('c-status').value;
@@ -2048,6 +2108,11 @@ function changeMovementMode(mode) {
 
 async function searchStudentsForMovement() {
   const q = document.getElementById('m-std-search').value.toLowerCase();
+  const list = document.getElementById('m-std-list');
+  if (!q) {
+    list.innerHTML = '';
+    return;
+  }
   const all = await nmGetStudents(schoolId, currentYearId);
   const students = all.filter(s => (s.full_name||s.fullName).toLowerCase().includes(q) || (s.admission_number||s.admissionNumber).toLowerCase().includes(q));
   const list = document.getElementById('m-std-list');

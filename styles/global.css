@@ -752,74 +752,83 @@ textarea.form-control { resize: vertical; min-height: 90px; }
     color: #111;
   }
 
-  /* ── Profile printing (printing-profile class) ── */
-  body.printing-profile .panel-layout { display: none !important; }
-  body.printing-profile .modal-overlay { display: none !important; }
-  body.printing-profile #print-section { display: block !important; width: 100% !important; max-width: 100% !important; }
+/* ── Profile printing (Component styles available for screen & print) ── */
+body.printing-profile .panel-layout { display: none !important; }
+body.printing-profile .modal-overlay { display: none !important; }
+body.printing-profile #print-section { display: block !important; width: 100% !important; max-width: 100% !important; padding: 30px; background: #fff !important; color: #111 !important; min-height: 100vh; position: relative; z-index: 99999; }
 
-  /* Print section layout */
-  .print-only, #print-section { display: block !important; visibility: visible !important; }
+/* Print section layout components */
+.print-header {
+  display: flex !important; align-items: center; justify-content: space-between;
+  border-bottom: 2.5px solid #222; padding-bottom: 15px; margin-bottom: 25px;
+}
+.print-logo-wrap { display: flex !important; align-items: center; gap: 12px; }
+.print-logo { width: 48px; height: 48px; object-fit: contain; }
+.print-header-text h1 { font-size: 1.5rem; margin: 0; color: #000; letter-spacing: -0.02em; font-weight: 800; }
+.print-header-text p { font-size: 8.5pt; color: #444; margin: 2px 0 0; font-weight: 500; }
+.print-meta { text-align: right; font-size: 8pt; color: #666; line-height: 1.5; }
 
-  /* Professional Letterhead */
-  .print-header {
-    display: flex !important; align-items: center; justify-content: space-between;
-    border-bottom: 2.5px solid #222; padding-bottom: 15px; margin-bottom: 25px;
-  }
-  .print-logo-wrap { display: flex !important; align-items: center; gap: 12px; }
-  .print-logo { width: 48px; height: 48px; object-fit: contain; }
-  .print-header-text h1 { font-size: 1.5rem; margin: 0; color: #000; letter-spacing: -0.02em; }
-  .print-header-text p { font-size: 8.5pt; color: #444; margin: 2px 0 0; font-weight: 500; }
-  .print-meta { text-align: right; font-size: 8pt; color: #666; line-height: 1.5; }
+.print-section-title {
+  font-size: 10.5pt; font-weight: 800; text-transform: uppercase; letter-spacing: 0.05em;
+  background: #f0f0f2; padding: 8px 12px; margin-top: 25px; margin-bottom: 12px;
+  border-left: 4px solid #000; page-break-after: avoid; color: #000 !important;
+}
 
-  /* Report section titles */
-  .print-section-title {
-    font-size: 10.5pt; font-weight: 800; text-transform: uppercase; letter-spacing: 0.05em;
-    background: #f0f0f2; padding: 8px 12px; margin-top: 25px; margin-bottom: 12px;
-    border-left: 4px solid #000; page-break-after: avoid; color: #000 !important;
-  }
+.print-row { display: flex; gap: 24px; margin-bottom: 20px; flex-wrap: wrap; }
+.print-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px 24px; width: 100%; }
 
-  .print-row { display: flex; gap: 24px; margin-bottom: 20px; flex-wrap: wrap; }
-  .print-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px 24px; }
+.print-info-item {
+  border-bottom: 1px solid #ececec; padding: 6px 0;
+  display: flex; justify-content: space-between; align-items: flex-end;
+  gap: 8px; flex-wrap: wrap;
+}
+.print-info-item strong { font-size: 7.5pt; text-transform: uppercase; color: #666; font-weight: 600; white-space: nowrap; }
+.print-info-item span { font-weight: 700; color: #000; font-size: 9pt; text-align: right; word-break: break-word; }
+
+.print-photo-wrap { flex-shrink: 0; }
+.print-photo {
+  width: 105px; height: 125px; border: 1.5px solid #bbb;
+  padding: 2px; object-fit: cover; border-radius: 4px; background: #fff;
+}
+
+/* Timeline Print Overrides */
+body.printing-profile .timeline { padding-left: 20px !important; }
+body.printing-profile .timeline::before { background: #ddd !important; left: 7px !important; }
+body.printing-profile .timeline-item { margin-bottom: 15px !important; page-break-inside: avoid; }
+body.printing-profile .timeline-dot {
+  width: 16px !important; height: 16px !important; left: -20px !important; top: 3px !important;
+  border: 1.5px solid #444 !important; background: #fff !important; color: #222 !important;
+  font-size: 0.6rem !important;
+}
+body.printing-profile .timeline-content { border: 1px solid #ddd !important; background: #fff !important; padding: 8px 12px !important; border-radius: 4px !important; }
+body.printing-profile .timeline-date { color: #555 !important; font-weight: 700 !important; font-size: 7.5pt !important; }
+body.printing-profile .timeline-title { font-size: 9pt !important; color: #000 !important; }
+body.printing-profile .timeline-body { color: #333 !important; font-size: 8pt !important; margin-top: 2px !important; }
+
+.print-footer {
+  position: relative; margin-top: 40px; border-top: 1px solid #ddd; 
+  padding-top: 10px; font-size: 7.5pt; color: #999; 
+  display: flex !important; justify-content: space-between;
+}
+
+/* Mobile Screen Adjustments for Print Preview */
+@media screen and (max-width: 600px) {
+  body.printing-profile #print-section { padding: 15px; }
+  .print-header { flex-direction: column; align-items: flex-start; gap: 15px; text-align: left; }
+  .print-meta { text-align: left; width: 100%; }
+  .print-row { flex-direction: column; align-items: center; text-align: center; }
+  .print-grid { grid-template-columns: 1fr; gap: 8px; }
+  .print-info-item { flex-direction: row; justify-content: space-between; width: 100%; }
+}
+
+@media print {
+  @page { margin: 1.0cm; size: A4; }
+  * { -webkit-print-color-adjust: exact; print-color-adjust: exact; box-shadow: none !important; text-shadow: none !important; }
+  body { background: #fff !important; color: #111 !important; font-size: 10pt; font-family: 'Inter', sans-serif; }
   
-  @media (max-width: 500px) {
-    .print-grid { grid-template-columns: 1fr; gap: 8px; }
-    .print-row { gap: 15px; }
-  }
+  .print-footer { position: fixed; bottom: 0; left: 0; right: 0; width: 100%; }
 
-  .print-info-item {
-    border-bottom: 1px solid #ececec; padding: 6px 0;
-    display: flex; justify-content: space-between; align-items: flex-end;
-    gap: 8px; flex-wrap: wrap;
-  }
-  .print-info-item strong { font-size: 7.5pt; text-transform: uppercase; color: #666; font-weight: 600; white-space: nowrap; }
-  .print-info-item span { font-weight: 700; color: #000; font-size: 9pt; text-align: right; word-break: break-word; }
-
-  .print-photo-wrap { flex-shrink: 0; }
-  .print-photo {
-    width: 95px; height: 115px; border: 1.5px solid #bbb;
-    padding: 2px; object-fit: cover; border-radius: 4px; background: #fff;
-  }
-
-  /* Timeline for profile print */
-  .timeline { padding-left: 20px !important; }
-  .timeline::before { background: #ddd !important; left: 7px !important; }
-  .timeline-item { margin-bottom: 15px !important; page-break-inside: avoid; }
-  .timeline-dot {
-    width: 16px !important; height: 16px !important; left: -20px !important; top: 3px !important;
-    border: 1.5px solid #444 !important; background: #fff !important; color: #222 !important;
-    font-size: 0.6rem !important;
-  }
-  .timeline-content { border: 1px solid #ddd !important; background: #fff !important; padding: 8px 12px !important; border-radius: 4px !important; }
-  .timeline-date { color: #555 !important; font-weight: 700 !important; font-size: 7.5pt !important; }
-  .timeline-title { font-size: 9pt !important; color: #000 !important; }
-  .timeline-body { color: #333 !important; font-size: 8pt !important; margin-top: 2px !important; }
-
-  /* Print footer */
-  .print-footer {
-    position: fixed; bottom: 0; left: 0; right: 0;
-    border-top: 1px solid #ddd; padding-top: 6px; font-size: 7.5pt;
-    color: #999; display: flex !important; justify-content: space-between;
-    background: #fff;
-  }
+  /* Redundant for safety but scoped to print */
+  .sidebar, .topbar, .filter-bar, .step-progress, .nav-item, .modal-header, .modal-footer, .topbar-right, [onclick*="print"] { display: none !important; }
 }
 
