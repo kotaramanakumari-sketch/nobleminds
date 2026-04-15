@@ -1627,7 +1627,7 @@ async function loadStudentCache() {
   }
 }
 
-function initStudentSearch(prefix, isMulti = false) {
+function initStudentSearch(prefix, isMulti = false, customSource = null) {
   const input = document.getElementById(`${prefix}-student-search`);
   const results = document.getElementById(`${prefix}-search-results`);
   if (!input || !results) return;
@@ -1636,13 +1636,15 @@ function initStudentSearch(prefix, isMulti = false) {
     const q = input.value.trim().toLowerCase();
     if (!q) { results.classList.remove('active'); return; }
     
-    const filtered = allCachedStudents.filter(s => 
+    // Use custom source list if provided, else default to all cached students
+    const source = customSource || allCachedStudents;
+    const filtered = source.filter(s => 
       (s.full_name || s.fullName || '').toLowerCase().includes(q) || 
       (s.admission_number || s.admissionNumber || '').toLowerCase().includes(q)
     ).slice(0, 10);
 
     if (!filtered.length) {
-      results.innerHTML = '<div style="padding:10px;color:var(--clr-text-3);">No students found</div>';
+      results.innerHTML = `<div style="padding:10px;color:var(--clr-text-3);">${customSource ? 'No students found (Only "Away" students shown)' : 'No students found'}</div>`;
     } else {
       results.innerHTML = filtered.map(s => `
         <div class="student-result-item" onclick="handleStudentSelect('${prefix}', '${s.id}', ${isMulti})">
@@ -1697,6 +1699,10 @@ async function handleStudentSelect(prefix, studentId, isMulti) {
         document.getElementById('m-relationship').value = existing.relationship;
         document.getElementById('m-phone').value = existing.phone;
         document.getElementById('m-report-date').value = nmToday();
+        
+        // Ensure readOnly states are correctly applied (in case they were manually changed)
+        document.getElementById('m-leave-date').readOnly = true;
+        document.getElementById('m-reason').readOnly = true;
       }
     }
   }
@@ -2161,10 +2167,18 @@ function changeMovementMode(mode) {
   if (isOut) {
     btnOut.style.background = 'var(--clr-primary)'; btnOut.style.color = '#fff';
     btnIn.style.background = 'transparent'; btnIn.style.color = 'inherit';
+    // Reset search to all students
+    initStudentSearch('m', false);
   } else {
     btnIn.style.background = 'var(--clr-primary)'; btnIn.style.color = '#fff';
     btnOut.style.background = 'transparent'; btnOut.style.color = 'inherit';
-    searchOutgoingRecords();
+    
+    // Filter search to ONLY away students
+    searchOutgoingRecords().then(awayMap => {
+      const awayIds = Object.keys(awayMap);
+      const awayStudents = allCachedStudents.filter(s => awayIds.includes(s.id));
+      initStudentSearch('m', false, awayStudents);
+    });
   }
 }
 
