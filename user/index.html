@@ -855,36 +855,39 @@
 let schoolId = '', currentYearId = '', allYears = [], currentStudentId = '', excelParsed = [], currentStep = 1;
 
 async function init() {
-  await nmInitAuth();
-  const session = nmRequireAuth('user');
-  if (session) {
-    schoolId = session.school_id || session.school_id; // Check both cases
-    document.getElementById('user-name-disp').textContent = session.name;
-    document.getElementById('user-avatar').textContent    = nmGetInitials(session.name);
-    document.getElementById('sb-school-name').textContent = session.school_name || session.schoolName || 'School Portal';
-    
-    await loadAcademicYears();
-  }
+  try {
+    await nmInitAuth();
+    const session = nmRequireAuth('user');
+    if (session) {
+      schoolId = session.school_id || session.schoolId;
+      document.getElementById('user-name-disp').textContent = session.name;
+      document.getElementById('user-avatar').textContent    = nmGetInitials(session.name);
+      document.getElementById('sb-school-name').textContent = session.school_name || session.schoolName || 'School Portal';
+      
+      await loadAcademicYears();
+    }
+  } catch(e) { console.error('[init] startup error:', e); }
 
   // Set up Realtime Subscriptions
-  const refreshUI = nmDebounce(async () => {
-    const activeSection = document.querySelector('.page-section.active')?.id.replace('section-', '') || 'dashboard';
-    console.log('[Realtime] Refreshing active section:', activeSection);
-    
-    // Efficiently refresh only data, not the whole section layout
-    if (activeSection === 'dashboard') await renderDashboard();
-    else if (activeSection === 'students') await renderStudents();
-    else if (activeSection === 'observations') await renderObservations();
-    else if (activeSection === 'counselling') await renderCounselling();
-    else if (activeSection === 'movement') await renderMovements();
-    else if (activeSection === 'teacher-diary') await renderTeacherDiaries();
-  }, 1000);
+  try {
+    const refreshUI = nmDebounce(async () => {
+      const activeSection = document.querySelector('.page-section.active')?.id.replace('section-', '') || 'dashboard';
+      console.log('[Realtime] Refreshing active section:', activeSection);
+      
+      if (activeSection === 'dashboard') await renderDashboard();
+      else if (activeSection === 'students') await renderStudents();
+      else if (activeSection === 'observations') await renderObservations();
+      else if (activeSection === 'counselling') await renderCounselling();
+      else if (activeSection === 'movement') await renderMovements();
+      else if (activeSection === 'teacher-diary') await renderTeacherDiaries();
+    }, 1000);
 
-  nmSubscribe('students', schoolId, refreshUI);
-  nmSubscribe('observations', schoolId, refreshUI);
-  nmSubscribe('counselling_records', schoolId, refreshUI);
-  nmSubscribe('movements', schoolId, refreshUI);
-  nmSubscribe('teacher_diaries', schoolId, refreshUI);
+    nmSubscribe('students', schoolId, refreshUI);
+    nmSubscribe('observations', schoolId, refreshUI);
+    nmSubscribe('counselling_records', schoolId, refreshUI);
+    nmSubscribe('movements', schoolId, refreshUI);
+    nmSubscribe('teacher_diaries', schoolId, refreshUI);
+  } catch(e) { console.warn('[init] realtime setup fail:', e); }
   
   // Handle URL params
   const params = new URLSearchParams(window.location.search);
@@ -906,42 +909,37 @@ async function init() {
 
 // ── Academic Years ────────────────────────────────────────────────────────────
 async function loadAcademicYears() {
-  allYears = await nmGetAcademicYears(schoolId);
-  
-  let y26 = allYears.find(y => y.name === '2026-2027');
-  let y23 = allYears.find(y => y.name === '2023-2024');
+  try {
+    allYears = await nmGetAcademicYears(schoolId);
+    
+    let y26 = allYears.find(y => y.name === '2026-2027');
+    let y23 = allYears.find(y => y.name === '2023-2024');
 
-  // 1. Create 2026-2027 if missing
-  if (!y26) {
-    try {
-      await nmSaveAcademicYear({ school_id: schoolId, name: '2026-2027', is_active: true });
-      allYears = await nmGetAcademicYears(schoolId);
-      y26 = allYears.find(y => y.name === '2026-2027');
-    } catch(e) { console.error('Academic year setup failed:', e); }
-  }
+    if (!y26 && schoolId) {
+      try {
+        await nmSaveAcademicYear({ school_id: schoolId, name: '2026-2027', is_active: true });
+        allYears = await nmGetAcademicYears(schoolId);
+        y26 = allYears.find(y => y.name === '2026-2027');
+      } catch(e) { console.error('Academic year setup failed:', e); }
+    }
 
-  // 2. Aggressive Migration: If 2023-2024 exists, MOVE all students to 2026-2027 and delete old year.
-  if (y23 && y26) {
-    try {
-      console.log('Migrating data to 2026-2027...');
-      // Move students from 2023-24 to 2026-27
-      await sb.from('students').update({ academic_year_id: y26.id }).eq('academic_year_id', y23.id);
-      // Ensure students with no year are also moved
-      await sb.from('students').update({ academic_year_id: y26.id }).eq('school_id', schoolId).is('academic_year_id', null);
-      
-      // Delete the old 23-24 record
-      await sb.from('academic_years').delete().eq('id', y23.id);
-      
-      allYears = await nmGetAcademicYears(schoolId); // Refresh list
-      y26 = allYears.find(y => y.name === '2026-2027');
-      nmToast('Academic Year migrated to 2026-2027 successfully!', 'success');
-    } catch(e) { console.error('Manual migration failed:', e); }
-  }
+    if (y23 && y26) {
+      try {
+        console.log('Migrating data to 2026-2027...');
+        await sb.from('students').update({ academic_year_id: y26.id }).eq('academic_year_id', y23.id);
+        await sb.from('students').update({ academic_year_id: y26.id }).eq('school_id', schoolId).is('academic_year_id', null);
+        await sb.from('academic_years').delete().eq('id', y23.id);
+        
+        allYears = await nmGetAcademicYears(schoolId);
+        y26 = allYears.find(y => y.name === '2026-2027');
+      } catch(e) { console.error('Manual migration failed:', e); }
+    }
 
-  if (allYears.length) {
-    const active = allYears.find(y => y.is_active) || y26 || allYears[0];
-    currentYearId = active.id;
-  }
+    if (allYears.length) {
+      const active = allYears.find(y => y.is_active) || y26 || allYears[0];
+      currentYearId = active.id;
+    }
+  } catch(e) { console.error('[loadAcademicYears] fatal:', e); }
   renderYearSelector();
 }
 
@@ -1047,17 +1045,22 @@ async function renderDashboard() {
     return;
   }
 
-  const stats = await nmGetStats(schoolId, currentYearId);
-  const students = (await nmGetStudents(schoolId, currentYearId)) || [];
-  const counselling = (await nmGetCounselling(schoolId)) || [];
-  
-  document.getElementById('ds-total').textContent    = stats.total;
-  document.getElementById('ds-sessions').textContent = stats.counselling.total;
-  document.getElementById('ds-followups').textContent = stats.counselling.followUps;
-  document.getElementById('ds-activities').textContent = stats.total ? students.filter(s=>s.ncc||s.nss||s.sgfi||s.scouts).length : 0;
-  
-  document.getElementById('nb-count').textContent    = stats.total;
-  document.getElementById('dash-school-label').textContent = `School: ${document.getElementById('sb-school-name').textContent} · ${stats.total} students enrolled`;
+  try {
+    const stats = await nmGetStats(schoolId, currentYearId);
+    const students = (await nmGetStudents(schoolId, currentYearId)) || [];
+    const counselling = (await nmGetCounselling(schoolId)) || [];
+    
+    document.getElementById('ds-total').textContent    = stats.total;
+    document.getElementById('ds-sessions').textContent = stats.counselling.total;
+    document.getElementById('ds-followups').textContent = stats.counselling.followUps;
+    document.getElementById('ds-activities').textContent = stats.total ? students.filter(s=>s.ncc||s.nss||s.sgfi||s.scouts).length : 0;
+    
+    document.getElementById('nb-count').textContent    = stats.total;
+    document.getElementById('dash-school-label').textContent = `School: ${document.getElementById('sb-school-name').textContent} · ${stats.total} students enrolled`;
+  } catch(e) {
+    console.error('renderDashboard error:', e);
+    document.getElementById('dash-school-label').innerHTML = `<span style="color:#d9534f;">⚠ Error loading dashboard. Please check your internet or refresh.</span>`;
+  }
   
   // Recent Students
   const recent = [...students].reverse().slice(0,5);
