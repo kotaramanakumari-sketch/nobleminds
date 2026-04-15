@@ -1821,12 +1821,10 @@ async function saveObservation() {
     return; 
   }
 
-  nmShowLoading(true);
   try {
-    // If editing a single record, we update it. If multiple students selected, we create new records for each.
     if (idValue && selected.length === 1) {
       await nmSaveObservation({ 
-        id: idValue, student_id: selected[0].id, observation_date: date, observation: text 
+        id: idValue, school_id: schoolId, student_id: selected[0].id, observation_date: date, observation: text 
       });
     } else {
       for (const s of selected) {
@@ -1840,8 +1838,6 @@ async function saveObservation() {
     await renderObservations();
   } catch (err) {
     nmToast('Error saving observations','error');
-  } finally {
-    nmShowLoading(false);
   }
 }
 
@@ -2216,7 +2212,6 @@ async function saveMovement() {
   if (!sid || !leave || !reason || !escort) { nmToast('Please select a student and fill all fields','error'); return; }
   if (mode === 'incoming' && !report) { nmToast('Please enter Date of Reporting','error'); return; }
 
-  nmShowLoading(true);
   try {
     const payload = {
       id: document.getElementById('mov-id').value || undefined,
@@ -2230,8 +2225,6 @@ async function saveMovement() {
     await renderMovements();
   } catch (err) {
     nmToast('Error saving movement record','error');
-  } finally {
-    nmShowLoading(false);
   }
 }
 
