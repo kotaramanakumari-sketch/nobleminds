@@ -94,7 +94,13 @@
       <div class="page-section active" id="section-dashboard">
         <div class="mb-24">
           <h2 style="font-size:1.5rem;font-weight:900;">Welcome back! 👋</h2>
-          <p id="dash-school-label">Loading your school data…</p>
+          <div id="admin-school-picker" style="display:none; margin-top:16px; padding:20px; background:rgba(108,99,255,0.08); border:1px solid rgba(108,99,255,0.2); border-radius:var(--radius-lg);">
+            <p style="font-weight:600; margin-bottom:12px; font-size:0.9rem;">Admin Mode: Select a school to view its dashboard</p>
+            <select id="admin-school-sel" class="form-control" style="max-width:400px;" onchange="switchAdminSchool(this.value)">
+              <option value="">— Select School —</option>
+            </select>
+          </div>
+          <p id="dash-school-label" style="margin-top:8px;">Loading your school data…</p>
         </div>
         <div class="stat-cards mb-24">
           <div class="stat-card"><div class="stat-icon green">🎓</div><div><div class="stat-value" id="ds-total">0</div><div class="stat-label">Total Students</div></div></div>
@@ -868,13 +874,19 @@ async function init() {
     await nmInitAuth();
     const session = nmRequireAuth('user');
     if (session) {
-      schoolId = session.school_id || session.schoolId;
+      schoolId = session.school_id || session.schoolId || '';
       document.getElementById('user-name-disp').textContent = session.name;
       document.getElementById('user-avatar').textContent    = nmGetInitials(session.name);
       document.getElementById('sb-school-name').textContent = session.school_name || session.schoolName || 'School Portal';
       
+      // Admin Logic: Show school picker if Super Admin
+      if (session.role === 'admin') {
+        document.getElementById('admin-school-picker').style.display = 'block';
+        await populateAdminSchoolPicker();
+      }
+
       await loadAcademicYears();
-      
+
       // Update Debug Info
       document.getElementById('dbg-school-id').textContent = schoolId || 'Missing';
       document.getElementById('dbg-role').textContent = session.role || 'user';
@@ -1051,15 +1063,20 @@ document.querySelectorAll('.modal-overlay').forEach(o => o.addEventListener('cli
 
 // ── Dashboard ─────────────────────────────────────────────────────────────────
 async function renderDashboard() {
+  const label = document.getElementById('dash-school-label');
+  
   if (!schoolId) {
-    document.getElementById('dash-school-label').innerHTML = `<span style="color:#d9534f;font-weight:600;">⚠ Account Not Linked</span> &nbsp;&mdash;&nbsp; Your account has not been linked to a school. Please contact the Super Admin.`;
+    label.innerHTML = `<div style="padding:12px; background:rgba(217,83,79,0.1); border-radius:var(--radius-sm); border:1px solid rgba(217,83,79,0.3);">
+      <span style="color:#d9534f;font-weight:700;display:block;margin-bottom:4px;">⚠ Account Not Linked</span>
+      <p style="font-size:0.85rem;color:var(--clr-text-2);">Your account is not currently linked to a school. ${window.nmState?.role === 'admin' ? 'Please use the <strong>Select School</strong> dropdown above to view data.' : 'Please contact the Super Admin.'}</p>
+    </div>`;
     document.getElementById('ds-total').textContent = '0';
     document.getElementById('ds-sessions').textContent = '0';
     document.getElementById('ds-followups').textContent = '0';
     document.getElementById('ds-activities').textContent = '0';
-    document.getElementById('recent-table').innerHTML = '<div class="empty-state" style="padding:32px;"><div class="empty-state-icon">🚫</div><h3>No School Assigned</h3><p>Data will appear here once an admin assigns you to a school.</p></div>';
-    document.getElementById('recent-cns-list').innerHTML = '<div class="empty-state" style="padding:20px;"><p>No records found.</p></div>';
     document.getElementById('nb-count').textContent = '0';
+    document.getElementById('recent-table').innerHTML = '';
+    document.getElementById('recent-cns-list').innerHTML = '';
     return;
   }
 
@@ -2457,11 +2474,38 @@ async function exportTeacherDiaries() {
 }
 
 
+async function populateAdminSchoolPicker() {
+  const schools = await nmGetSchools();
+  const sel = document.getElementById('admin-school-sel');
+  if (!sel) return;
+  sel.innerHTML = '<option value="">— Select School —</option>' + 
+    schools.map(s => `<option value="${s.id}">${s.name}</option>`).join('');
+  
+  if (schoolId) sel.value = schoolId;
+}
+
+async function switchAdminSchool(id) {
+  if (!id) return;
+  schoolId = id;
+  if (window.nmState) window.nmState.schoolId = id;
+  
+  const schools = await nmGetSchools();
+  const s = schools.find(x => x.id === id);
+  document.getElementById('sb-school-name').textContent = s ? s.name : 'School Portal';
+  document.getElementById('dbg-school-id').textContent = id;
+  
+  await loadAcademicYears();
+  await renderDashboard();
+  nmToast('Viewing dashboard for: ' + (s ? s.name : ''), 'info');
+}
+
 async function toggleDebugInfo() {
   const p = document.getElementById('debug-panel');
   p.style.display = p.style.display === 'none' ? 'block' : 'none';
   if (window.nmState) {
+    document.getElementById('dbg-school-id').textContent = window.nmState.schoolId || 'Missing';
     document.getElementById('dbg-year-id').textContent = window.nmState.currentYearId || 'None';
+    document.getElementById('dbg-role').textContent = window.nmState.role || 'user';
   }
 }
 </script>
