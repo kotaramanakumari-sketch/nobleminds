@@ -125,6 +125,10 @@
             <div class="stat-icon amber">♀</div>
             <div><div class="stat-value" id="dash-female">0</div><div class="stat-label">Female Students</div></div>
           </div>
+          <div class="stat-card clickable" onclick="showSection('management'); switchMgmtTab('requests', document.getElementById('tab-btn-requests'))">
+            <div class="stat-icon red">📩</div>
+            <div><div class="stat-value" id="dash-requests">0</div><div class="stat-label">Pending Requests</div></div>
+          </div>
         </div>
 
         <!-- School summary cards -->
@@ -655,9 +659,10 @@ async function renderDashboard() {
   document.getElementById('dash-users').textContent    = stats.users || 0;
   document.getElementById('dash-students').textContent = stats.total;
   document.getElementById('dash-male').textContent     = stats.genders['Male']   || 0;
-  document.getElementById('dash-female').textContent   = stats.genders['Female'] || 0;
-  document.getElementById('schools-count').textContent = stats.schools;
-  document.getElementById('users-count').textContent   = stats.users || 0;
+  document.getElementById('dash-female').textContent   = stats.female || stats.genders['Female'] || 0;
+  
+  const reqs = await nmGetRegistrationRequests();
+  document.getElementById('dash-requests').textContent = reqs.length;
 
   const list = document.getElementById('school-summary-list');
   if (!schools.length) {

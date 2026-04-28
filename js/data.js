@@ -345,6 +345,7 @@ async function nmSaveMovement(mov) {
 // ─── REGISTRATION REQUESTS ───────────────────────────────────────────────────
 async function nmGetRegistrationRequests() {
   const { data, error } = await sb.from('registration_requests').select('*').eq('status', 'pending').order('created_at', { ascending: false });
+  if (error) { console.error('[nmGetRegistrationRequests] Error:', error); return []; }
   return data || [];
 }
 async function nmSaveRegistrationRequest(req) {

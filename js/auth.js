@@ -75,6 +75,7 @@ async function nmSignUp(data) {
 
     if (reqError) {
       console.error('Request creation error:', reqError);
+      throw new Error('Registration record could not be saved. Please contact support.');
     }
   }
 

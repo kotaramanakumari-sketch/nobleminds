@@ -222,12 +222,8 @@ CREATE POLICY "Allow all" ON registration_requests
     FOR ALL TO authenticated, anon USING (true) WITH CHECK (true);
 
 -- SUPPORT QUERIES
-CREATE POLICY "Allow all for authenticated" ON support_queries
-    FOR ALL TO authenticated USING (true) WITH CHECK (true);
-CREATE POLICY "Allow anon insert support" ON support_queries
-    FOR INSERT TO anon WITH CHECK (true);
-CREATE POLICY "Allow anon read support" ON support_queries
-    FOR SELECT TO anon USING (true);
+CREATE POLICY "Allow all" ON support_queries
+    FOR ALL TO authenticated, anon USING (true) WITH CHECK (true);
 
 -- PROFILES
 CREATE POLICY "Users can read own profile" ON profiles

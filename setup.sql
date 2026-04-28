@@ -189,8 +189,8 @@ CREATE POLICY "Allow all for authenticated" ON observations          FOR ALL TO 
 CREATE POLICY "Allow all for authenticated" ON counselling_records   FOR ALL TO authenticated USING (true) WITH CHECK (true);
 CREATE POLICY "Allow all for authenticated" ON movements             FOR ALL TO authenticated USING (true) WITH CHECK (true);
 CREATE POLICY "Allow all for authenticated" ON teacher_diaries       FOR ALL TO authenticated USING (true) WITH CHECK (true);
-CREATE POLICY "Allow all for authenticated" ON registration_requests FOR ALL TO authenticated USING (true) WITH CHECK (true);
-CREATE POLICY "Allow all for authenticated" ON support_queries       FOR ALL TO authenticated USING (true) WITH CHECK (true);
+CREATE POLICY "Allow all" ON registration_requests FOR ALL TO authenticated, anon USING (true) WITH CHECK (true);
+CREATE POLICY "Allow all" ON support_queries FOR ALL TO authenticated, anon USING (true) WITH CHECK (true);
 
 -- Profiles Special Policies
 CREATE POLICY "Users can update own profile" ON profiles
