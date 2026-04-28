@@ -1,0 +1,856 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>User Panel — NobleMinds</title>
+  <link rel="stylesheet" href="../styles/global.css">
+  <link rel="stylesheet" href="../styles/dashboard.css">
+
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body>
+<div class="panel-layout">
+
+  <!-- SIDEBAR -->
+  <aside class="sidebar">
+    <div class="sidebar-logo">
+      <img src="../assets/logo.png" alt="NobleMinds" style="width:40px;height:40px;border-radius:var(--radius-sm);object-fit:contain;background:#fff;padding:2px;">
+      <div>
+        <div class="sidebar-brand">Noble<span>Minds</span></div>
+        <div class="sidebar-sub" id="sb-school-name">School Portal</div>
+      </div>
+    </div>
+    <nav class="sidebar-nav">
+      <div class="nav-section-label">Main</div>
+      <div class="nav-item active" onclick="showSection('dashboard',this)"><span class="nav-item-icon">📊</span>Dashboard</div>
+      <div class="nav-section-label">Students</div>
+      <div class="nav-item" onclick="showSection('students',this)"><span class="nav-item-icon">🎓</span>All Students<span class="nav-badge" id="nb-count">0</span></div>
+      <div class="nav-item" onclick="showSection('add-student',this);resetForm()"><span class="nav-item-icon">➕</span>Add Student</div>
+      <div class="nav-item" onclick="showSection('import',this)"><span class="nav-item-icon">📥</span>Bulk Import</div>
+      <div class="nav-section-label">Records</div>
+      <div class="nav-item" onclick="showSection('observations',this)"><span class="nav-item-icon">👁‍🗨</span>Observations</div>
+      <div class="nav-item" onclick="showSection('counselling',this)"><span class="nav-item-icon">🤝</span>Counselling</div>
+      <div class="nav-item" onclick="showSection('movement',this)"><span class="nav-item-icon">🏃</span>Movement Record</div>
+      <div class="nav-item" onclick="showSection('teacher-diary',this)"><span class="nav-item-icon">📓</span>Teacher Diary</div>
+      <div class="nav-section-label">Account</div>
+      <div class="nav-item" data-section="settings" onclick="showSection('settings',this)">
+        <span class="nav-item-icon">⚙️</span> Settings
+      </div>
+      <div class="nav-item mobile-only" onclick="window.print()">
+        <span class="nav-item-icon">🖨</span> Print Page
+      </div>
+      <div class="nav-item" onclick="nmLogout()">
+        <span class="nav-item-icon">🚪</span> Logout
+      </div>
+    </nav>
+    <div class="sidebar-footer">
+      <div class="sidebar-user">
+        <div class="avatar" id="user-avatar">U</div>
+        <div class="sidebar-user-info">
+          <div class="sidebar-user-name" id="user-name-disp">User</div>
+          <div class="sidebar-user-role">School Staff</div>
+        </div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- MAIN -->
+  <div class="main-content">
+    <div class="topbar">
+      <button class="mobile-menu-btn" onclick="toggleMobileMenu()">☰</button>
+      <div class="topbar-title" id="topbar-title">Dashboard</div>
+      <div class="topbar-right">
+        <select id="topbar-year-sel" class="filter-select hide-mobile" style="padding: 4px 8px; font-size: 0.8rem; height: 32px; min-width: 120px;" onchange="changeYear(this.value)">
+          <option value="">Year...</option>
+        </select>
+        <button class="btn btn-ghost btn-sm hide-mobile" onclick="window.print()">🖨 Print Page</button>
+      </div>
+    </div>
+
+    <div class="content-area">
+
+      <!-- DASHBOARD -->
+      <div class="page-section active" id="section-dashboard">
+        <div class="mb-24">
+          <h2 style="font-size:1.5rem;font-weight:900;">Welcome back! 👋</h2>
+          <p id="dash-school-label">Loading your school data…</p>
+        </div>
+        <div class="stat-cards mb-24">
+          <div class="stat-card"><div class="stat-icon green">🎓</div><div><div class="stat-value" id="ds-total">0</div><div class="stat-label">Total Students</div></div></div>
+          <div class="stat-card"><div class="stat-icon purple">🤝</div><div><div class="stat-value" id="ds-sessions">0</div><div class="stat-label">Counselling Sessions</div></div></div>
+          <div class="stat-card"><div class="stat-icon amber">⏳</div><div><div class="stat-value" id="ds-followups">0</div><div class="stat-label">Pending Follow-ups</div></div></div>
+          <div class="stat-card"><div class="stat-icon pink">🏆</div><div><div class="stat-value" id="ds-activities">0</div><div class="stat-label">In Activities</div></div></div>
+        </div>
+
+        <div class="mb-24">
+          <div class="card" style="padding: 24px;">
+            <div class="card-header" style="margin-bottom: 20px;">
+              <span class="card-title" style="font-size: 1.1rem;">📊 Student Strength by Class</span>
+              <div class="badge badge-purple" id="chart-year-label" style="font-weight: 700;">Loading...</div>
+            </div>
+            <div id="strength-chart-container" class="strength-chart-container">
+              <!-- Animated Bars Injected by JS -->
+            </div>
+          </div>
+        </div>
+        <div style="display:grid;grid-template-columns:1.5fr 1fr;gap:24px;">
+          <div class="card">
+            <div class="card-header"><span class="card-title">Recent Students</span><button class="btn btn-ghost btn-sm" onclick="showSection('students',document.querySelector('[onclick*=students]'))">View All →</button></div>
+            <div id="recent-table"></div>
+          </div>
+          <div class="card">
+            <div class="card-header"><span class="card-title">Recent Counselling</span><button class="btn btn-ghost btn-sm" onclick="showSection('counselling',document.querySelector('[onclick*=counselling]'))">View All →</button></div>
+            <div id="recent-cns-list" style="font-size:0.85rem;"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- STUDENTS LIST -->
+      <div class="page-section" id="section-students">
+        <div class="section-header">
+          <h2>🎓 Students</h2>
+          <div class="action-btns" style="display:flex; gap:12px; flex-wrap:wrap;">
+            <button class="btn btn-primary" onclick="showSection('add-student',document.querySelector('[onclick*=add-student]'));resetForm()">+ Add Student</button>
+            <button class="btn btn-primary" style="background:#6c63ff; border-color:#6c63ff;" onclick="openPromotionModal()">⬆ Promote Students</button>
+          </div>
+        </div>
+        <div class="filter-bar mb-20">
+          <div class="search-input-wrapper" style="flex:1;min-width:180px;">
+            <span>🔍</span><input type="text" id="std-search" placeholder="Search by name, admission no…" oninput="renderStudents()">
+          </div>
+          <select class="filter-select" id="f-class" onchange="renderStudents()">
+            <option value="">All Classes</option>
+            <option value="1">Class 1</option><option value="2">Class 2</option><option value="3">Class 3</option>
+            <option value="4">Class 4</option><option value="5">Class 5</option><option value="6">Class 6</option>
+            <option value="7">Class 7</option><option value="8">Class 8</option><option value="9">Class 9</option>
+            <option value="10">Class 10</option><option value="11">Class 11</option><option value="12">Class 12</option>
+          </select>
+          <select class="filter-select" id="f-section" onchange="renderStudents()">
+            <option value="">All Sections</option>
+            <option>A</option><option>B</option><option>C</option><option>D</option><option>E</option><option>F</option>
+          </select>
+          <select class="filter-select" id="f-gender" onchange="renderStudents()">
+            <option value="">All Genders</option><option>Male</option><option>Female</option>
+          </select>
+          <button class="btn btn-ghost btn-sm" onclick="exportStudents()">⬇ Export Excel</button>
+        </div>
+        <div class="card" style="padding:0;overflow:hidden;">
+          <div class="table-wrapper">
+            <table class="data-table">
+              <thead><tr><th>Student Name</th><th>Class</th><th>Section</th><th>House</th><th>Phone Number</th><th>Actions</th></tr></thead>
+              <tbody id="std-tbody"></tbody>
+            </table>
+          </div>
+          <div id="std-empty" class="empty-state hidden">
+            <div class="empty-state-icon">🎓</div><h3>No students found</h3><p>Add students or adjust your filters.</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- ADD STUDENT (5-STEP FORM) -->
+      <div class="page-section" id="section-add-student">
+        <div class="section-header">
+          <h2 id="form-title">➕ Add New Student</h2>
+        </div>
+        <!-- Step progress -->
+        <div class="step-progress" id="step-progress">
+          <div class="sp-item active" onclick="goToStep(1)"><div class="sp-num" id="sn1">1</div><div class="sp-label">Basic Info</div></div>
+          <div class="sp-item" onclick="goToStep(2)"><div class="sp-num" id="sn2">2</div><div class="sp-label">Contact & IDs</div></div>
+          <div class="sp-item" onclick="goToStep(3)"><div class="sp-num" id="sn3">3</div><div class="sp-label">Father Details</div></div>
+          <div class="sp-item" onclick="goToStep(4)"><div class="sp-num" id="sn4">4</div><div class="sp-label">Mother Details</div></div>
+          <div class="sp-item" onclick="goToStep(5)"><div class="sp-num" id="sn5">5</div><div class="sp-label">Medical & Activities</div></div>
+        </div>
+
+        <div class="card">
+          <!-- STEP 1: Basic Info -->
+          <div class="step-pane active" id="pane-1">
+            <h3 style="margin-bottom:20px;">📋 Step 1: Basic Information</h3>
+            <div style="display:flex;gap:20px;align-items:flex-start;flex-wrap:wrap;margin-bottom:20px;">
+              <div>
+                <div class="form-label" style="margin-bottom:8px;">Student Photo</div>
+                <div class="photo-box" id="sp-preview">
+                  <input type="file" id="f-photo" accept="image/*" onchange="previewPhoto(this,'sp-preview')">
+                  <span style="font-size:2rem;color:var(--clr-text-3);">📷</span>
+                  <span style="font-size:0.7rem;color:var(--clr-text-3);margin-top:4px;">Upload Photo (Max 200KB)</span>
+                </div>
+              </div>
+              <div style="flex:1;min-width:280px;">
+                <div class="form-grid">
+                  <div class="form-group">
+                    <label class="form-label">Admission Number <span class="required">*</span></label>
+                    <input type="text" id="f-adm" class="form-control" placeholder="e.g. SCH/2024/001">
+                  </div>
+                  <div class="form-group">
+                    <label class="form-label">Full Name <span class="required">*</span></label>
+                    <input type="text" id="f-name" class="form-control" placeholder="Student full name">
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="form-grid mb-16">
+              <div class="form-group">
+                <label class="form-label">Class <span class="required">*</span></label>
+                <select id="f-class-val" class="form-control">
+                  <option value="">Select class</option>
+                  <option value="1">Class 1</option><option value="2">Class 2</option><option value="3">Class 3</option>
+                  <option value="4">Class 4</option><option value="5">Class 5</option><option value="6">Class 6</option>
+                  <option value="7">Class 7</option><option value="8">Class 8</option><option value="9">Class 9</option>
+                  <option value="10">Class 10</option><option value="11">Class 11</option><option value="12">Class 12</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label class="form-label">Section</label>
+                <select id="f-section-val" class="form-control">
+                  <option value="">Select</option>
+                  <option>A</option><option>B</option><option>C</option><option>D</option><option>E</option><option>F</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label class="form-label">House</label>
+                <input type="text" id="f-house" class="form-control" placeholder="e.g. Blue, Red, Topaz">
+              </div>
+            </div>
+            <div class="form-grid mb-16">
+              <div class="form-group">
+                <label class="form-label">Date of Birth <span class="required">*</span></label>
+                <input type="date" id="f-dob" class="form-control" onchange="calcAge()">
+              </div>
+              <div class="form-group">
+                <label class="form-label">Age</label>
+                <input type="text" id="f-age" class="form-control" placeholder="Auto-calculated" readonly style="background:rgba(255,255,255,0.03);">
+              </div>
+            </div>
+            <div class="form-grid mb-16">
+              <div class="form-group">
+                <label class="form-label">Gender <span class="required">*</span></label>
+                <div class="radio-group">
+                  <label class="radio-option"><input type="radio" name="gender" value="Male"> Male</label>
+                  <label class="radio-option"><input type="radio" name="gender" value="Female"> Female</label>
+                </div>
+              </div>
+              <div class="form-group">
+                <label class="form-label">Religion</label>
+                <select id="f-religion" class="form-control">
+                  <option value="">Select</option>
+                  <option>Hindu</option><option>Muslim</option><option>Christian</option><option>Others</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label class="form-label">Caste</label>
+                <select id="f-caste" class="form-control">
+                  <option value="">Select</option>
+                  <option>OC</option><option>BC</option><option>SC</option><option>ST</option><option>NA</option>
+                </select>
+              </div>
+            </div>
+            <div class="step-actions"><div></div><button class="btn btn-primary" onclick="nextStep(1)">Next: Contact & IDs →</button></div>
+          </div>
+
+          <!-- STEP 2: Contact & IDs -->
+          <div class="step-pane" id="pane-2">
+            <h3 style="margin-bottom:20px;">📞 Step 2: Contact & Identity Documents</h3>
+            <div class="form-group mb-16">
+              <label class="form-label">Address</label>
+              <textarea id="f-address" class="form-control" rows="2" placeholder="Full residential address"></textarea>
+            </div>
+            <div class="form-grid mb-16">
+              <div class="form-group">
+                <label class="form-label">Phone Number</label>
+                <input type="tel" id="f-phone" class="form-control" placeholder="10-digit mobile" maxlength="10">
+              </div>
+              <div class="form-group">
+                <label class="form-label">Email</label>
+                <input type="email" id="f-email" class="form-control" placeholder="student@email.com">
+              </div>
+            </div>
+            <div class="form-grid mb-16">
+              <div class="form-group">
+                <label class="form-label">Aadhar Number</label>
+                <input type="text" id="f-aadhar" class="form-control" placeholder="12-digit Aadhar" maxlength="12">
+              </div>
+              <div class="form-group">
+                <label class="form-label">APAAR Number</label>
+                <input type="text" id="f-apaar" class="form-control" placeholder="APAAR ID">
+              </div>
+              <div class="form-group">
+                <label class="form-label">PEN</label>
+                <input type="text" id="f-pen" class="form-control" placeholder="Permanent Education Number">
+              </div>
+            </div>
+            <div class="step-actions">
+              <button class="btn btn-ghost" onclick="goToStep(1)">← Previous</button>
+              <button class="btn btn-primary" onclick="nextStep(2)">Next: Father Details →</button>
+            </div>
+          </div>
+
+          <!-- STEP 3: Father Details -->
+          <div class="step-pane" id="pane-3">
+            <h3 style="margin-bottom:20px;">👨 Step 3: Father's Details</h3>
+            <div style="display:flex;gap:20px;align-items:flex-start;flex-wrap:wrap;margin-bottom:20px;">
+              <div>
+                <div class="form-label" style="margin-bottom:8px;">Father Photo</div>
+                <div class="photo-box" id="fp-preview">
+                  <input type="file" id="f-father-photo" accept="image/*" onchange="previewPhoto(this,'fp-preview')">
+                  <span style="font-size:2rem;color:var(--clr-text-3);">📷</span>
+                  <span style="font-size:0.7rem;color:var(--clr-text-3);margin-top:4px;">Upload Photo (Max 200KB)</span>
+                </div>
+              </div>
+              <div style="flex:1;min-width:280px;">
+                <div class="form-group mb-16">
+                  <label class="form-label">Father's Full Name</label>
+                  <input type="text" id="f-fname" class="form-control" placeholder="Father's full name">
+                </div>
+                <div class="form-grid">
+                  <div class="form-group">
+                    <label class="form-label">Qualification</label>
+                    <input type="text" id="f-fqual" class="form-control" placeholder="e.g. B.Sc, Graduate">
+                  </div>
+                  <div class="form-group">
+                    <label class="form-label">Occupation</label>
+                    <input type="text" id="f-focc" class="form-control" placeholder="e.g. Business, Farmer">
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="form-group mb-16">
+              <label class="form-label">Father's Phone Number</label>
+              <input type="tel" id="f-fphone" class="form-control" placeholder="10-digit mobile" maxlength="10" style="max-width:300px;">
+            </div>
+            <div class="step-actions">
+              <button class="btn btn-ghost" onclick="goToStep(2)">← Previous</button>
+              <button class="btn btn-primary" onclick="nextStep(3)">Next: Mother Details →</button>
+            </div>
+          </div>
+
+          <!-- STEP 4: Mother Details -->
+          <div class="step-pane" id="pane-4">
+            <h3 style="margin-bottom:20px;">👩 Step 4: Mother's Details</h3>
+            <div style="display:flex;gap:20px;align-items:flex-start;flex-wrap:wrap;margin-bottom:20px;">
+              <div>
+                <div class="form-label" style="margin-bottom:8px;">Mother Photo</div>
+                <div class="photo-box" id="mp-preview">
+                  <input type="file" id="f-mother-photo" accept="image/*" onchange="previewPhoto(this,'mp-preview')">
+                  <span style="font-size:2rem;color:var(--clr-text-3);">📷</span>
+                  <span style="font-size:0.7rem;color:var(--clr-text-3);margin-top:4px;">Upload Photo (Max 200KB)</span>
+                </div>
+              </div>
+              <div style="flex:1;min-width:280px;">
+                <div class="form-group mb-16">
+                  <label class="form-label">Mother's Full Name</label>
+                  <input type="text" id="f-mname" class="form-control" placeholder="Mother's full name">
+                </div>
+                <div class="form-grid">
+                  <div class="form-group">
+                    <label class="form-label">Qualification</label>
+                    <input type="text" id="f-mqual" class="form-control" placeholder="e.g. Graduate, HSC">
+                  </div>
+                  <div class="form-group">
+                    <label class="form-label">Occupation</label>
+                    <input type="text" id="f-mocc" class="form-control" placeholder="e.g. Homemaker, Teacher">
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="form-group mb-16">
+              <label class="form-label">Mother's Phone Number</label>
+              <input type="tel" id="f-mphone" class="form-control" placeholder="10-digit mobile" maxlength="10" style="max-width:300px;">
+            </div>
+            <div class="step-actions">
+              <button class="btn btn-ghost" onclick="goToStep(3)">← Previous</button>
+              <button class="btn btn-primary" onclick="nextStep(4)">Next: Medical & Activities →</button>
+            </div>
+          </div>
+
+          <!-- STEP 5: Medical & Activities -->
+          <div class="step-pane" id="pane-5">
+            <h3 style="margin-bottom:20px;">🏥 Step 5: Medical History & Activities</h3>
+            <div class="form-group mb-20">
+              <label class="form-label">Medical History</label>
+              <textarea id="f-medical" class="form-control" rows="4" placeholder="Describe any known medical conditions, allergies, disabilities, or special needs. Write 'None' if healthy."></textarea>
+            </div>
+            <div class="form-group mb-20">
+              <label class="form-label">Extracurricular Activities</label>
+              <div class="check-group" style="gap:12px;">
+                <label class="check-option"><input type="checkbox" id="f-ncc"> NCC</label>
+                <label class="check-option"><input type="checkbox" id="f-nss"> NSS</label>
+                <label class="check-option"><input type="checkbox" id="f-sgfi"> SGFI</label>
+                <label class="check-option"><input type="checkbox" id="f-scouts"> Scouts &amp; Guides</label>
+              </div>
+            </div>
+            <!-- Summary preview -->
+            <div style="padding:20px;background:rgba(108,99,255,0.07);border:1px solid rgba(108,99,255,0.18);border-radius:var(--radius-md);margin-bottom:4px;">
+              <div style="font-weight:700;margin-bottom:12px;color:var(--clr-primary);">📋 Summary Preview</div>
+              <div id="form-summary" style="font-size:0.85rem;color:var(--clr-text-2);line-height:1.9;"></div>
+            </div>
+            <div class="step-actions">
+              <button class="btn btn-ghost" onclick="goToStep(4)">← Previous</button>
+              <button class="btn btn-success btn-lg" onclick="submitStudent()" id="submit-btn">✓ Save Student Record</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- BULK IMPORT -->
+      <div class="page-section" id="section-import">
+        <div class="section-header"><h2>📥 Bulk Import Students (Excel)</h2></div>
+        <div class="card mb-20">
+          <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-bottom:16px;">
+            <div><h3 style="margin-bottom:4px;">Step 1: Download Template</h3><p style="font-size:0.85rem;">Get the Excel template (.xlsx) with the correct columns.</p></div>
+            <button class="btn btn-ghost" onclick="nmDownloadTemplate()">⬇ Download Template Excel</button>
+          </div>
+          <hr class="divider">
+          <h3 style="margin-bottom:8px;">Step 2: Upload Filled Excel</h3>
+          <p style="font-size:0.85rem;margin-bottom:16px;">Fill the template and upload it here. Preview before saving.</p>
+          <div class="drop-zone" id="drop-zone">
+            <input type="file" id="excel-file" accept=".xlsx, .xls, .csv" onchange="handleExcelUpload(this)">
+            <div class="drop-zone-icon">📊</div>
+            <h3>Drop your Excel file here</h3>
+            <p>or click to browse · .xlsx or .csv accepted</p>
+          </div>
+        </div>
+        <div id="excel-preview" class="hidden">
+          <div class="card" style="padding:0;overflow:hidden;">
+            <div class="card-header" style="padding:16px 20px;"><span class="card-title" id="excel-preview-title">Preview</span><div style="display:flex;gap:8px;"><button class="btn btn-ghost btn-sm" onclick="clearExcel()">✕ Clear</button><button class="btn btn-primary btn-sm" onclick="confirmImport()" id="import-btn">✓ Import All</button></div></div>
+            <div class="table-wrapper" id="excel-table-wrap"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- OBSERVATIONS -->
+      <div class="page-section" id="section-observations">
+        <div class="section-header">
+          <h2>👁‍🗨 Observations</h2>
+          <button class="btn btn-primary" onclick="openObservationModal()">+ Add Observation</button>
+        </div>
+        <div class="filter-bar mb-20">
+          <div class="search-input-wrapper" style="flex:1;">
+            <span>🔍</span><input type="text" id="obs-search" placeholder="Search students..." oninput="renderObservations()">
+          </div>
+          <button class="btn btn-ghost btn-sm" onclick="exportObservations()">⬇ Export Excel</button>
+        </div>
+        <div class="card" style="padding:0;overflow:hidden;">
+          <div class="table-wrapper">
+            <table class="data-table">
+              <thead><tr><th>Date</th><th>Student Name</th><th>Class</th><th>Sec</th><th>House</th><th>Observation</th><th>Actions</th></tr></thead>
+              <tbody id="obs-tbody"></tbody>
+            </table>
+          </div>
+          <div id="obs-empty" class="empty-state hidden">
+            <div class="empty-state-icon">👁‍🗨</div><h3>No observations found</h3><p>Record your first student observation today.</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- COUNSELLING -->
+      <div class="page-section" id="section-counselling">
+        <div class="section-header">
+          <h2>🤝 Counselling Records</h2>
+          <button class="btn btn-primary" onclick="openCounsellingModal()">+ Add Counselling</button>
+        </div>
+        <div class="filter-bar mb-20">
+          <div class="search-input-wrapper" style="flex:1;">
+            <span>🔍</span><input type="text" id="cns-search" placeholder="Search students or issues..." oninput="renderCounselling()">
+          </div>
+          <button class="btn btn-ghost btn-sm" onclick="exportCounselling()">⬇ Export Excel</button>
+        </div>
+        <div class="card" style="padding:0;overflow:hidden;">
+          <div class="table-wrapper">
+            <table class="data-table">
+              <thead><tr><th>Date</th><th>Student Name</th><th>Class</th><th>Sec</th><th>House</th><th>Brief Issue</th><th>Actions</th></tr></thead>
+              <tbody id="cns-tbody"></tbody>
+            </table>
+          </div>
+          <div id="cns-empty" class="empty-state hidden">
+            <div class="empty-state-icon">🤝</div><h3>No counselling records</h3><p>Support your students with documented counselling sessions.</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- MOVEMENT RECORD -->
+      <div class="page-section" id="section-movement">
+        <div class="section-header">
+          <h2>🏃 Movement Record</h2>
+          <button class="btn btn-primary" onclick="openMovementModal()">+ Add Movement</button>
+        </div>
+        <div class="filter-bar mb-20">
+          <div class="search-input-wrapper" style="flex:1;">
+            <span>🔍</span><input type="text" id="mov-search" placeholder="Search student or escort..." oninput="renderMovements()">
+          </div>
+          <button class="btn btn-ghost btn-sm" onclick="exportMovements()">⬇ Export Excel</button>
+        </div>
+        <div class="card" style="padding:0;overflow:hidden;">
+          <div class="table-wrapper">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>Leaving Date</th>
+                  <th>Student Info</th>
+                  <th>Reason</th>
+                  <th>Reporting Date</th>
+                  <th>Escort Details</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody id="mov-tbody"></tbody>
+            </table>
+          </div>
+          <div id="mov-empty" class="empty-state hidden">
+            <div class="empty-state-icon">🏃</div>
+            <h3>No movement records found</h3>
+            <p>Click "Add Movement" to record a student leaving or reporting.</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- TEACHER DIARY -->
+      <div class="page-section" id="section-teacher-diary">
+        <div class="section-header">
+          <h2>📓 Teacher Diary</h2>
+          <button class="btn btn-primary" onclick="openDiaryModal()">+ Add Entry</button>
+        </div>
+        <div class="filter-bar mb-20">
+          <div class="search-input-wrapper" style="flex:1;">
+            <span>🔍</span><input type="text" id="diary-search" placeholder="Search topic or class..." oninput="renderTeacherDiaries()">
+          </div>
+          <button class="btn btn-ghost btn-sm" onclick="exportTeacherDiaries()">⬇ Export Excel</button>
+        </div>
+        <div class="card" style="padding:0;overflow:hidden;">
+          <div class="table-wrapper">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>Date</th>
+                  <th>Period</th>
+                  <th>Class & Section</th>
+                  <th>Attendance Summary</th>
+                  <th>Topic Discussed</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody id="diary-tbody"></tbody>
+            </table>
+          </div>
+          <div id="diary-empty" class="empty-state hidden">
+            <div class="empty-state-icon">📓</div>
+            <h3>No diary entries</h3>
+            <p>Start logging your daily classroom activities.</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- SETTINGS -->
+      <div class="page-section" id="section-settings">
+        <div class="section-header">
+          <h2>⚙️ Settings</h2>
+        </div>
+        <div class="card mb-20" style="max-width: 600px;">
+          <h3 style="margin-bottom:16px;">Academic Years</h3>
+          <div id="ay-list" style="margin-bottom:16px; border:1px solid var(--clr-border); border-radius:var(--radius-sm); overflow:hidden;"></div>
+          <div style="display:flex; gap:12px;">
+            <input type="text" id="ay-name-new" class="form-control" placeholder="e.g. 2024-2025" style="max-width:200px;">
+            <button class="btn btn-primary" onclick="addAcademicYear()">Add Year</button>
+          </div>
+          <p style="font-size:0.75rem; color:var(--clr-text-3); margin-top:12px;">The active year is the default view for all school staff.</p>
+        </div>
+
+        <div class="card mb-20" style="max-width: 600px;">
+          <h3 style="margin-bottom:16px;">Appearance</h3>
+          <div style="display:flex;align-items:center;justify-content:space-between;padding:16px;background:var(--clr-surface2);border:1px solid var(--clr-border);border-radius:var(--radius-sm);">
+            <div>
+              <div style="font-weight:600;font-size:1rem;">Dark Theme</div>
+              <div style="font-size:0.85rem;color:var(--clr-text-2);">Enable dark mode for a low-light interface.</div>
+            </div>
+            <label class="theme-switch" style="cursor:pointer;display:flex;align-items:center;gap:8px;">
+              <input type="checkbox" class="theme-toggle-cb" style="width:20px;height:20px;accent-color:var(--clr-primary);cursor:pointer;" onchange="nmToggleTheme()">
+            </label>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- STUDENT VIEW MODAL -->
+<div class="modal-overlay" id="student-modal">
+  <div class="modal modal-lg">
+    <div class="modal-header">
+      <span class="modal-title">Student Profile</span>
+      <div class="modal-header-actions">
+        <button class="btn btn-ghost btn-sm" onclick="nmPreparePrintProfile(currentStudentId)">🖨 <span class="hide-mobile">Print</span><span class="mobile-only">Print</span></button>
+        <button class="btn btn-danger btn-sm" id="modal-delete-btn">🗑 Delete</button>
+        <button class="modal-close" onclick="closeModal('student-modal')">✕</button>
+      </div>
+    </div>
+    <div class="modal-body" id="student-modal-body"></div>
+  </div>
+</div>
+
+<!-- OBSERVATION MODAL -->
+<div class="modal-overlay" id="obs-modal">
+  <div class="modal">
+    <div class="modal-header"><span class="modal-title" id="obs-modal-title">Add Observation</span><button class="modal-close" onclick="closeModal('obs-modal')">✕</button></div>
+    <div class="modal-body">
+      <input type="hidden" id="o-id">
+      <div class="form-group mb-16">
+        <label class="form-label">Date <span class="required">*</span></label>
+        <input type="date" id="o-date" class="form-control">
+      </div>
+      <div class="form-group mb-16">
+        <label class="form-label">Search Student <span class="required">*</span></label>
+        <div class="student-search-container">
+          <input type="text" id="o-student-search" class="form-control" placeholder="Type student name or admission no...">
+          <div id="o-search-results" class="student-search-results"></div>
+        </div>
+        <div id="o-selected-area" class="selected-students-area"></div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Observation <span class="required">*</span></label>
+        <textarea id="o-text" class="form-control" rows="4" placeholder="What did you observe?"></textarea>
+      </div>
+    </div>
+    <div class="modal-footer"><button class="btn btn-ghost" onclick="closeModal('obs-modal')">Cancel</button><button class="btn btn-primary" onclick="saveObservation()">Save Observation</button></div>
+  </div>
+</div>
+
+<!-- COUNSELLING MODAL -->
+<div class="modal-overlay" id="cns-modal">
+  <div class="modal">
+    <div class="modal-header"><span class="modal-title" id="cns-modal-title">Add Counselling Record</span><button class="modal-close" onclick="closeModal('cns-modal')">✕</button></div>
+    <div class="modal-body">
+      <input type="hidden" id="c-id">
+      <div class="form-group mb-16">
+        <label class="form-label">Date <span class="required">*</span></label>
+        <input type="date" id="c-date" class="form-control">
+      </div>
+      <div class="form-group mb-16" id="c-search-parent">
+        <label class="form-label">Search Student <span class="required">*</span></label>
+        <div class="student-search-container" id="c-search-wrap">
+          <input type="text" id="c-student-search" class="form-control" placeholder="Type name or admission no...">
+          <div id="c-search-results" class="student-search-results"></div>
+        </div>
+        <div id="c-selection-disp" class="single-selection-disp hidden">
+          <div id="c-selected-name" style="font-weight:600;"></div>
+          <button class="btn btn-ghost btn-sm" onclick="clearSingleSelection('c')">✕ Change</button>
+        </div>
+        <input type="hidden" id="c-student">
+      </div>
+      <div class="form-grid mb-16">
+        <div class="form-group">
+          <label class="form-label">Brief Issue <span class="required">*</span></label>
+          <input type="text" id="c-issue" class="form-control" placeholder="e.g. Behavioural, Academic stress">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Status</label>
+          <select id="c-status" class="form-control">
+            <option value="Resolved">Resolved</option>
+            <option value="Open">Open</option>
+            <option value="Follow-up">Follow-up Required</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-group mb-16">
+        <label class="check-option"><input type="checkbox" id="c-followup"> Flag for Follow-up</label>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Counselling Record <span class="required">*</span></label>
+        <textarea id="c-text" class="form-control" rows="5" placeholder="Details of the counselling session..."></textarea>
+      </div>
+    </div>
+    <div class="modal-footer"><button class="btn btn-ghost" onclick="closeModal('cns-modal')">Cancel</button><button class="btn btn-primary" onclick="saveCounselling()">Save Record</button></div>
+  </div>
+</div>
+
+<!-- MOVEMENT MODAL -->
+<div class="modal-overlay" id="movement-modal">
+  <div class="modal">
+    <div class="modal-header">
+      <span class="modal-title" id="mov-modal-title">Add Movement Record</span>
+      <button class="modal-close" onclick="closeModal('movement-modal')">✕</button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="mov-id">
+
+      <div class="form-group mb-16" id="m-search-parent">
+        <label class="form-label">Search Student <span class="required">*</span></label>
+        <div class="student-search-container" id="m-search-wrap">
+          <input type="text" id="m-student-search" class="form-control" placeholder="Type name or admission no...">
+          <div id="m-search-results" class="student-search-results"></div>
+        </div>
+        <div id="m-selection-disp" class="single-selection-disp hidden">
+          <div id="m-selected-name" style="font-weight:600;"></div>
+          <button class="btn btn-ghost btn-sm" onclick="clearSingleSelection('m')">✕ Change</button>
+        </div>
+        <input type="hidden" id="m-student">
+      </div>
+
+      <input type="hidden" id="mov-mode" value="outgoing">
+      <div style="display:flex; background:var(--clr-surface); padding:4px; border-radius:var(--radius-sm); margin-bottom:20px;">
+        <button id="btn-mov-outgoing" class="btn btn-sm" style="flex:1; background:var(--clr-primary); color:#fff;" onclick="changeMovementMode('outgoing')">Outgoing (Leaving)</button>
+        <button id="btn-mov-incoming" class="btn btn-sm" style="flex:1;" onclick="changeMovementMode('incoming')">Incoming (Reporting)</button>
+      </div>
+
+      <div id="mov-outgoing-fields">
+        <div class="form-group mb-16">
+          <label class="form-label" id="lbl-date-1">Date of Leaving <span class="required">*</span></label>
+          <input type="date" id="m-leave-date" class="form-control">
+        </div>
+      </div>
+
+      <div id="mov-incoming-fields" style="display:none;">
+        <p style="font-size:0.8rem; color:var(--clr-text-2); margin-bottom:12px;">Searching for students who are currently marked as "Away".</p>
+      </div>
+
+      <div class="form-group mb-16" id="group-report-date" style="display:none;">
+        <label class="form-label">Date of Reporting <span class="required">*</span></label>
+        <input type="date" id="m-report-date" class="form-control">
+      </div>
+
+      <div class="form-group mb-16">
+        <label class="form-label">Reason for Leave <span class="required">*</span></label>
+        <input type="text" id="m-reason" class="form-control" placeholder="e.g. Visiting home for holidays">
+      </div>
+
+      <div class="card mb-0" style="background:var(--clr-surface);border:1px solid var(--clr-border);">
+        <h4 style="margin-bottom:12px;font-size:0.9rem;">👤 Escort Information</h4>
+        <div class="form-grid mb-0">
+          <div class="form-group">
+            <label class="form-label">Escort Name <span class="required">*</span></label>
+            <input type="text" id="m-escort-name" class="form-control">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Relationship <span class="required">*</span></label>
+            <input type="text" id="m-relationship" class="form-control">
+          </div>
+        </div>
+        <div class="form-group mt-12">
+          <label class="form-label">Phone Number <span class="required">*</span></label>
+          <input type="tel" id="m-phone" class="form-control">
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('movement-modal')">Cancel</button>
+      <button class="btn btn-primary" onclick="saveMovement()">Save Record</button>
+    </div>
+  </div>
+</div>
+
+<!-- PROMOTION MODAL -->
+<div class="modal-overlay" id="promotion-modal">
+  <div class="modal">
+    <div class="modal-header">
+      <span class="modal-title">Bulk Student Promotion</span>
+      <button class="modal-close" onclick="closeModal('promotion-modal')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div style="font-size:0.85rem; background:rgba(108,99,255,0.08); border:1px solid rgba(108,99,255,0.2); padding:12px; border-radius:var(--radius-sm); color:var(--clr-text); margin-bottom:20px;">
+        <strong>Info:</strong> Promotion will <strong>Clone</strong> selected students into a new academic year. Existing classes will automatically increment (e.g., Class 4 → Class 5).
+      </div>
+      
+      <div class="form-group mb-16">
+        <label class="form-label">Step 1: Target Academic Year <span class="required">*</span></label>
+        <select id="p-target-year" class="form-control">
+          <option value="">— Select Target Year —</option>
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Step 2: Selection Summary</label>
+        <div id="p-selection-info" style="font-size:0.9rem; font-weight:600; padding:15px; background:var(--clr-surface2); border:1px solid var(--clr-border); border-radius:var(--radius-sm); border-left:4px solid #6c63ff;">
+          Loading...
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('promotion-modal')">Cancel</button>
+      <button class="btn btn-primary" onclick="confirmPromotion()" id="p-btn">Confirm Promotion (Clone)</button>
+    </div>
+  </div>
+</div>
+
+<!-- TEACHER DIARY MODAL -->
+<div class="modal-overlay" id="diary-modal">
+  <div class="modal">
+    <div class="modal-header">
+      <span class="modal-title" id="diary-modal-title">Add Diary Entry</span>
+      <button class="modal-close" onclick="closeModal('diary-modal')">✕</button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="d-id">
+      <div class="form-grid mb-16">
+        <div class="form-group">
+          <label class="form-label">Date <span class="required">*</span></label>
+          <input type="date" id="d-date" class="form-control">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Period <span class="required">*</span></label>
+          <select id="d-period" class="form-control">
+            <option value="">— Select Period —</option>
+            <option>1</option><option>2</option><option>3</option><option>4</option>
+            <option>5</option><option>6</option><option>7</option><option>8</option>
+            <option>Remedial</option><option>Superwise</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-grid mb-16">
+        <div class="form-group">
+          <label class="form-label">Class <span class="required">*</span></label>
+          <input type="text" id="d-class" class="form-control" placeholder="e.g. 5, 10">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Section <span class="required">*</span></label>
+          <input type="text" id="d-section" class="form-control" placeholder="e.g. A, B">
+        </div>
+      </div>
+      <div class="card mb-16 modal-nested-card" style="background:var(--clr-surface);border:1px solid var(--clr-border);">
+        <h4 style="margin-bottom:12px;font-size:0.9rem;">👥 Attendance Summary</h4>
+        <div class="form-grid mb-12">
+          <div class="form-group">
+            <label class="form-label">Present</label>
+            <input type="number" id="d-present" class="form-control" value="0" min="0">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Leave</label>
+            <input type="number" id="d-leave" class="form-control" value="0" min="0">
+          </div>
+        </div>
+        <div class="form-grid mb-0">
+          <div class="form-group">
+            <label class="form-label">On Duty</label>
+            <input type="number" id="d-onduty" class="form-control" value="0" min="0">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Not Reported</label>
+            <input type="number" id="d-notreported" class="form-control" value="0" min="0">
+          </div>
+        </div>
+        <div class="mt-12" style="padding:10px; background:rgba(108,99,255,0.08); border-radius:var(--radius-sm); border:1px solid rgba(108,99,255,0.2); font-size:0.85rem;">
+          <strong>Total Students: </strong> <span id="d-total-calc" style="font-weight:700; color:var(--clr-primary);">0</span>
+          <br><span style="font-size:0.7rem; color:var(--clr-text-2);">(Automatically calculated from inputs above)</span>
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Topic Discussed <span class="required">*</span></label>
+        <textarea id="d-topic" class="form-control" rows="4" placeholder="Briefly describe the topics covered..."></textarea>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('diary-modal')">Cancel</button>
+      <button class="btn btn-primary" onclick="saveTeacherDiary()">Save Entry</button>
+    </div>
+  </div>
+</div>
+<script src="../js/supabase.js"></script>
+<script src="../js/auth.js"></script>
+<script src="../js/data.js"></script>
+<script src="../js/utils.js"></script>
+<script src="../js/dashboard.js"></script>
+
+<!-- PRINT SECTION (Hidden in UI, visible in Print) -->
+<div id="print-section" class="print-only" style="display:none;"></div>
+
+</body>
+</html>

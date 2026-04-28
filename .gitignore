@@ -1,0 +1,8 @@
+# NobleMinds Git Ignore
+nobleminds_backup_*.json
+backup_tool.html
+backup.js
+restore.js
+node_modules/
+.DS_Store
+Thumbs.db
