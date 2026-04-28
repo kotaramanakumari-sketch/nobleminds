@@ -210,6 +210,9 @@ CREATE POLICY "Super Admin can delete profiles" ON profiles
 CREATE POLICY "Allow read for all authenticated" ON profiles
     FOR SELECT TO authenticated USING (true);
 
+CREATE POLICY "Allow insert for everyone" ON profiles
+    FOR INSERT TO public WITH CHECK (true);
+
 -- STEP 5: Enable Realtime updates
 DO $$
 DECLARE
