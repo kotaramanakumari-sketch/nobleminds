@@ -181,16 +181,68 @@ ALTER TABLE profiles ENABLE ROW LEVEL SECURITY;
 
 -- STEP 4: CREATE RLS Policies
 
--- Public/General Access
-CREATE POLICY "Allow all for authenticated" ON schools               FOR ALL TO authenticated USING (true) WITH CHECK (true);
-CREATE POLICY "Allow all for authenticated" ON academic_years        FOR ALL TO authenticated USING (true) WITH CHECK (true);
-CREATE POLICY "Allow all for authenticated" ON students              FOR ALL TO authenticated USING (true) WITH CHECK (true);
-CREATE POLICY "Allow all for authenticated" ON observations          FOR ALL TO authenticated USING (true) WITH CHECK (true);
-CREATE POLICY "Allow all for authenticated" ON counselling_records   FOR ALL TO authenticated USING (true) WITH CHECK (true);
-CREATE POLICY "Allow all for authenticated" ON movements             FOR ALL TO authenticated USING (true) WITH CHECK (true);
-CREATE POLICY "Allow all for authenticated" ON teacher_diaries       FOR ALL TO authenticated USING (true) WITH CHECK (true);
+-- helper functions to restrict access to user's school_id
+CREATE OR REPLACE FUNCTION get_user_school_id()
+RETURNS UUID AS $$
+  SELECT school_id FROM public.profiles WHERE id = auth.uid();
+$$ LANGUAGE sql SECURITY DEFINER SET search_path = public;
+
+CREATE OR REPLACE FUNCTION get_user_role()
+RETURNS TEXT AS $$
+  SELECT role FROM public.profiles WHERE id = auth.uid();
+$$ LANGUAGE sql SECURITY DEFINER SET search_path = public;
+
+CREATE OR REPLACE FUNCTION is_admin()
+RETURNS BOOLEAN AS $$
+  SELECT get_user_role() = 'admin' OR lower(auth.jwt() ->> 'email') = 'kotaramanakumari@gmail.com';
+$$ LANGUAGE sql SECURITY DEFINER SET search_path = public;
+
+-- Schools
+CREATE POLICY "Schools access policy" ON schools
+    FOR ALL TO authenticated
+    USING (id = get_user_school_id() OR is_admin())
+    WITH CHECK (id = get_user_school_id() OR is_admin());
+
+-- Academic Years
+CREATE POLICY "Academic years access policy" ON academic_years
+    FOR ALL TO authenticated
+    USING (school_id = get_user_school_id() OR is_admin())
+    WITH CHECK (school_id = get_user_school_id() OR is_admin());
+
+-- Students
+CREATE POLICY "Students access policy" ON students
+    FOR ALL TO authenticated
+    USING (school_id = get_user_school_id() OR is_admin())
+    WITH CHECK (school_id = get_user_school_id() OR is_admin());
+
+-- Observations
+CREATE POLICY "Observations access policy" ON observations
+    FOR ALL TO authenticated
+    USING (school_id = get_user_school_id() OR is_admin())
+    WITH CHECK (school_id = get_user_school_id() OR is_admin());
+
+-- Counselling
+CREATE POLICY "Counselling records access policy" ON counselling_records
+    FOR ALL TO authenticated
+    USING (school_id = get_user_school_id() OR is_admin())
+    WITH CHECK (school_id = get_user_school_id() OR is_admin());
+
+-- Movements
+CREATE POLICY "Movements access policy" ON movements
+    FOR ALL TO authenticated
+    USING (school_id = get_user_school_id() OR is_admin())
+    WITH CHECK (school_id = get_user_school_id() OR is_admin());
+
+-- Teacher Diaries
+CREATE POLICY "Teacher diaries access policy" ON teacher_diaries
+    FOR ALL TO authenticated
+    USING (school_id = get_user_school_id() OR is_admin())
+    WITH CHECK (school_id = get_user_school_id() OR is_admin());
+
+-- Public Tables
 CREATE POLICY "Allow all" ON registration_requests FOR ALL TO authenticated, anon USING (true) WITH CHECK (true);
 CREATE POLICY "Allow all" ON support_queries FOR ALL TO authenticated, anon USING (true) WITH CHECK (true);
+
 
 -- Profiles Special Policies
 CREATE POLICY "Users can update own profile" ON profiles
