@@ -419,8 +419,13 @@ async function viewStudent(id) {
     <div class="profile-header">
       <div class="profile-photo">${s.photo?`<img src="${s.photo}" style="width:100%;height:100%;border-radius:inherit;object-fit:cover;">`:'<span style="font-size:2.5rem;">👤</span>'}</div>
       <div style="flex:1;">
-        <div class="profile-name">${s.full_name||s.fullName||'—'}</div>
-        <div style="color:var(--clr-text-2);font-size:0.88rem;">${s.admission_number||s.admissionNumber||''} · ID: ${s.id.slice(0,8)}</div>
+        <div style="display:flex; justify-content:space-between; align-items:flex-start; gap: 16px;">
+          <div>
+            <div class="profile-name">${s.full_name||s.fullName||'—'}</div>
+            <div style="color:var(--clr-text-2);font-size:0.88rem;">${s.admission_number||s.admissionNumber||''} · ID: ${s.id.slice(0,8)}</div>
+          </div>
+          <button class="btn btn-ghost btn-sm" onclick="nmPreparePrintProfile('${id}')" style="white-space:nowrap;">🖨 Print</button>
+        </div>
         <div class="profile-meta">
           <span class="badge badge-purple">Class ${s.class||'?'} - ${s.section||'?'}</span>
           <span class="badge badge-gray">${s.house||'—'} House</span>
@@ -433,7 +438,6 @@ async function viewStudent(id) {
           <button class="btn btn-primary btn-sm" onclick="quickAddObservation('${id}')">👁‍🗨 Obs</button>
           <button class="btn btn-primary btn-sm" onclick="quickAddCounselling('${id}')">🤝 Cns</button>
           <button class="btn btn-primary btn-sm" onclick="quickAddMovement('${id}')">🏃 Mov</button>
-          <button class="btn btn-ghost btn-sm" onclick="nmPreparePrintProfile('${id}')">🖨 Print</button>
         </div>
         <div style="font-size:0.7rem; color:var(--clr-text-3); font-weight:600; text-transform:uppercase; letter-spacing:0.5px;">Quick Actions</div>
       </div>

@@ -62,9 +62,6 @@
       <div class="nav-item" data-section="settings" onclick="showSection('settings',this)">
         <span class="nav-item-icon">⚙️</span> Settings
       </div>
-      <div class="nav-item mobile-only" onclick="window.print()">
-        <span class="nav-item-icon">🖨</span> Print Page
-      </div>
       <div class="nav-item" onclick="nmLogout()">
         <span class="nav-item-icon">🚪</span> Logout
       </div>
@@ -90,7 +87,6 @@
         <select class="form-control" id="topbar-year-sel" onchange="switchAdminYear(this.value)" style="max-width:180px; height:34px; font-size:0.85rem; padding:0 10px;">
           <option value="">All Years</option>
         </select>
-        <button class="btn btn-ghost btn-sm hide-tablet" onclick="window.print()">🖨 Print Page</button>
         <div style="font-size:0.8rem;color:var(--clr-text-2);" id="topbar-date" class="hide-tablet"></div>
       </div>
     </div>
@@ -418,7 +414,6 @@
     <div class="modal-header">
       <span class="modal-title">Student Profile</span>
       <div class="modal-header-actions">
-        <button class="btn btn-ghost btn-sm" onclick="nmPreparePrintProfile(currentStudentId)">🖨 <span class="hide-mobile">Print Profile</span><span class="mobile-only">Print</span></button>
         <button class="modal-close" onclick="closeModal('student-view-modal')">✕</button>
       </div>
     </div>
@@ -973,8 +968,13 @@ async function viewStudent(id) {
         ${s.photo ? `<img src="${s.photo}" style="width:100%;height:100%;object-fit:cover;border-radius:inherit;">` : `<span>👤</span>`}
       </div>
       <div style="flex:1;">
-        <div class="profile-name">${s.full_name||s.fullName||'—'}</div>
-        <div style="color:var(--clr-text-2);font-size:0.9rem;">${s.admission_number||s.admissionNumber||''} · ${s.school_name || s.schoolName || ''}</div>
+        <div style="display:flex; justify-content:space-between; align-items:flex-start; gap: 16px;">
+          <div>
+            <div class="profile-name">${s.full_name||s.fullName||'—'}</div>
+            <div style="color:var(--clr-text-2);font-size:0.9rem;">${s.admission_number||s.admissionNumber||''} · ${s.school_name || s.schoolName || ''}</div>
+          </div>
+          <button class="btn btn-ghost btn-sm" onclick="nmPreparePrintProfile('${id}')" style="white-space:nowrap;">🖨 Print</button>
+        </div>
         <div class="profile-meta">
           <span class="badge badge-purple">Class ${s.class||'?'} - ${s.section||'?'}</span>
           <span class="badge ${s.gender==='Male'?'badge-blue':'badge-pink'}">${s.gender||'—'}</span>
@@ -987,7 +987,6 @@ async function viewStudent(id) {
           <button class="btn btn-primary btn-sm" onclick="adminQuickAdd('observations', '${id}')">👁‍🗨 Obs</button>
           <button class="btn btn-primary btn-sm" onclick="adminQuickAdd('counselling', '${id}')">🤝 Cns</button>
           <button class="btn btn-primary btn-sm" onclick="adminQuickAdd('movement', '${id}')">🏃 Mov</button>
-          <button class="btn btn-ghost btn-sm" onclick="nmPreparePrintProfile('${id}')">🖨 Print</button>
         </div>
         <div style="font-size:0.75rem; color:var(--clr-text-3); font-weight:600; text-transform:uppercase; letter-spacing:0.5px;">Quick Actions</div>
       </div>
@@ -1188,6 +1187,6 @@ async function nmPreparePrintProfile(id) {
 // ─── Init ─────────────────────────────────────────────────────────────────────
 init();
 </script>
-<div id="print-section" class="print-only" style="display:none;"></div>
+<div id="print-section" class="print-only"></div>
 </body>
 </html>

@@ -38,9 +38,6 @@
       <div class="nav-item" data-section="settings" onclick="showSection('settings',this)">
         <span class="nav-item-icon">⚙️</span> Settings
       </div>
-      <div class="nav-item mobile-only" onclick="window.print()">
-        <span class="nav-item-icon">🖨</span> Print Page
-      </div>
       <div class="nav-item" onclick="nmLogout()">
         <span class="nav-item-icon">🚪</span> Logout
       </div>
@@ -65,7 +62,6 @@
         <select id="topbar-year-sel" class="filter-select hide-mobile" style="padding: 4px 8px; font-size: 0.8rem; height: 32px; min-width: 120px;" onchange="changeYear(this.value)">
           <option value="">Year...</option>
         </select>
-        <button class="btn btn-ghost btn-sm hide-mobile" onclick="window.print()">🖨 Print Page</button>
       </div>
     </div>
 
@@ -592,7 +588,6 @@
     <div class="modal-header">
       <span class="modal-title">Student Profile</span>
       <div class="modal-header-actions">
-        <button class="btn btn-ghost btn-sm" onclick="nmPreparePrintProfile(currentStudentId)">🖨 <span class="hide-mobile">Print</span><span class="mobile-only">Print</span></button>
         <button class="btn btn-danger btn-sm" id="modal-delete-btn">🗑 Delete</button>
         <button class="modal-close" onclick="closeModal('student-modal')">✕</button>
       </div>
@@ -880,7 +875,7 @@
 <script src="../js/dashboard.js"></script>
 
 <!-- PRINT SECTION (Hidden in UI, visible in Print) -->
-<div id="print-section" class="print-only" style="display:none;"></div>
+<div id="print-section" class="print-only"></div>
 
 </body>
 </html>

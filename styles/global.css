@@ -723,6 +723,8 @@ textarea.form-control { resize: vertical; min-height: 90px; }
 /* ═══════════════════════════════════════════════════════════════════════════
    PRINT STYLES — Works for both general "Print Page" and Student Profile Print
    ═══════════════════════════════════════════════════════════════════════════ */
+#print-section { display: none; }
+
 @media print {
   @page { margin: 1.0cm; size: A4; }
 
@@ -813,54 +815,46 @@ textarea.form-control { resize: vertical; min-height: 90px; }
   /* Display print header & footer */
   .print-header-all, .print-footer-all { display: none !important; }
 
-  @media print {
-    body:not(.printing-profile) .content-area::before { display: none !important; }
+  body:not(.printing-profile) .content-area::before { display: none !important; }
 
-    .print-header-all {
-      display: block !important;
-      text-align: center !important;
-      margin-bottom: 24px !important;
-      border-bottom: 2px solid #222 !important;
-      padding-bottom: 8px !important;
-    }
-    .print-header-all h1 {
-      font-size: 16pt !important;
-      font-weight: 900 !important;
-      margin: 0 0 4px 0 !important;
-      color: #000 !important;
-      text-transform: uppercase !important;
-    }
-    .print-header-all p {
-      font-size: 8.5pt !important;
-      margin: 0 !important;
-      color: #555 !important;
-    }
-
-    .print-footer-all {
-      display: block !important;
-      position: fixed !important;
-      bottom: 10px !important;
-      left: 0 !important;
-      right: 0 !important;
-      text-align: center !important;
-      font-size: 7.5pt !important;
-      color: #777 !important;
-      border-top: 1px solid #ddd !important;
-      padding-top: 4px !important;
-    }
-    
-    @page { margin: 1.2cm 1.0cm; size: auto; }
+  .print-header-all {
+    display: block !important;
+    text-align: center !important;
+    margin-bottom: 24px !important;
+    border-bottom: 2px solid #222 !important;
+    padding-bottom: 8px !important;
+  }
+  .print-header-all h1 {
+    font-size: 16pt !important;
+    font-weight: 900 !important;
+    margin: 0 0 4px 0 !important;
+    color: #000 !important;
+    text-transform: uppercase !important;
+  }
+  .print-header-all p {
+    font-size: 8.5pt !important;
+    margin: 0 !important;
+    color: #555 !important;
   }
 
-@media print {
-  @page { margin: 1.0cm; size: auto; }
-  * { -webkit-print-color-adjust: exact; print-color-adjust: exact; box-shadow: none !important; text-shadow: none !important; }
-  body { background: #fff !important; color: #111 !important; font-size: 10pt; font-family: 'Inter', sans-serif; }
+  .print-footer-all {
+    display: block !important;
+    position: fixed !important;
+    bottom: 10px !important;
+    left: 0 !important;
+    right: 0 !important;
+    text-align: center !important;
+    font-size: 7.5pt !important;
+    color: #777 !important;
+    border-top: 1px solid #ddd !important;
+    padding-top: 4px !important;
+  }
 
+  /* ── Specific to Student Profile Print ── */
   body.printing-profile .panel-layout { display: none !important; }
   body.printing-profile .modal-overlay { display: none !important; }
   body:not(.printing-profile) #print-section { display: none !important; }
-  #print-section { display: block !important; width: 100% !important; max-width: 100% !important; padding: 20px; background: #fff !important; color: #111 !important; }
+  body.printing-profile #print-section { display: block !important; width: 100% !important; max-width: 100% !important; padding: 20px; background: #fff !important; color: #111 !important; }
 
   .print-header {
     display: flex !important; align-items: center; justify-content: space-between;
