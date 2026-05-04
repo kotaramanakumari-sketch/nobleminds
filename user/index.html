@@ -70,8 +70,11 @@
     </div>
 
     <div class="content-area">
-
-      <!-- DASHBOARD -->
+      <!-- DYNAMIC PRINT HEADER -->
+      <div class="print-header-all">
+        <h1 id="print-school-heading">NobleMinds Platform — Official Records</h1>
+        <p>Official Institutional & School Data</p>
+      </div>
       <div class="page-section active" id="section-dashboard">
         <div class="mb-24">
           <h2 style="font-size:1.5rem;font-weight:900;">Welcome back! 👋</h2>
@@ -135,6 +138,7 @@
             <option value="">All Genders</option><option>Male</option><option>Female</option>
           </select>
           <button class="btn btn-ghost btn-sm" onclick="exportStudents()">⬇ Export Excel</button>
+          <button class="btn btn-ghost btn-sm" onclick="window.print()">🖨 Print</button>
         </div>
         <div class="card" style="padding:0;overflow:hidden;">
           <div class="table-wrapper">
@@ -429,6 +433,7 @@
             <span>🔍</span><input type="text" id="obs-search" placeholder="Search students..." oninput="renderObservations()">
           </div>
           <button class="btn btn-ghost btn-sm" onclick="exportObservations()">⬇ Export Excel</button>
+          <button class="btn btn-ghost btn-sm" onclick="window.print()">🖨 Print</button>
         </div>
         <div class="card" style="padding:0;overflow:hidden;">
           <div class="table-wrapper">
@@ -454,6 +459,7 @@
             <span>🔍</span><input type="text" id="cns-search" placeholder="Search students or issues..." oninput="renderCounselling()">
           </div>
           <button class="btn btn-ghost btn-sm" onclick="exportCounselling()">⬇ Export Excel</button>
+          <button class="btn btn-ghost btn-sm" onclick="window.print()">🖨 Print</button>
         </div>
         <div class="card" style="padding:0;overflow:hidden;">
           <div class="table-wrapper">
@@ -479,17 +485,19 @@
             <span>🔍</span><input type="text" id="mov-search" placeholder="Search student or escort..." oninput="renderMovements()">
           </div>
           <button class="btn btn-ghost btn-sm" onclick="exportMovements()">⬇ Export Excel</button>
+          <button class="btn btn-ghost btn-sm" onclick="window.print()">🖨 Print</button>
         </div>
         <div class="card" style="padding:0;overflow:hidden;">
           <div class="table-wrapper">
             <table class="data-table">
               <thead>
                 <tr>
-                  <th>Leaving Date</th>
                   <th>Student Info</th>
+                  <th>Leaving Date</th>
                   <th>Reason</th>
+                  <th>Outgoing Escort Details</th>
                   <th>Reporting Date</th>
-                  <th>Escort Details</th>
+                  <th>Incoming Escort Details</th>
                   <th>Actions</th>
                 </tr>
               </thead>
@@ -515,6 +523,7 @@
             <span>🔍</span><input type="text" id="diary-search" placeholder="Search topic or class..." oninput="renderTeacherDiaries()">
           </div>
           <button class="btn btn-ghost btn-sm" onclick="exportTeacherDiaries()">⬇ Export Excel</button>
+          <button class="btn btn-ghost btn-sm" onclick="window.print()">🖨 Print</button>
         </div>
         <div class="card" style="padding:0;overflow:hidden;">
           <div class="table-wrapper">
@@ -566,7 +575,11 @@
               <input type="checkbox" class="theme-toggle-cb" style="width:20px;height:20px;accent-color:var(--clr-primary);cursor:pointer;" onchange="nmToggleTheme()">
             </label>
           </div>
-        </div>
+      </div>
+
+      <!-- DYNAMIC PRINT FOOTER -->
+      <div class="print-footer-all">
+        Powered by Noble Minds
       </div>
 
     </div>
@@ -672,6 +685,11 @@
     </div>
     <div class="modal-body">
       <input type="hidden" id="mov-id">
+      <input type="hidden" id="mov-mode" value="outgoing">
+      <div style="display:flex; background:var(--clr-surface); padding:4px; border-radius:var(--radius-sm); margin-bottom:20px;">
+        <button id="btn-mov-outgoing" class="btn btn-sm" style="flex:1; background:var(--clr-primary); color:#fff;" onclick="changeMovementMode('outgoing')">Outgoing (Leaving)</button>
+        <button id="btn-mov-incoming" class="btn btn-sm" style="flex:1;" onclick="changeMovementMode('incoming')">Incoming (Reporting)</button>
+      </div>
 
       <div class="form-group mb-16" id="m-search-parent">
         <label class="form-label">Search Student <span class="required">*</span></label>
@@ -684,12 +702,6 @@
           <button class="btn btn-ghost btn-sm" onclick="clearSingleSelection('m')">✕ Change</button>
         </div>
         <input type="hidden" id="m-student">
-      </div>
-
-      <input type="hidden" id="mov-mode" value="outgoing">
-      <div style="display:flex; background:var(--clr-surface); padding:4px; border-radius:var(--radius-sm); margin-bottom:20px;">
-        <button id="btn-mov-outgoing" class="btn btn-sm" style="flex:1; background:var(--clr-primary); color:#fff;" onclick="changeMovementMode('outgoing')">Outgoing (Leaving)</button>
-        <button id="btn-mov-incoming" class="btn btn-sm" style="flex:1;" onclick="changeMovementMode('incoming')">Incoming (Reporting)</button>
       </div>
 
       <div id="mov-outgoing-fields">
@@ -713,8 +725,8 @@
         <input type="text" id="m-reason" class="form-control" placeholder="e.g. Visiting home for holidays">
       </div>
 
-      <div class="card mb-0" style="background:var(--clr-surface);border:1px solid var(--clr-border);">
-        <h4 style="margin-bottom:12px;font-size:0.9rem;">👤 Escort Information</h4>
+      <div class="card mb-12" id="card-escort-outgoing" style="background:var(--clr-surface);border:1px solid var(--clr-border);margin-bottom:12px;">
+        <h4 style="margin-bottom:12px;font-size:0.9rem;">👤 Outgoing Escort Details</h4>
         <div class="form-grid mb-0">
           <div class="form-group">
             <label class="form-label">Escort Name <span class="required">*</span></label>
@@ -728,6 +740,24 @@
         <div class="form-group mt-12">
           <label class="form-label">Phone Number <span class="required">*</span></label>
           <input type="tel" id="m-phone" class="form-control">
+        </div>
+      </div>
+
+      <div class="card mb-0" id="card-escort-incoming" style="background:var(--clr-surface);border:1px solid var(--clr-border);display:none;">
+        <h4 style="margin-bottom:12px;font-size:0.9rem;">👤 Incoming Escort Details</h4>
+        <div class="form-grid mb-0">
+          <div class="form-group">
+            <label class="form-label">Escort Name <span class="required">*</span></label>
+            <input type="text" id="m-return-escort-name" class="form-control">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Relationship <span class="required">*</span></label>
+            <input type="text" id="m-return-relationship" class="form-control">
+          </div>
+        </div>
+        <div class="form-group mt-12">
+          <label class="form-label">Phone Number <span class="required">*</span></label>
+          <input type="tel" id="m-return-phone" class="form-control">
         </div>
       </div>
     </div>

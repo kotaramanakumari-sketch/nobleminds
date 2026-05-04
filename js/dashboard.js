@@ -10,7 +10,11 @@ async function init() {
     schoolId = session.school_id || session.school_id; // Check both cases
     document.getElementById('user-name-disp').textContent = session.name;
     document.getElementById('user-avatar').textContent    = nmGetInitials(session.name);
-    document.getElementById('sb-school-name').textContent = session.school_name || session.schoolName || 'School Portal';
+    const sn = session.school_name || session.schoolName || 'School Portal';
+    document.getElementById('sb-school-name').textContent = sn;
+    if (document.getElementById('print-school-heading')) {
+      document.getElementById('print-school-heading').textContent = sn.toUpperCase();
+    }
     
     await loadAcademicYears();
   }
@@ -467,7 +471,10 @@ async function viewStudent(id) {
                 footer = `<div class="timeline-footer"><span class="status-badge ${h.follow_up||h.followUp ? 'status-followup' : 'status-resolved'}">${h.follow_up||h.followUp ? 'Follow-up' : h.status}</span></div>`;
               } else if (h.type === 'movement') {
                 icon = '🏃'; title = `Movement: ${h.reason}`;
-                body = `<strong>Leaving:</strong> ${nmFmtDate(h.leave_date||h.leaveDate)} · <strong>Return:</strong> ${nmFmtDate(h.report_date||h.reportDate)}<br><strong>Escort:</strong> ${h.escort_name||h.escortName} (${h.relationship})`;
+                body = `<strong>Leaving:</strong> ${nmFmtDate(h.leave_date||h.leaveDate)} · <strong>Return:</strong> ${nmFmtDate(h.report_date||h.reportDate)}<br><strong>Outgoing Escort:</strong> ${h.escort_name||h.escortName} (${h.relationship})`;
+                if (h.report_date || h.reportDate) {
+                  body += `<br><strong>Incoming Escort:</strong> ${h.return_escort_name || h.returnEscortName || '—'} (${h.return_relationship || h.returnRelationship || '—'})`;
+                }
               }
               return `
                 <div class="timeline-item ${h.type}">
@@ -962,11 +969,19 @@ async function handleStudentSelect(prefix, studentId, isMulti) {
         document.getElementById('m-escort-name').value = existing.escort_name || existing.escortName;
         document.getElementById('m-relationship').value = existing.relationship;
         document.getElementById('m-phone').value = existing.phone;
+
+        document.getElementById('m-return-escort-name').value = existing.return_escort_name || existing.returnEscortName || existing.escort_name || existing.escortName || '';
+        document.getElementById('m-return-relationship').value = existing.return_relationship || existing.returnRelationship || existing.relationship || '';
+        document.getElementById('m-return-phone').value = existing.return_phone || existing.returnPhone || existing.phone || '';
+
         document.getElementById('m-report-date').value = nmToday();
         
         // Ensure readOnly states are correctly applied (in case they were manually changed)
         document.getElementById('m-leave-date').readOnly = true;
         document.getElementById('m-reason').readOnly = true;
+        document.getElementById('m-escort-name').readOnly = true;
+        document.getElementById('m-relationship').readOnly = true;
+        document.getElementById('m-phone').readOnly = true;
       }
     }
   }
@@ -1004,6 +1019,15 @@ function clearSingleSelection(prefix) {
     document.getElementById('m-escort-name').value = '';
     document.getElementById('m-relationship').value = '';
     document.getElementById('m-phone').value = '';
+    document.getElementById('m-return-escort-name').value = '';
+    document.getElementById('m-return-relationship').value = '';
+    document.getElementById('m-return-phone').value = '';
+
+    document.getElementById('m-leave-date').readOnly = false;
+    document.getElementById('m-reason').readOnly = false;
+    document.getElementById('m-escort-name').readOnly = false;
+    document.getElementById('m-relationship').readOnly = false;
+    document.getElementById('m-phone').readOnly = false;
   }
 }
 
@@ -1335,7 +1359,11 @@ async function nmPreparePrintProfile(id) {
         let body = h.type === 'observation' ? h.observation : (h.counselling || '');
         if (h.type === 'movement') {
           icon = '🏃'; title = `Movement: ${h.reason}`;
-          body = `Leaving: ${nmFmtDate(h.leave_date || h.leaveDate)} · Return: ${nmFmtDate(h.report_date || h.reportDate)}<br>Escort: ${h.escort_name || h.escortName} (${h.relationship}) · Contact: ${h.phone}`;
+          body = `Leaving: ${nmFmtDate(h.leave_date || h.leaveDate)} · Return: ${nmFmtDate(h.report_date || h.reportDate)}<br>` + 
+                 `Outgoing Escort: ${h.escort_name || h.escortName} (${h.relationship}) · Contact: ${h.phone}`;
+          if (h.report_date || h.reportDate) {
+            body += `<br>Incoming Escort: ${h.return_escort_name || h.returnEscortName || '—'} (${h.return_relationship || h.returnRelationship || '—'}) · Contact: ${h.return_phone || h.returnPhone || '—'}`;
+          }
         }
         return `
         <div class="timeline-item ${h.type}">
@@ -1388,18 +1416,24 @@ async function renderMovements() {
     const s = students.find(x => x.id === (m.student_id || m.studentId)) || { full_name: 'Unknown', class:'?', section:'?', house:'?' };
     const isIncoming = !!(m.report_date || m.reportDate);
     return `<tr>
-      <td data-label="Leave Date"><div style="font-weight:600;color:var(--clr-primary);">${nmFmtDate(m.leave_date||m.leaveDate)}</div></td>
       <td data-label="Student">
         <div style="font-weight:600;">${s.full_name||s.fullName}</div>
         <div style="font-size:0.75rem;color:var(--clr-text-2);">Class ${s.class} · ${s.section} · ${s.house} House</div>
       </td>
+      <td data-label="Leave Date"><div style="font-weight:600;color:var(--clr-primary);">${nmFmtDate(m.leave_date||m.leaveDate)}</div></td>
       <td data-label="Reason" style="max-width:200px;font-size:0.85rem;">${m.reason}</td>
+      <td data-label="Outgoing Escort">
+        <div style="font-weight:500;">${m.escort_name||m.escortName||'—'}</div>
+        <div style="font-size:0.75rem;color:var(--clr-text-2);">${m.relationship||'—'} · ${m.phone||'—'}</div>
+      </td>
       <td data-label="Return Date">
         ${isIncoming ? `<div style="font-weight:600;color:var(--clr-success);">${nmFmtDate(m.report_date||m.reportDate)}</div>` : `<span class="badge" style="background:rgba(255,193,7,0.1);color:#ffc107;">Away</span>`}
       </td>
-      <td data-label="Escort">
-        <div style="font-weight:500;">${m.escort_name||m.escortName}</div>
-        <div style="font-size:0.75rem;color:var(--clr-text-2);">${m.relationship} · ${m.phone}</div>
+      <td data-label="Incoming Escort">
+        ${isIncoming ? `
+        <div style="font-weight:500;">${m.return_escort_name||m.returnEscortName||'—'}</div>
+        <div style="font-size:0.75rem;color:var(--clr-text-2);">${m.return_relationship||m.returnRelationship||'—'} · ${m.return_phone||m.returnPhone||'—'}</div>
+        ` : `<span style="color:var(--clr-text-3); font-size:0.85rem;">—</span>`}
       </td>
       <td data-label="Actions">
         <div style="display:flex;gap:4px;">
@@ -1417,9 +1451,13 @@ function changeMovementMode(mode) {
   document.getElementById('mov-outgoing-fields').style.display = isOut ? 'block' : 'none';
   document.getElementById('mov-incoming-fields').style.display = isOut ? 'none' : 'block';
   document.getElementById('group-report-date').style.display = isOut ? 'none' : 'block';
+  document.getElementById('card-escort-incoming').style.display = isOut ? 'none' : 'block';
   document.getElementById('lbl-date-1').textContent = isOut ? 'Date of Leaving *' : 'Date of Leaving (Auto)';
   document.getElementById('m-leave-date').readOnly = !isOut;
   document.getElementById('m-reason').readOnly = !isOut;
+  document.getElementById('m-escort-name').readOnly = !isOut;
+  document.getElementById('m-relationship').readOnly = !isOut;
+  document.getElementById('m-phone').readOnly = !isOut;
 
   const btnOut = document.getElementById('btn-mov-outgoing');
   const btnIn = document.getElementById('btn-mov-incoming');
@@ -1458,6 +1496,10 @@ async function openMovementModal(id) {
     document.getElementById('m-relationship').value = m.relationship;
     document.getElementById('m-phone').value = m.phone;
 
+    document.getElementById('m-return-escort-name').value = m.return_escort_name || m.returnEscortName || '';
+    document.getElementById('m-return-relationship').value = m.return_relationship || m.returnRelationship || '';
+    document.getElementById('m-return-phone').value = m.return_phone || m.returnPhone || '';
+
     if (s) {
       handleStudentSelect('m', s.id, false);
     }
@@ -1480,14 +1522,21 @@ async function saveMovement() {
   const rel = document.getElementById('m-relationship').value.trim();
   const phone = document.getElementById('m-phone').value.trim();
 
+  const rEscort = document.getElementById('m-return-escort-name').value.trim();
+  const rRel = document.getElementById('m-return-relationship').value.trim();
+  const rPhone = document.getElementById('m-return-phone').value.trim();
+
   if (!sid || !leave || !reason || !escort) { nmToast('Please select a student and fill all fields','error'); return; }
-  if (mode === 'incoming' && !report) { nmToast('Please enter Date of Reporting','error'); return; }
+  if (mode === 'incoming' && (!report || !rEscort)) { nmToast('Please fill all Return Escort fields and Date of Reporting','error'); return; }
 
   try {
     const payload = {
       id: document.getElementById('mov-id').value || undefined,
       school_id: schoolId, student_id: sid, reason, leave_date: leave, report_date: report || null,
-      escort_name: escort, relationship: rel, phone
+      escort_name: escort, relationship: rel, phone,
+      return_escort_name: rEscort || null,
+      return_relationship: rRel || null,
+      return_phone: rPhone || null
     };
     
     await nmSaveMovement(payload);
@@ -1521,7 +1570,10 @@ function exportMovements() {
           Reason: m.reason,
           Escort: m.escort_name || m.escortName,
           Relationship: m.relationship,
-          EscortPhone: m.phone
+          EscortPhone: m.phone,
+          ReturnEscort: m.return_escort_name || m.returnEscortName || '',
+          ReturnRelationship: m.return_relationship || m.returnRelationship || '',
+          ReturnEscortPhone: m.return_phone || m.returnPhone || ''
         };
       });
       nmExportExcel(data, `NobleMinds_Movements_${new Date().toISOString().split('T')[0]}.xlsx`);

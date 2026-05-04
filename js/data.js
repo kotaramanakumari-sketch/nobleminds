@@ -329,7 +329,10 @@ async function nmSaveMovement(mov) {
     reason: mov.reason,
     escort_name: mov.escort_name || mov.escortName,
     relationship: mov.relationship,
-    phone: mov.phone
+    phone: mov.phone,
+    return_escort_name: mov.return_escort_name || mov.returnEscortName || null,
+    return_relationship: mov.return_relationship || mov.returnRelationship || null,
+    return_phone: mov.return_phone || mov.returnPhone || null
   };
   if (mov.id) {
     const { data, error } = await sb.from('movements').update(payload).eq('id', mov.id).select();

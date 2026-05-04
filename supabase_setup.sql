@@ -110,6 +110,9 @@ CREATE TABLE movements (
     escort_name  TEXT,
     relationship TEXT,
     phone        TEXT,
+    return_escort_name TEXT,
+    return_relationship TEXT,
+    return_phone TEXT,
     created_at   TIMESTAMPTZ DEFAULT NOW()
 );
 
