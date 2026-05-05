@@ -7,6 +7,7 @@
   <link rel="stylesheet" href="../styles/global.css">
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <style>
     .school-logo-circle {
       width: 36px; height: 36px; border-radius: 10px; flex-shrink: 0;
@@ -84,6 +85,10 @@
       <button class="mobile-menu-btn" onclick="toggleMobileMenu()">☰</button>
       <div class="topbar-title" id="topbar-title">Dashboard</div>
       <div class="topbar-right">
+        <div class="notification-bell-wrapper" style="position:relative; cursor:pointer;" onclick="showSection('management'); switchMgmtTab('requests', document.getElementById('tab-btn-requests'))" title="View pending requests">
+          <span style="font-size:1.3rem;">🔔</span>
+          <span id="bell-badge" class="badge badge-pink" style="position:absolute; top:-5px; right:-5px; font-size:0.65rem; padding:2px 5px; border-radius:50px; display:none;">0</span>
+        </div>
         <select class="form-control" id="topbar-year-sel" onchange="switchAdminYear(this.value)" style="max-width:180px; height:34px; font-size:0.85rem; padding:0 10px;">
           <option value="">All Years</option>
         </select>
@@ -124,6 +129,26 @@
           <div class="stat-card clickable" onclick="showSection('management'); switchMgmtTab('requests', document.getElementById('tab-btn-requests'))">
             <div class="stat-icon red">📩</div>
             <div><div class="stat-value" id="dash-requests">0</div><div class="stat-label">Pending Requests</div></div>
+          </div>
+        </div>
+
+        <!-- Charts & Analytics -->
+        <div class="form-grid mb-24" style="grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));">
+          <div class="card" style="min-height: 380px; display: flex; flex-direction: column;">
+            <div class="card-header">
+              <span class="card-title">📊 Student Enrollment by School</span>
+            </div>
+            <div style="flex: 1; min-height: 250px; position: relative;">
+              <canvas id="admin-bar-chart"></canvas>
+            </div>
+          </div>
+          <div class="card" style="min-height: 380px; display: flex; flex-direction: column;">
+            <div class="card-header">
+              <span class="card-title">🍩 Gender Distribution</span>
+            </div>
+            <div style="flex: 1; min-height: 250px; position: relative; display: flex; align-items: center; justify-content: center;">
+              <canvas id="admin-donut-chart" style="max-height: 240px;"></canvas>
+            </div>
           </div>
         </div>
 
@@ -421,14 +446,46 @@
   </div>
 </div>
 
+<!-- ═══════════ PRINT OPTIONS MODAL ═══════════ -->
+<div class="modal-overlay" id="print-options-modal">
+  <div class="modal" style="max-width:400px; max-height: 80vh;">
+    <div class="modal-header">
+      <span class="modal-title">🖨 Print Settings</span>
+      <button class="modal-close" onclick="closeModal('print-options-modal')">✕</button>
+    </div>
+    <div class="modal-body">
+      <p class="mb-16" style="font-size:0.9rem; color:var(--clr-text-2);">Choose your preferred page orientation for the student profile.</p>
+      <div class="form-group">
+        <label class="form-label">Page Orientation</label>
+        <div class="radio-group" style="margin-top:8px;">
+          <label class="radio-option">
+            <input type="radio" name="print-orientation" value="portrait" checked>
+            <span>Portrait (Vertical)</span>
+          </label>
+          <label class="radio-option">
+            <input type="radio" name="print-orientation" value="landscape">
+            <span>Landscape (Horizontal)</span>
+          </label>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer" style="position: sticky; bottom: 0; background: var(--clr-bg2); border-top: 1px solid var(--clr-border); padding: 16px 28px;">
+      <button class="btn btn-ghost" onclick="closeModal('print-options-modal')">Cancel</button>
+      <button class="btn btn-primary" onclick="confirmPrintProfile()">Print Now</button>
+    </div>
+  </div>
+</div>
+
 <script src="../js/supabase.js?v=1.0.1"></script>
 <script src="../js/utils.js?v=1.0.1"></script>
 <script src="../js/auth.js?v=1.0.1"></script>
 <script src="../js/data.js?v=1.0.1"></script>
+<script src="../js/modules/print.js?v=1.0.1"></script>
 <script>
 // ─── Global State ─────────────────────────────────────────────────────────────
 let currentAdminYearId = ''; 
 let globalYears = []; // Unique year names across platform
+let currentStudentId = '';
 
 // ─── Auth Guard ───────────────────────────────────────────────────────────────
 async function init() {
@@ -455,7 +512,7 @@ async function init() {
       else if (activeTab === 'support') await renderSupportQueries();
       else { await renderSchools(); await renderUsers(); await renderRequests(); await renderSupportQueries(); }
     }
-    else if (activeSection === 'school-data') renderSchoolStudents();
+    else if (activeSection === 'school-data') await renderSchoolStudents();
   }, 1000);
 
   nmSubscribe('schools', null, refreshUI);
@@ -491,15 +548,24 @@ async function loadAdminYears() {
 
 async function switchAdminYear(yearName) {
   currentAdminYearId = yearName;
-  const activeSection = document.querySelector('.page-section.active').id.replace('section-', '');
-  if (activeSection === 'dashboard') renderDashboard();
-  if (activeSection === 'school-data') renderSchoolStudents();
+  const activeSection = document.querySelector('.page-section.active')?.id.replace('section-', '') || 'dashboard';
+  console.log('[Admin] Switched year to:', yearName, 'Refreshing section:', activeSection);
+  
+  if (activeSection === 'dashboard') await renderDashboard();
+  else if (activeSection === 'management') {
+    const activeTab = document.querySelector('.tab-controls .btn.active')?.getAttribute('onclick')?.match(/'(.*?)'/)[1];
+    if (activeTab === 'schools') await renderSchools();
+    else if (activeTab === 'users') await renderUsers();
+    else if (activeTab === 'requests') await renderRequests();
+    else if (activeTab === 'support') await renderSupportQueries();
+  }
+  else if (activeSection === 'school-data') await renderSchoolStudents();
 }
 
 async function onSchoolChange() {
   const schoolId = document.getElementById('view-school-select').value;
   if (schoolId) await loadSchoolYears(schoolId);
-  renderSchoolStudents();
+  await renderSchoolStudents();
 }
 
 async function loadSchoolYears(schoolId) {
@@ -515,16 +581,32 @@ function toggleMobileMenu() {
   document.querySelector('.sidebar').classList.toggle('open');
 }
 async function showSection(id, el) {
-  document.querySelector('.sidebar').classList.remove('open');
-  document.querySelectorAll('.page-section').forEach(s => s.classList.remove('active'));
-  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
-  document.getElementById('section-' + id).classList.add('active');
-  if (el) el.classList.add('active');
-  document.getElementById('topbar-title').textContent = titles[id] || id;
+  try {
+    const sidebar = document.querySelector('.sidebar');
+    if (sidebar) sidebar.classList.remove('open');
+    
+    document.querySelectorAll('.page-section').forEach(s => s.classList.remove('active'));
+    document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+    
+    const targetSection = document.getElementById('section-' + id);
+    if (targetSection) {
+      targetSection.classList.add('active');
+    }
+    
+    if (el) el.classList.add('active');
+    document.getElementById('topbar-title').textContent = titles[id] || id;
 
-  if (id === 'dashboard') await renderDashboard();
-  if (id === 'management') { await renderSchools(); await renderUsers(); await renderRequests(); await renderSupportQueries(); }
-  if (id === 'school-data') await populateSchoolDropdowns();
+    if (id === 'dashboard') await renderDashboard();
+    if (id === 'management') { 
+      await renderSchools(); 
+      await renderUsers(); 
+      await renderRequests(); 
+      await renderSupportQueries(); 
+    }
+    if (id === 'school-data') await populateSchoolDropdowns();
+  } catch (err) {
+    console.error('[Admin] Navigation error:', err);
+  }
 }
 
 async function switchMgmtTab(tab, btn) {
@@ -589,10 +671,15 @@ async function renderRequests() {
   const tbody = document.getElementById('requests-tbody');
   const empty = document.getElementById('requests-empty');
   const badge = document.getElementById('req-badge');
+  const bell = document.getElementById('bell-badge');
   
   if (badge) {
     badge.textContent = reqs.length;
     badge.style.display = reqs.length ? 'inline-flex' : 'none';
+  }
+  if (bell) {
+    bell.textContent = reqs.length;
+    bell.style.display = reqs.length ? 'inline-flex' : 'none';
   }
 
   if (!reqs.length) {
@@ -636,14 +723,10 @@ document.querySelectorAll('.modal-overlay').forEach(o => o.addEventListener('cli
 
 // ─── DASHBOARD ────────────────────────────────────────────────────────────────
 async function renderDashboard() {
-  // For global dashboard, we might need to find all year IDs matching the name
   let yearIdToPass = '';
   if (currentAdminYearId) {
      const allY = await nmGetAcademicYears();
      const targets = allY.filter(y => y.name === currentAdminYearId).map(y => y.id);
-     // Note: nmGetStats currently takes a single ID. Expanding this for the admin panel
-     // to either take an array or the logic needs to adjust.
-     // For now, let's just pass the first one found or adjust the stats call.
      yearIdToPass = targets[0] || ''; 
   }
 
@@ -654,7 +737,7 @@ async function renderDashboard() {
   document.getElementById('dash-users').textContent    = stats.users || 0;
   document.getElementById('dash-students').textContent = stats.total;
   document.getElementById('dash-male').textContent     = stats.genders['Male']   || 0;
-  document.getElementById('dash-female').textContent   = stats.female || stats.genders['Female'] || 0;
+  document.getElementById('dash-female').textContent   = stats.genders['Female'] || 0;
   
   const reqs = await nmGetRegistrationRequests();
   document.getElementById('dash-requests').textContent = reqs.length;
@@ -666,10 +749,17 @@ async function renderDashboard() {
   }
   
   let html = '';
+  const schoolLabels = [];
+  const schoolCounts = [];
+
   for (const s of schools) {
     const stds = await nmGetStudents(s.id);
     const cnt = stds.length;
     const pct = stats.total ? Math.round(cnt / stats.total * 100) : 0;
+    
+    schoolLabels.push(s.name);
+    schoolCounts.push(cnt);
+
     html += `<div style="padding:14px 20px;border-bottom:1px solid var(--clr-border);display:flex;align-items:center;gap:16px;">
       <div class="school-logo-circle">${(s.code || 'SC').slice(0,2)}</div>
       <div style="flex:1;min-width:0;">
@@ -686,6 +776,64 @@ async function renderDashboard() {
     </div>`;
   }
   list.innerHTML = html;
+
+  // Render Chart.js Bar Chart (School enrollment)
+  try {
+    if (window.adminBarChart) window.adminBarChart.destroy();
+    const ctxBar = document.getElementById('admin-bar-chart').getContext('2d');
+    window.adminBarChart = new Chart(ctxBar, {
+      type: 'bar',
+      data: {
+        labels: schoolLabels,
+        datasets: [{
+          label: 'Students Enrolled',
+          data: schoolCounts,
+          backgroundColor: 'rgba(108, 99, 255, 0.65)',
+          borderColor: 'rgba(108, 99, 255, 1)',
+          borderWidth: 1,
+          borderRadius: 6
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: { legend: { display: false } },
+        scales: {
+          x: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: 'rgba(255,255,255,0.6)', font: { size: 10 } } },
+          y: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: 'rgba(255,255,255,0.6)', precision: 0 } }
+        }
+      }
+    });
+  } catch (err) { console.error('Bar Chart Fail:', err); }
+
+  // Render Chart.js Donut Chart (Gender distribution)
+  try {
+    if (window.adminDonutChart) window.adminDonutChart.destroy();
+    const ctxDonut = document.getElementById('admin-donut-chart').getContext('2d');
+    window.adminDonutChart = new Chart(ctxDonut, {
+      type: 'doughnut',
+      data: {
+        labels: ['Male', 'Female'],
+        datasets: [{
+          data: [stats.genders['Male'] || 0, stats.female || stats.genders['Female'] || 0],
+          backgroundColor: ['rgba(54, 162, 235, 0.75)', 'rgba(255, 101, 132, 0.75)'],
+          borderColor: ['rgba(54, 162, 235, 1)', 'rgba(255, 101, 132, 1)'],
+          borderWidth: 1
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: { position: 'bottom', labels: { color: 'rgba(255,255,255,0.7)', font: { size: 11 } } }
+        },
+      }
+    });
+  } catch (err) { console.error('Donut Chart Fail:', err); }
+
+  try {
+    await renderRequests();
+  } catch (err) { console.error('Requests Load Fail:', err); }
 }
 
 // ─── SCHOOLS ──────────────────────────────────────────────────────────────────
@@ -715,7 +863,7 @@ async function renderSchools() {
       <td data-label="Phone">${s.phone||'—'}</td>
       <td data-label="Students"><span class="badge badge-green">${cnt}</span></td>
       <td data-label="Actions"><div class="action-btns">
-        <button class="btn btn-ghost btn-sm btn-icon" title="Edit" onclick='openSchoolModal(${JSON.stringify(s)})'>✏️</button>
+        <button class="btn btn-ghost btn-sm btn-icon" title="Edit" onclick='openSchoolModal(${JSON.stringify(s).replace(/'/g, "&apos;")})'>✏️</button>
         <button class="btn btn-danger btn-sm btn-icon" title="Delete" onclick="deleteSchool('${s.id}')">🗑</button>
       </div></td>
     </tr>`;
@@ -772,14 +920,17 @@ async function deleteSchool(id) {
 async function populateSchoolDropdowns() {
   const schools = await nmGetSchools();
   const opts = schools.map(s => `<option value="${s.id}">${s.name}</option>`).join('');
-  ['user-school','user-school-filter','view-school-select'].forEach(id => {
+  
+  const selects = ['user-school', 'user-school-filter', 'view-school-select'];
+  selects.forEach(id => {
     const el = document.getElementById(id);
     if (!el) return;
     const prev = el.value;
     const prefix = id === 'user-school-filter' ? '<option value="">All Schools</option>' :
-                   id === 'view-school-select'  ? '<option value="">— Choose a school —</option>' : '<option value="">— Select school —</option>';
+                   id === 'view-school-select'  ? '<option value="">— Choose a school —</option>' :
+                   '<option value="">— Select school —</option>';
     el.innerHTML = prefix + opts;
-    el.value = prev;
+    if (prev) el.value = prev;
   });
 }
 
@@ -809,32 +960,15 @@ async function renderUsers() {
     <td data-label="School">${u.school_name ? `<span class="badge badge-blue">${u.school_name}</span>` : '—'}</td>
     <td data-label="Created">${nmFmtDate(u.created_at)}</td>
     <td data-label="Actions"><div class="action-btns">
-      <button class="btn btn-ghost btn-sm btn-icon" title="Edit" onclick='openUserModal(${JSON.stringify(u).replace(/'/g,"&#39;")})'>✏️</button>
+      <button class="btn btn-ghost btn-sm btn-icon" title="Edit" onclick='openUserModal(${JSON.stringify(u).replace(/'/g, "&apos;")})'>✏️</button>
       <button class="btn btn-danger btn-sm btn-icon" title="Delete" onclick="deleteUser('${u.id}')">🗑</button>
     </div></td>
   </tr>`).join('');
 }
 
-// Helper to populate school select in modals
-async function populateSchoolSelects() {
-  const schools = await nmGetSchools();
-  const opts = schools.map(s => `<option value="${s.id}">${s.name}</option>`).join('');
-  
-  const selects = ['user-school', 'user-school-filter', 'view-school-select'];
-  selects.forEach(id => {
-    const el = document.getElementById(id);
-    if (!el) return;
-    const prev = el.value;
-    const prefix = id === 'user-school-filter' ? '<option value="">All Schools</option>' :
-                   id === 'view-school-select'  ? '<option value="">— Choose a school —</option>' :
-                   '<option value="">— Select school —</option>';
-    el.innerHTML = prefix + opts;
-    if (prev) el.value = prev;
-  });
-}
 
 async function openUserModal(user) {
-  await populateSchoolSelects();
+  await populateSchoolDropdowns();
   user = user || {};
   
   document.getElementById('user-modal-title').textContent = user.id ? 'Edit User' : 'Create New User';
@@ -887,13 +1021,13 @@ async function saveUser() {
         schoolName: schoolName || 'Pending',
         udise: '', phone: '', address: '' 
       });
-      nmToast(schoolId ? 'User account created and linked to school!' : 'User account and request created!', 'success');
     }
+    nmToast(id ? 'User profile updated!' : 'User account created!', 'success');
     closeModal('user-modal');
     await renderUsers();
   } catch (err) {
     console.error('[saveUser] Fatal Error:', err);
-    alert('Failed to save user!\n\nReason: ' + err.message + '\n\nCheck the browser console (F12) for more details.');
+    nmToast('Failed to save user: ' + (err.message || 'Unknown error'), 'error');
   }
 }
 
@@ -906,8 +1040,8 @@ async function deleteUser(id) {
   nmToast('User profile removed from NobleMinds.', 'info');
 }
 
-function exportStudents() {
-  const list = nmGetStudents();
+async function exportStudents() {
+  const list = await nmGetStudents();
   if (!list.length) { nmToast('No students to export','info'); return; }
   const safe = list.map(s => { const c={...s}; delete c.photo; delete c.fatherPhoto; delete c.motherPhoto; return c; });
   nmExportExcel(safe, `NobleMinds_All_Students_${new Date().toISOString().split('T')[0]}.xlsx`);
@@ -937,17 +1071,20 @@ async function renderSchoolStudents() {
       <div class="table-wrapper">
         <table class="data-table">
           <thead><tr><th>Student Name</th><th>Class</th><th>Section</th><th>House</th><th>Phone Number</th><th>Actions</th></tr></thead>
-          <tbody>${students.map(s => `<tr>
+          <tbody>${students.map(s => {
+            const nameEsc = nmEscapeHTML(s.full_name || s.fullName || '—');
+            const admEsc = nmEscapeHTML(s.admission_number || s.admissionNumber || '');
+            return `<tr>
             <td data-label="Student Name"><div style="display:flex;align-items:center;gap:10px;cursor:pointer;" onclick="viewStudent('${s.id}')">
-              ${s.photo ? `<img src="${s.photo}" style="width:32px;height:32px;border-radius:8px;object-fit:cover;">` : `<div class="avatar" style="width:32px;height:32px;font-size:0.7rem;">${(s.full_name||s.fullName||'?')[0]}</div>`}
-              <div><div style="font-weight:600;color:var(--clr-primary);">${s.full_name||s.fullName||'—'}</div><div style="font-size:0.72rem;color:var(--clr-text-2);">${s.admission_number||s.admissionNumber||''}</div></div>
+              ${s.photo ? `<img src="${s.photo}" style="width:32px;height:32px;border-radius:8px;object-fit:cover;">` : `<div class="avatar" style="width:32px;height:32px;font-size:0.7rem;">${nameEsc[0]}</div>`}
+              <div><div style="font-weight:600;color:var(--clr-primary);">${nameEsc}</div><div style="font-size:0.72rem;color:var(--clr-text-2);">${admEsc}</div></div>
             </div></td>
             <td data-label="Class"><span class="badge badge-purple">Class ${s.class||'?'}</span></td>
             <td data-label="Section">${s.section||'—'}</td>
             <td data-label="House"><span class="badge badge-gray">${s.house||'—'}</span></td>
             <td data-label="Phone Number">${s.phone||'—'}</td>
             <td data-label="Actions"><button class="btn btn-ghost btn-sm" onclick="viewStudent('${s.id}')">👁 View Profile</button></td>
-          </tr>`).join('')}
+          </tr>`; }).join('')}
           </tbody>
         </table>
       </div>
@@ -973,7 +1110,7 @@ async function viewStudent(id) {
             <div class="profile-name">${s.full_name||s.fullName||'—'}</div>
             <div style="color:var(--clr-text-2);font-size:0.9rem;">${s.admission_number||s.admissionNumber||''} · ${s.school_name || s.schoolName || ''}</div>
           </div>
-          <button class="btn btn-ghost btn-sm" onclick="nmPreparePrintProfile('${id}')" style="white-space:nowrap;">🖨 Print</button>
+          <button class="btn btn-ghost btn-sm" onclick="openPrintOptions('${id}')" style="white-space:nowrap;">🖨 Print</button>
         </div>
         <div class="profile-meta">
           <span class="badge badge-purple">Class ${s.class||'?'} - ${s.section||'?'}</span>
@@ -1032,16 +1169,21 @@ async function viewStudent(id) {
                   body += `<br> Incoming Escort: ${h.return_escort_name || h.returnEscortName || '—'} (${h.return_relationship || h.returnRelationship || '—'})`;
                 }
               }
+              const titleEsc = nmEscapeHTML(title);
+              const bodyEsc = nmEscapeHTML(body);
               return `
               <div class="timeline-item ${h.type}">
                 <div class="timeline-dot">${icon}</div>
                 <div class="timeline-content">
                   <div class="timeline-header">
-                    <span class="timeline-title">${title}</span>
+                    <span class="timeline-title">${titleEsc}</span>
                     <span class="timeline-date">${nmFmtDate(h.date)}</span>
                   </div>
-                  <div class="timeline-body" style="font-size:0.8rem;">${body}</div>
+                  <div class="timeline-body" style="font-size:0.8rem;">${bodyEsc}</div>
                   ${h.type === 'counselling' ? `<div class="timeline-footer"><span class="status-badge ${h.follow_up ? 'status-followup' : 'status-resolved'}">${h.follow_up ? 'Follow-up' : h.status}</span></div>` : ''}
+                </div>
+                <div class="timeline-actions" style="opacity:0; transition:opacity 0.2s;">
+                  <button class="btn btn-ghost btn-sm btn-icon" onclick="deleteTimelineRecord('${h.type}', '${h.id}')" title="Delete" style="color:var(--clr-danger);">🗑</button>
                 </div>
               </div>
             `; }).join('')
@@ -1064,124 +1206,33 @@ function adminQuickAdd(type, stdId) {
   window.location.href = `../user/index.html?action=add-${type}&studentId=${stdId}`;
 }
 
-let currentStudentId = '';
-async function nmPreparePrintProfile(id) {
-  const students = await nmGetStudents();
-  const s = students.find(x => x.id === id);
-  if (!s) { nmToast('Student not found', 'error'); return; }
+// ─── Print Integration ────────────────────────────────────────────────────────
+function openPrintOptions(id) {
+  currentStudentId = id;
+  openModal('print-options-modal');
+}
 
-  const history = await nmGetStudentHistory(id);
-  const p = document.getElementById('print-section');
+async function confirmPrintProfile() {
+  const orientation = document.querySelector('input[name="print-orientation"]:checked').value;
+  closeModal('print-options-modal');
+  await nmPreparePrintProfile(currentStudentId, { orientation });
+}
 
-  document.body.classList.add('printing-profile');
 
-  const infoRow = (k, v) => `<div class="print-info-item"><strong>${k}</strong><span>${v || '—'}</span></div>`;
+async function deleteTimelineRecord(type, id) {
+  const ok = await nmConfirm(`Delete this ${type} record permanently?`);
+  if (!ok) return;
 
-  p.innerHTML = `
-    <div class="print-header">
-      <div class="print-logo-wrap">
-        <img src="../assets/logo.png" class="print-logo">
-        <div class="print-header-text">
-          <h1>Student Record</h1>
-          <p>${s.school_name || 'NobleMinds Portal'} · Official Archive</p>
-        </div>
-      </div>
-      <div class="print-meta">
-        <div>Ref: NM/STU/${s.admission_number || '000'}</div>
-        <div>Date: ${new Date().toLocaleDateString('en-IN')}</div>
-        <div>Time: ${new Date().toLocaleTimeString('en-IN', {hour:'2-digit', minute:'2-digit'})}</div>
-      </div>
-    </div>
-
-    <div class="print-row">
-      <div class="print-photo-wrap">
-        <img src="${s.photo || '../assets/logo.png'}" class="print-photo">
-      </div>
-      <div style="flex:1;">
-        <h2 style="margin:0 0 10px; font-size:18pt; color:#000;">${s.full_name || '—'}</h2>
-        <div class="print-grid">
-          ${infoRow('Admission No', s.admission_number)}
-          ${infoRow('Class & Section', `${s.class || '?'} - ${s.section || '?'}`)}
-          ${infoRow('Gender', s.gender)}
-          ${infoRow('House', s.house)}
-          ${infoRow('Date of Birth', nmFmtDate(s.dob))}
-          ${infoRow('Age', s.dob ? nmCalcAge(s.dob) + ' Years' : '—')}
-        </div>
-      </div>
-    </div>
-
-    <h3 class="print-section-title">Personal & Contact Details</h3>
-    <div class="print-grid">
-      ${infoRow('Religion', s.religion)}
-      ${infoRow('Caste', s.caste)}
-      ${infoRow('Phone', s.phone)}
-      ${infoRow('Email', s.email)}
-      ${infoRow('Aadhar', s.aadhar)}
-      ${infoRow('APAAR', s.apaar_number)}
-      ${infoRow('PEN', s.pen)}
-    </div>
-    <div style="margin-top:15px;">
-      ${infoRow('Residential Address', s.address)}
-    </div>
-
-    <div class="print-grid" style="margin-top:20px;">
-      <div>
-        <h3 class="print-section-title">Father's Info</h3>
-        ${infoRow('Name', s.father_name)}
-        ${infoRow('Occupation', s.father_occupation)}
-        ${infoRow('Contact', s.father_phone)}
-      </div>
-      <div>
-        <h3 class="print-section-title">Mother's Info</h3>
-        ${infoRow('Name', s.mother_name)}
-        ${infoRow('Occupation', s.mother_occupation)}
-        ${infoRow('Contact', s.mother_phone)}
-      </div>
-    </div>
-
-    <h3 class="print-section-title">Medical History</h3>
-    <div style="padding:15px; border:1px solid #eee; font-size:10pt; color:#333; line-height:1.6; border-radius:6px;">${s.medical_history || 'No significant medical history recorded.'}</div>
-
-    <h3 class="print-section-title">Counselling, Observation & Movement History</h3>
-    <div class="timeline">
-      ${history.length ? history.map(h => {
-        let icon = '👁', title = h.type === 'observation' ? 'Observation' : (h.issue || 'Record');
-        let body = h.type === 'observation' ? h.observation : (h.counselling || '');
-        if (h.type === 'movement') {
-          icon = '🏃'; title = `Movement: ${h.reason}`;
-          body = `Leaving: ${nmFmtDate(h.leave_date)} · Return: ${nmFmtDate(h.report_date)}<br>Outgoing Escort: ${h.escort_name} (${h.relationship}) · Contact: ${h.phone}`;
-          if (h.report_date || h.reportDate) {
-            body += `<br>Incoming Escort: ${h.return_escort_name || h.returnEscortName || '—'} (${h.return_relationship || h.returnRelationship || '—'}) · Contact: ${h.return_phone || h.returnPhone || '—'}`;
-          }
-        }
-        return `
-        <div class="timeline-item ${h.type}">
-          <div class="timeline-dot">${icon}</div>
-          <div class="timeline-content">
-            <div class="timeline-header">
-              <span class="timeline-title"><strong>${title}</strong></span>
-              <span class="timeline-date">${nmFmtDate(h.date)}</span>
-            </div>
-            <div class="timeline-body">${body}</div>
-            ${h.type === 'counselling' ? `<div style="margin-top:8px;"><span class="status-badge">${h.status || 'Resolved'}</span></div>` : ''}
-          </div>
-        </div>
-        `;
-      }).join('') : '<p style="padding:10px; color:#666;">No history records found for this student.</p>'}
-    </div>
-
-    <div class="print-footer">
-      <span>Official Student Record — NobleMinds Platform</span>
-      <span>Confidential Document</span>
-    </div>
-  `;
-
-  setTimeout(() => {
-    window.print();
-    setTimeout(() => {
-      document.body.classList.remove('printing-profile');
-    }, 500);
-  }, 300);
+  try {
+    if (type === 'observation') await nmDeleteObservation(id);
+    else if (type === 'counselling') await nmDeleteCounselling(id);
+    else if (type === 'movement') await nmDeleteMovement(id);
+    
+    nmToast('Record deleted successfully.', 'info');
+    if (currentStudentId) await viewStudent(currentStudentId);
+  } catch (err) {
+    nmToast('Error deleting record.', 'error');
+  }
 }
 
 // ─── Init ─────────────────────────────────────────────────────────────────────

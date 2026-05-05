@@ -156,6 +156,13 @@ function nmDebounce(fn, ms) {
   let t; return (...args) => { clearTimeout(t); t = setTimeout(() => fn(...args), ms); };
 }
 
+/** Escape HTML strings to prevent XSS */
+function nmEscapeHTML(str) {
+  if (!str) return '';
+  const map = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' };
+  return str.toString().replace(/[&<>"']/g, m => map[m]);
+}
+
 /** Simple throttle function */
 function nmThrottle(fn, ms) {
   let last = 0;
@@ -177,7 +184,7 @@ function nmInitTheme() {
 }
 
 function nmToggleTheme() {
-  const current = document.documentElement.getAttribute('data-theme');
+  const current = document.documentElement.getAttribute('data-theme') || 'dark';
   const newTheme = current === 'dark' ? 'light' : 'dark';
   document.documentElement.setAttribute('data-theme', newTheme);
   localStorage.setItem('nm_theme', newTheme);

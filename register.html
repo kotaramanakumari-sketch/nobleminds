@@ -20,8 +20,8 @@
     .login-bg { position: fixed; inset: 0; z-index: 0; }
     .grid-lines {
       position: absolute; inset: 0;
-      background-image: linear-gradient(rgba(108,99,255,0.06) 1px, transparent 1px),
-                        linear-gradient(90deg, rgba(108,99,255,0.06) 1px, transparent 1px);
+      background-image: linear-gradient(rgba(59,130,246,0.05) 1px, transparent 1px),
+                        linear-gradient(90deg, rgba(59,130,246,0.05) 1px, transparent 1px);
       background-size: 60px 60px;
     }
 
@@ -69,12 +69,12 @@
     .login-btn {
       width: 100%; padding: 14px; font-size: 1rem; font-weight: 700;
       letter-spacing: 0.02em; margin-top: 8px;
-      background: linear-gradient(135deg, var(--clr-primary), #8b7cf8);
+      background: linear-gradient(135deg, var(--clr-primary), var(--clr-primary-d));
       color: #fff; border: none; border-radius: var(--radius-sm);
       cursor: pointer; transition: var(--transition);
-      box-shadow: 0 6px 24px rgba(108,99,255,0.4);
+      box-shadow: 0 6px 24px rgba(59,130,246,0.4);
     }
-    .login-btn:hover { transform: translateY(-2px); box-shadow: 0 10px 32px rgba(108,99,255,0.55); }
+    .login-btn:hover { transform: translateY(-2px); box-shadow: var(--glow-primary), 0 10px 32px rgba(59,130,246,0.55); }
 
     .back-link {
       display: flex; align-items: center; justify-content: center;
@@ -96,7 +96,7 @@
   <div class="login-card">
     <!-- Logo -->
     <div class="login-logo">
-      <img src="assets/logo.png" alt="NobleMinds" style="width:48px;height:48px;border-radius:14px;object-fit:contain;background:#fff;padding:4px;box-shadow: 0 8px 24px rgba(108,99,255,0.2);">
+      <img src="assets/logo.png" alt="NobleMinds" style="width:48px;height:48px;border-radius:14px;object-fit:contain;background:#fff;padding:4px;box-shadow: 0 8px 24px rgba(59,130,246,0.2);">
       <span class="login-logo-text">Noble<span>Minds</span></span>
     </div>
 
@@ -185,9 +185,15 @@
 <script>
   document.getElementById('register-form').addEventListener('submit', async e => {
     e.preventDefault();
+    const udise    = document.getElementById('reg-udise').value.trim();
     const password = document.getElementById('reg-password').value;
     const confirm  = document.getElementById('reg-confirm').value;
     const phone    = document.getElementById('reg-phone').value.trim();
+
+    if (udise.length !== 11 || isNaN(udise)) {
+      nmToast('Please enter a valid 11-digit numeric UDISE code.', 'error');
+      return;
+    }
 
     if (phone.length !== 10 || isNaN(phone)) {
       nmToast('Please enter a valid 10-digit phone number.', 'error');
@@ -205,7 +211,7 @@
     }
 
     const data = {
-      udise:      document.getElementById('reg-udise').value.trim(),
+      udise:      udise,
       schoolName: document.getElementById('reg-school').value.trim(),
       address:    document.getElementById('reg-address').value.trim(),
       name:       document.getElementById('reg-name').value.trim(),

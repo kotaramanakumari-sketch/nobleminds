@@ -47,12 +47,12 @@ async function nmSignUp(data) {
   if (authError) throw authError;
   if (!authData.user) throw new Error('Sign up failed');
 
-  // 2. Create the profile
+  // 2. Create the profile — role defaults to 'user'; promote to admin via Supabase dashboard
   const { error: profError } = await sb.from('profiles').insert([{
     id: authData.user.id,
     name: name,
     email: email,
-    role: email.toLowerCase() === 'kotaramanakumari@gmail.com' ? 'admin' : 'user',
+    role: 'user',
     school_id: schoolId || null,
     school_name: schoolId ? schoolName : 'Pending Approval'
   }]);
@@ -90,20 +90,9 @@ async function nmLogin(email, password) {
   
   let profile = await nmGetProfile(data.user.id);
 
-  // Auto-heal super admin profile if it got lost/skipped
-  if (!profile && email.toLowerCase() === 'kotaramanakumari@gmail.com') {
-    const { error: profError } = await sb.from('profiles').insert([{
-      id: data.user.id,
-      name: 'Super Admin',
-      role: 'admin',
-      school_id: null,
-      school_name: 'NobleMinds Headquarters'
-    }]);
-    if (profError) {
-      alert("Database Error: " + profError.message);
-    } else {
-      profile = await nmGetProfile(data.user.id);
-    }
+  // NOTE: To set someone as admin, set role='admin' in the profiles table via Supabase dashboard
+  if (!profile) {
+    return { success: false, message: 'Profile not found. Please contact the Super Admin.' };
   }
 
   if (profile) {
@@ -111,7 +100,6 @@ async function nmLogin(email, password) {
     return { success: true, user: profile };
   }
 
-  
   return { success: false, message: 'Profile not found.' };
 }
 
@@ -247,4 +235,20 @@ async function nmMigrateToCloud() {
     console.error('Migration failed fatal:', err);
     nmToast('Migration failed. Check console.', 'error');
   }
+}
+
+/** Update user password */
+async function nmUpdateUserPassword() {
+  const pwd = document.getElementById('settings-new-password')?.value;
+  if (!pwd || pwd.length < 6) {
+    nmToast('Password must be at least 6 characters long', 'error');
+    return;
+  }
+  const { error } = await sb.auth.updateUser({ password: pwd });
+  if (error) {
+    nmToast(error.message, 'error');
+    return;
+  }
+  document.getElementById('settings-new-password').value = '';
+  nmToast('Password updated successfully!', 'success');
 }

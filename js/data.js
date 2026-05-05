@@ -83,6 +83,11 @@ async function nmSetDefaultYear(yearId, schoolId) {
   if (error) throw error;
 }
 
+async function nmDeleteMovement(id) {
+  const { error } = await sb.from('movements').delete().eq('id', id);
+  if (error) throw error;
+}
+
 // ─── SCHOOLS ──────────────────────────────────────────────────────────────────
 async function nmGetSchools(force = false) {
   const now = Date.now();
@@ -212,6 +217,7 @@ async function nmDeleteStudent(id) {
  * CLONES student records into a new Year and increments the Class. 
  */
 async function nmPromoteStudents(studentIds, targetYearId) {
+  if (!studentIds || !studentIds.length) return [];
   const { data: students, error: fetchErr } = await sb.from('students').select('*').in('id', studentIds);
   if (fetchErr) throw fetchErr;
 
@@ -279,6 +285,11 @@ async function nmSaveObservation(obs) {
   }
 }
 
+async function nmDeleteObservation(id) {
+  const { error } = await sb.from('observations').delete().eq('id', id);
+  if (error) throw error;
+}
+
 // ─── COUNSELLING ──────────────────────────────────────────────────────────────
 async function nmGetCounselling(id, isSchool = true) {
   let query = sb.from('counselling_records').select('*').order('record_date', { ascending: false });
@@ -308,6 +319,10 @@ async function nmSaveCounselling(rec) {
     if (error) throw error;
     return data[0];
   }
+}
+async function nmDeleteCounselling(id) {
+  const { error } = await sb.from('counselling_records').delete().eq('id', id);
+  if (error) throw error;
 }
 
 // ─── MOVEMENTS ────────────────────────────────────────────────────────────────
@@ -343,6 +358,10 @@ async function nmSaveMovement(mov) {
     if (error) throw error;
     return data[0];
   }
+}
+async function nmDeleteMovement(id) {
+  const { error } = await sb.from('movements').delete().eq('id', id);
+  if (error) throw error;
 }
 
 // ─── REGISTRATION REQUESTS ───────────────────────────────────────────────────
@@ -404,29 +423,27 @@ async function nmProcessRegistrationRequest(requestId, approve = true) {
 
 // ─── STATS ────────────────────────────────────────────────────────────────────
 async function nmGetStats(schoolId, academicYearId) {
-  // Use head=true for exact counts without fetching data rows (Very fast)
-  const studentQuery = sb.from('students').select('*', { count: 'exact', head: true });
-  if (schoolId) studentQuery.eq('school_id', schoolId);
-  if (academicYearId) studentQuery.eq('academic_year_id', academicYearId);
+  // IMPORTANT: Supabase query objects are immutable — must reassign with `let` for conditional filters
+  let studentQuery = sb.from('students').select('*', { count: 'exact', head: true });
+  if (schoolId)       studentQuery = studentQuery.eq('school_id', schoolId);
+  if (academicYearId) studentQuery = studentQuery.eq('academic_year_id', academicYearId);
   
   const schoolQuery = sb.from('schools').select('*', { count: 'exact', head: true });
-  const userQuery = sb.from('profiles').select('*', { count: 'exact', head: true });
+  const userQuery   = sb.from('profiles').select('*', { count: 'exact', head: true });
   
-  const cnsQuery = sb.from('counselling_records').select('*', { count: 'exact', head: true });
-  if (schoolId) cnsQuery.eq('school_id', schoolId);
-  // Counselling is student-linked, but we might want to filter by year if it was year-bound.
-  // Currently, history stays linked to the student record of that year.
+  let cnsQuery = sb.from('counselling_records').select('*', { count: 'exact', head: true });
+  if (schoolId) cnsQuery = cnsQuery.eq('school_id', schoolId);
   
-  const fuQuery = sb.from('counselling_records').select('*', { count: 'exact', head: true }).eq('follow_up', true);
-  if (schoolId) fuQuery.eq('school_id', schoolId);
+  let fuQuery = sb.from('counselling_records').select('*', { count: 'exact', head: true }).eq('follow_up', true);
+  if (schoolId) fuQuery = fuQuery.eq('school_id', schoolId);
 
-  const maleQuery = sb.from('students').select('*', { count: 'exact', head: true }).eq('gender', 'Male');
-  if (schoolId) maleQuery.eq('school_id', schoolId);
-  if (academicYearId) maleQuery.eq('academic_year_id', academicYearId);
+  let maleQuery = sb.from('students').select('*', { count: 'exact', head: true }).eq('gender', 'Male');
+  if (schoolId)       maleQuery = maleQuery.eq('school_id', schoolId);
+  if (academicYearId) maleQuery = maleQuery.eq('academic_year_id', academicYearId);
 
-  const femaleQuery = sb.from('students').select('*', { count: 'exact', head: true }).eq('gender', 'Female');
-  if (schoolId) femaleQuery.eq('school_id', schoolId);
-  if (academicYearId) femaleQuery.eq('academic_year_id', academicYearId);
+  let femaleQuery = sb.from('students').select('*', { count: 'exact', head: true }).eq('gender', 'Female');
+  if (schoolId)       femaleQuery = femaleQuery.eq('school_id', schoolId);
+  if (academicYearId) femaleQuery = femaleQuery.eq('academic_year_id', academicYearId);
 
   const [
     { count: totalStudents },
@@ -441,14 +458,11 @@ async function nmGetStats(schoolId, academicYearId) {
   ]);
 
   return {
-    total: totalStudents || 0,
-    schools: totalSchools || 0,
-    users: totalUsers || 0,
-    counselling: { 
-      total: cnsCount || 0,
-      followUps: fuCount || 0 
-    },
-    genders: { Male: maleCount || 0, Female: femaleCount || 0 }
+    total:     totalStudents || 0,
+    schools:   totalSchools  || 0,
+    users:     totalUsers    || 0,
+    counselling: { total: cnsCount || 0, followUps: fuCount || 0 },
+    genders:   { Male: maleCount || 0, Female: femaleCount || 0 }
   };
 }
 
