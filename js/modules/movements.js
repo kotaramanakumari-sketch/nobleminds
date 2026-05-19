@@ -177,8 +177,8 @@ function exportMovements() {
       const data = mov.map(m => {
         const s = students.find(x => x.id === (m.student_id || m.studentId)) || {};
         return {
-          LeaveDate: m.leave_date || m.leaveDate,
-          ReportDate: m.report_date || m.reportDate || 'Away',
+          LeaveDate: m.leave_date || '',
+          ReportDate: m.report_date || 'Away',
           StudentName: s.full_name || s.fullName || 'Unknown',
           AdmissionNo: s.admission_number || s.admissionNumber || '',
           Reason: m.reason,

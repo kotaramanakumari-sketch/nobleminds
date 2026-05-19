@@ -9,7 +9,8 @@
 
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-</head>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+  </head>
 <body>
 <div class="panel-layout">
 
@@ -66,11 +67,6 @@
     </div>
 
     <div class="content-area">
-      <!-- DYNAMIC PRINT HEADER -->
-      <div class="print-header-all">
-        <h1 id="print-school-heading">NobleMinds Platform — Official Records</h1>
-        <p>Official Institutional & School Data</p>
-      </div>
       <div class="page-section active" id="section-dashboard">
         <div class="mb-24">
           <h2 style="font-size:1.5rem;font-weight:900;">Welcome back! 👋</h2>
@@ -134,7 +130,7 @@
             <option value="">All Genders</option><option>Male</option><option>Female</option>
           </select>
           <button class="btn btn-ghost btn-sm" onclick="exportStudents()">⬇ Export Excel</button>
-          <button class="btn btn-ghost btn-sm" onclick="window.print()">🖨 Print</button>
+          <button class="btn btn-ghost btn-sm" onclick="nmDownloadTablePDF(this, 'Students Directory', 'students')">📄 Download PDF</button>
         </div>
         <div class="card" style="padding:0;overflow:hidden;">
           <div class="table-wrapper">
@@ -398,7 +394,7 @@
         <div class="card mb-20">
           <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-bottom:16px;">
             <div><h3 style="margin-bottom:4px;">Step 1: Download Template</h3><p style="font-size:0.85rem;">Get the Excel template (.xlsx) with the correct columns.</p></div>
-            <button class="btn btn-ghost" onclick="nmDownloadTemplate()">⬇ Download Template Excel</button>
+            <button class="btn btn-ghost" onclick="nmGetTemplate()">⬇ Get Template Excel</button>
           </div>
           <hr class="divider">
           <h3 style="margin-bottom:8px;">Step 2: Upload Filled Excel</h3>
@@ -429,7 +425,7 @@
             <span>🔍</span><input type="text" id="obs-search" placeholder="Search students..." oninput="renderObservations()">
           </div>
           <button class="btn btn-ghost btn-sm" onclick="exportObservations()">⬇ Export Excel</button>
-          <button class="btn btn-ghost btn-sm" onclick="window.print()">🖨 Print</button>
+          <button class="btn btn-ghost btn-sm" onclick="nmDownloadTablePDF(this, 'Observations Record', 'observations')">📄 Download PDF</button>
         </div>
         <div class="card" style="padding:0;overflow:hidden;">
           <div class="table-wrapper">
@@ -455,12 +451,12 @@
             <span>🔍</span><input type="text" id="cns-search" placeholder="Search students or issues..." oninput="renderCounselling()">
           </div>
           <button class="btn btn-ghost btn-sm" onclick="exportCounselling()">⬇ Export Excel</button>
-          <button class="btn btn-ghost btn-sm" onclick="window.print()">🖨 Print</button>
+          <button class="btn btn-ghost btn-sm" onclick="nmDownloadTablePDF(this, 'Counselling Record', 'counselling')">📄 Download PDF</button>
         </div>
         <div class="card" style="padding:0;overflow:hidden;">
           <div class="table-wrapper">
             <table class="data-table">
-              <thead><tr><th>Date</th><th>Student Name</th><th>Class</th><th>Sec</th><th>House</th><th>Brief Issue</th><th>Actions</th></tr></thead>
+              <thead><tr><th>Date</th><th>Student Name</th><th>Class</th><th>Sec</th><th>House</th><th>Brief Issue</th><th>Details</th><th>Status</th><th>Actions</th></tr></thead>
               <tbody id="cns-tbody"></tbody>
             </table>
           </div>
@@ -481,7 +477,7 @@
             <span>🔍</span><input type="text" id="mov-search" placeholder="Search student or escort..." oninput="renderMovements()">
           </div>
           <button class="btn btn-ghost btn-sm" onclick="exportMovements()">⬇ Export Excel</button>
-          <button class="btn btn-ghost btn-sm" onclick="window.print()">🖨 Print</button>
+          <button class="btn btn-ghost btn-sm" onclick="nmDownloadTablePDF(this, 'Movement Record', 'movements')">📄 Download PDF</button>
         </div>
         <div class="card" style="padding:0;overflow:hidden;">
           <div class="table-wrapper">
@@ -519,7 +515,7 @@
             <span>🔍</span><input type="text" id="diary-search" placeholder="Search topic or class..." oninput="renderTeacherDiaries()">
           </div>
           <button class="btn btn-ghost btn-sm" onclick="exportTeacherDiaries()">⬇ Export Excel</button>
-          <button class="btn btn-ghost btn-sm" onclick="window.print()">🖨 Print</button>
+          <button class="btn btn-ghost btn-sm" onclick="nmDownloadTablePDF(this, 'Teacher Diary', 'diaries')">📄 Download PDF</button>
         </div>
         <div class="card" style="padding:0;overflow:hidden;">
           <div class="table-wrapper">
@@ -582,10 +578,6 @@
           <button class="btn btn-primary" onclick="nmUpdateUserPassword()">Update Password</button>
         </div>
 
-      <!-- DYNAMIC PRINT FOOTER -->
-      <div class="print-footer-all">
-        Powered by Noble Minds
-      </div>
 
     </div>
   </div>
@@ -956,10 +948,8 @@
 <script src="../js/modules/counselling.js"></script>
 <script src="../js/modules/movements.js"></script>
 <script src="../js/modules/diary.js"></script>
-<script src="../js/modules/print.js"></script>
+<script src="../js/modules/pdf.js"></script>
 
-<!-- PRINT SECTION (Hidden in UI, visible in Print) -->
-<div id="print-section" class="print-only"></div>
 
 </body>
 </html>

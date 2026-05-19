@@ -14,9 +14,6 @@ async function init() {
     document.getElementById('user-avatar').textContent    = nmGetInitials(session.name);
     const sn = session.school_name || session.schoolName || 'School Portal';
     document.getElementById('sb-school-name').textContent = sn;
-    if (document.getElementById('print-school-heading')) {
-      document.getElementById('print-school-heading').textContent = sn.toUpperCase();
-    }
     
     await loadAcademicYears();
   }

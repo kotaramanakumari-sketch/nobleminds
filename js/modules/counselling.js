@@ -19,6 +19,7 @@ async function renderCounselling() {
     const s = students.find(x => x.id === (c.student_id || c.studentId)) || { full_name: 'Unknown', class:'?', section:'?', house:'?' };
     const dateVal = c.record_date || c.date || '';
     const issueEsc = nmEscapeHTML(c.issue || '—');
+    const detailsEsc = nmEscapeHTML(c.counselling || c.details || c.counselling_notes || '—');
     const nameEsc  = nmEscapeHTML(s.full_name || s.fullName || 'Unknown');
     const admEsc   = nmEscapeHTML(s.admission_number || s.admissionNumber || '');
 
@@ -32,6 +33,7 @@ async function renderCounselling() {
       <td data-label="Section">${s.section||'—'}</td>
       <td data-label="House"><span class="badge badge-gray">${s.house||'—'}</span></td>
       <td data-label="Issue" style="max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${issueEsc}">${issueEsc}</td>
+      <td data-label="Details" style="max-width:280px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${detailsEsc}">${detailsEsc}</td>
       <td data-label="Status"><span class="status-badge ${c.follow_up||c.followUp ? 'status-followup' : 'status-resolved'}">${c.follow_up||c.followUp ? 'Follow-up' : c.status||'Resolved'}</span></td>
       <td data-label="Action">
         <div style="display:flex;gap:4px;">
@@ -117,7 +119,7 @@ async function exportCounselling() {
   const data = list.map(c => {
     const s = students.find(x => x.id === (c.student_id || c.studentId)) || {};
     return {
-      Date: c.date,
+      Date: c.record_date || c.date || '',
       StudentName: s.full_name || s.fullName || 'Unknown',
       AdmissionNo: s.admission_number || s.admissionNumber || '',
       Class: s.class || '',

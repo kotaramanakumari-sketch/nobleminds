@@ -7,8 +7,9 @@
   <link rel="stylesheet" href="../styles/global.css">
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-  <style>
+    <style>
     .school-logo-circle {
       width: 36px; height: 36px; border-radius: 10px; flex-shrink: 0;
       background: linear-gradient(135deg,var(--clr-primary),var(--clr-accent));
@@ -182,7 +183,10 @@
               <span>🔍</span>
               <input type="text" id="school-search" placeholder="Search schools…" oninput="renderSchools()">
             </div>
-            <button class="btn btn-primary" onclick="openSchoolModal()" id="add-school-btn">+ New School</button>
+            <div style="display:flex; gap:8px;">
+              <button class="btn btn-ghost btn-sm" onclick="nmDownloadTablePDF(this, 'Schools Directory', 'schools')" style="border:1px solid var(--clr-border);">📄 Download PDF</button>
+              <button class="btn btn-primary" onclick="openSchoolModal()" id="add-school-btn">+ New School</button>
+            </div>
           </div>
           
           <div class="card" style="padding:0;overflow:hidden;">
@@ -211,7 +215,10 @@
             <select class="filter-select" id="user-school-filter" onchange="renderUsers()" style="max-width:200px;">
               <option value="">All Schools</option>
             </select>
-            <button class="btn btn-primary" onclick="openUserModal()" id="add-user-btn">+ New User</button>
+            <div style="display:flex; gap:8px;">
+              <button class="btn btn-ghost btn-sm" onclick="nmDownloadTablePDF(this, 'System Users', 'users')" style="border:1px solid var(--clr-border);">📄 Download PDF</button>
+              <button class="btn btn-primary" onclick="openUserModal()" id="add-user-btn">+ New User</button>
+            </div>
           </div>
 
           <div class="card" style="padding:0;overflow:hidden;">
@@ -281,21 +288,38 @@
           <h2>📋 Student Data by School</h2>
         </div>
 
-        <div class="school-select-wrap" style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:20px;">
-          <div style="display:flex;align-items:center;gap:12px;flex:1;flex-wrap:wrap;">
-            <label>Select School:</label>
-            <select class="form-control" id="view-school-select" onchange="onSchoolChange()" style="max-width:300px;">
-              <option value="">— Choose a school —</option>
-            </select>
-            
-            <label style="margin-left:8px;">Academic Year:</label>
-            <select class="form-control" id="view-year-select" onchange="renderSchoolStudents()" style="max-width:180px;">
-              <option value="">— All —</option>
-            </select>
+        <div class="card mb-24 school-select-card" style="padding: 20px; background: var(--clr-bg2); border: 1px solid var(--clr-border);">
+          <div style="display:flex;align-items:center;justify-content:space-between;gap:20px;flex-wrap:wrap;">
+            <div style="display:flex;align-items:flex-end;gap:16px;flex:1;flex-wrap:wrap;">
+              
+              <div class="form-group" style="flex:1; min-width:280px; max-width: 400px;">
+                <label class="form-label" style="display:flex;align-items:center;gap:6px;font-size:0.75rem;font-weight:700;color:var(--clr-text-2);">
+                  <span>🏫</span> Select School
+                </label>
+                <select class="form-control" id="view-school-select" onchange="onSchoolChange()" style="margin-top:4px; background: var(--clr-surface2);">
+                  <option value="">— Choose a school —</option>
+                </select>
+              </div>
+              
+              <div class="form-group" style="flex:1; min-width:160px; max-width: 220px;">
+                <label class="form-label" style="display:flex;align-items:center;gap:6px;font-size:0.75rem;font-weight:700;color:var(--clr-text-2);">
+                  <span>📅</span> Academic Year
+                </label>
+                <select class="form-control" id="view-year-select" onchange="renderSchoolStudents()" style="margin-top:4px; background: var(--clr-surface2);">
+                  <option value="">— All —</option>
+                </select>
+              </div>
 
-            <span id="school-student-count" class="badge badge-green" style="display:none;"></span>
+              <div style="margin-bottom: 8px;">
+                <span id="school-student-count" class="badge badge-green" style="display:none;font-weight:700;padding: 6px 12px;box-shadow:var(--glow-success);"></span>
+              </div>
+
+            </div>
+            <div class="action-btns" style="margin-top: 4px;">
+              <button class="btn btn-ghost btn-sm" onclick="exportStudents()">⬇ Export Excel</button>
+              <button class="btn btn-ghost btn-sm" onclick="nmDownloadTablePDF(this, 'School Student Directory', 'school_students')" style="border:1px solid var(--clr-border);">📄 Download PDF</button>
+            </div>
           </div>
-          <button class="btn btn-ghost btn-sm" onclick="exportStudents()">⬇ Export All Students (Excel)</button>
         </div>
 
         <div id="school-data-content">
@@ -446,41 +470,13 @@
   </div>
 </div>
 
-<!-- ═══════════ PRINT OPTIONS MODAL ═══════════ -->
-<div class="modal-overlay" id="print-options-modal">
-  <div class="modal" style="max-width:400px; max-height: 80vh;">
-    <div class="modal-header">
-      <span class="modal-title">🖨 Print Settings</span>
-      <button class="modal-close" onclick="closeModal('print-options-modal')">✕</button>
-    </div>
-    <div class="modal-body">
-      <p class="mb-16" style="font-size:0.9rem; color:var(--clr-text-2);">Choose your preferred page orientation for the student profile.</p>
-      <div class="form-group">
-        <label class="form-label">Page Orientation</label>
-        <div class="radio-group" style="margin-top:8px;">
-          <label class="radio-option">
-            <input type="radio" name="print-orientation" value="portrait" checked>
-            <span>Portrait (Vertical)</span>
-          </label>
-          <label class="radio-option">
-            <input type="radio" name="print-orientation" value="landscape">
-            <span>Landscape (Horizontal)</span>
-          </label>
-        </div>
-      </div>
-    </div>
-    <div class="modal-footer" style="position: sticky; bottom: 0; background: var(--clr-bg2); border-top: 1px solid var(--clr-border); padding: 16px 28px;">
-      <button class="btn btn-ghost" onclick="closeModal('print-options-modal')">Cancel</button>
-      <button class="btn btn-primary" onclick="confirmPrintProfile()">Print Now</button>
-    </div>
-  </div>
-</div>
+<!-- ═══════════ PDF OPTIONS MODAL ═══════════ -->
 
 <script src="../js/supabase.js?v=1.0.1"></script>
 <script src="../js/utils.js?v=1.0.1"></script>
 <script src="../js/auth.js?v=1.0.1"></script>
 <script src="../js/data.js?v=1.0.1"></script>
-<script src="../js/modules/print.js?v=1.0.1"></script>
+<script src="../js/modules/pdf.js"></script>
 <script>
 // ─── Global State ─────────────────────────────────────────────────────────────
 let currentAdminYearId = ''; 
@@ -1110,7 +1106,6 @@ async function viewStudent(id) {
             <div class="profile-name">${s.full_name||s.fullName||'—'}</div>
             <div style="color:var(--clr-text-2);font-size:0.9rem;">${s.admission_number||s.admissionNumber||''} · ${s.school_name || s.schoolName || ''}</div>
           </div>
-          <button class="btn btn-ghost btn-sm" onclick="openPrintOptions('${id}')" style="white-space:nowrap;">🖨 Print</button>
         </div>
         <div class="profile-meta">
           <span class="badge badge-purple">Class ${s.class||'?'} - ${s.section||'?'}</span>
@@ -1121,6 +1116,7 @@ async function viewStudent(id) {
       </div>
       <div class="profile-actions">
         <div class="profile-actions-btns">
+          <button class="btn btn-ghost btn-sm" onclick="nmDownloadProfilePDF('${id}', this)" style="border:1px solid var(--clr-border);">📄 Download PDF</button>
           <button class="btn btn-primary btn-sm" onclick="adminQuickAdd('observations', '${id}')">👁‍🗨 Obs</button>
           <button class="btn btn-primary btn-sm" onclick="adminQuickAdd('counselling', '${id}')">🤝 Cns</button>
           <button class="btn btn-primary btn-sm" onclick="adminQuickAdd('movement', '${id}')">🏃 Mov</button>
@@ -1161,16 +1157,33 @@ async function viewStudent(id) {
         <div class="timeline">
           ${!history.length ? '<div class="empty-state" style="padding:24px;"><p>No records found.</p></div>' : 
             history.map(h => {
-              let icon = '👁', title = h.type === 'observation' ? 'Observation' : h.issue || 'History', body = h.type === 'observation' ? h.observation : h.counselling || h.reason || '';
-              if (h.type === 'movement') {
-                icon = '🏃'; title = `Movement: ${h.reason}`;
-                body = `Leaving: ${nmFmtDate(h.leave_date)} · Return: ${nmFmtDate(h.report_date)} <br> Outgoing Escort: ${h.escort_name} (${h.relationship})`;
+              let icon = '👁', title = h.type === 'observation' ? 'Observation' : h.issue || 'History';
+              let bodyEsc = '';
+              
+              if (h.type === 'observation') {
+                bodyEsc = nmEscapeHTML(h.observation || '');
+              } else if (h.type === 'counselling') {
+                icon = '🤝';
+                bodyEsc = nmEscapeHTML(h.counselling || h.reason || '');
+              } else if (h.type === 'movement') {
+                icon = '🏃'; 
+                title = `Movement: ${h.reason}`;
+                const leaveDate = nmFmtDate(h.leave_date || h.leaveDate);
+                const returnDate = nmFmtDate(h.report_date || h.reportDate);
+                const escortName = nmEscapeHTML(h.escort_name || h.escortName || '—');
+                const relationship = nmEscapeHTML(h.relationship || '—');
+                
+                bodyEsc = `<strong>Leaving:</strong> ${leaveDate} · <strong>Return:</strong> ${returnDate}<br><strong>Outgoing Escort:</strong> ${escortName} (${relationship})`;
                 if (h.report_date || h.reportDate) {
-                  body += `<br> Incoming Escort: ${h.return_escort_name || h.returnEscortName || '—'} (${h.return_relationship || h.returnRelationship || '—'})`;
+                  const retEscort = nmEscapeHTML(h.return_escort_name || h.returnEscortName || '—');
+                  const retRel = nmEscapeHTML(h.return_relationship || h.returnRelationship || '—');
+                  bodyEsc += `<br><strong>Incoming Escort:</strong> ${retEscort} (${retRel})`;
                 }
+              } else {
+                bodyEsc = nmEscapeHTML(h.reason || '');
               }
+              
               const titleEsc = nmEscapeHTML(title);
-              const bodyEsc = nmEscapeHTML(body);
               return `
               <div class="timeline-item ${h.type}">
                 <div class="timeline-dot">${icon}</div>
@@ -1206,17 +1219,7 @@ function adminQuickAdd(type, stdId) {
   window.location.href = `../user/index.html?action=add-${type}&studentId=${stdId}`;
 }
 
-// ─── Print Integration ────────────────────────────────────────────────────────
-function openPrintOptions(id) {
-  currentStudentId = id;
-  openModal('print-options-modal');
-}
-
-async function confirmPrintProfile() {
-  const orientation = document.querySelector('input[name="print-orientation"]:checked').value;
-  closeModal('print-options-modal');
-  await nmPreparePrintProfile(currentStudentId, { orientation });
-}
+// ─── PDF Integration ─────────────────────────────────────────────────────────
 
 
 async function deleteTimelineRecord(type, id) {
@@ -1238,6 +1241,6 @@ async function deleteTimelineRecord(type, id) {
 // ─── Init ─────────────────────────────────────────────────────────────────────
 init();
 </script>
-<div id="print-section" class="print-only"></div>
+
 </body>
 </html>

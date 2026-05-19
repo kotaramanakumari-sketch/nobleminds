@@ -109,7 +109,7 @@ function nmValidAadhar(a) { return /^\d{12}$/.test(a); }
 function nmValidEmail(e) { return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e); }
 
 /** Generate Excel template for bulk import */
-function nmDownloadTemplate() {
+function nmGetTemplate() {
   const headers = [
     'admissionNumber','fullName','class','section','house','dob','gender',
     'religion','caste','address','phone','email','aadhar','apaarNumber','pen',

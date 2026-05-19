@@ -37,8 +37,8 @@ async function renderTeacherDiaries() {
         <div style="font-size:0.8rem; display:grid; grid-template-columns:1fr 1fr; gap:4px;">
           <div><span style="color:var(--clr-success);">■</span> P: ${d.present}</div>
           <div><span style="color:var(--clr-danger);">■</span> L: ${d.leave}</div>
-          <div><span style="color:var(--clr-amber);">■</span> OD: ${d.onduty || d.on_duty}</div>
-          <div><span style="color:var(--clr-text-3);">■</span> NR: ${d.notreported || d.not_reported}</div>
+          <div><span style="color:var(--clr-amber);">■</span> OD: ${d.on_duty}</div>
+          <div><span style="color:var(--clr-text-3);">■</span> NR: ${d.not_reported}</div>
         </div>
         <div style="font-size:0.75rem;font-weight:700;margin-top:4px;">Total: ${d.total_students}</div>
       </td>
@@ -89,8 +89,8 @@ async function openDiaryModal(id) {
     dSection.value = d.section;
     dPresent.value = d.present;
     dLeave.value = d.leave;
-    dOnduty.value = d.onduty || d.on_duty;
-    dNotreported.value = d.notreported || d.not_reported;
+    dOnduty.value = d.on_duty;
+    dNotreported.value = d.not_reported;
     dTopic.value = d.topic_discussed;
   } else {
     document.getElementById('diary-modal-title').textContent = 'Add Diary Entry';
@@ -174,8 +174,8 @@ async function exportTeacherDiaries() {
     'Total Students': d.total_students,
     'Present': d.present,
     'Leave': d.leave,
-    'On Duty': d.onduty || d.on_duty,
-    'Not Reported': d.notreported || d.not_reported,
+    'On Duty': d.on_duty,
+    'Not Reported': d.not_reported,
     'Topic Discussed': d.topic_discussed
   }));
   

@@ -125,7 +125,6 @@ async function viewStudent(id) {
             <div class="profile-name">${nameEsc}</div>
             <div style="color:var(--clr-text-2);font-size:0.88rem;">${admEsc} · ID: ${s.id.slice(0,8)}</div>
           </div>
-          <button class="btn btn-ghost btn-sm" onclick="nmPreparePrintProfile('${id}')" style="white-space:nowrap;">🖨 Print</button>
         </div>
         <div class="profile-meta">
           <span class="badge badge-purple">Class ${s.class||'?'} - ${s.section||'?'}</span>
@@ -136,6 +135,7 @@ async function viewStudent(id) {
       </div>
       <div class="profile-actions">
         <div class="profile-actions-btns">
+          <button class="btn btn-ghost btn-sm" onclick="nmDownloadProfilePDF('${id}', this)" style="border: 1px solid var(--clr-border);">📄 Download PDF</button>
           <button class="btn btn-primary btn-sm" onclick="quickAddObservation('${id}')">👁‍🗨 Obs</button>
           <button class="btn btn-primary btn-sm" onclick="quickAddCounselling('${id}')">🤝 Cns</button>
           <button class="btn btn-primary btn-sm" onclick="quickAddMovement('${id}')">🏃 Mov</button>
@@ -144,45 +144,86 @@ async function viewStudent(id) {
       </div>
     </div>
     
-    <div class="profile-grid">
-      <div>
-        <h4 style="margin-bottom:12px; display:flex; align-items:center; gap:8px;">📋 Profile Information</h4>
+    <div class="profile-vertical-layout">
+      <!-- 📋 Student Information Section -->
+      <div class="profile-card-section">
+        <h4 class="profile-section-title">📋 Student Information</h4>
         <div class="info-grid mb-16">
           ${iI('DOB',nmFmtDate(s.dob))}${iI('Age',s.dob?nmCalcAge(s.dob)+' years' : (s.age ? s.age + ' years' : '—'))}
           ${iI('Religion',s.religion)}${iI('Caste',s.caste)}
           ${iI('Phone',s.phone)}${iI('Email',s.email)}
         </div>
-        <h4 style="margin-bottom:12px;">🏠 Address</h4>
-        <div style="padding:12px 16px;background:var(--clr-surface);border-radius:var(--radius-sm);border:1px solid var(--clr-border);margin-bottom:16px;color:var(--clr-text-2);font-size:0.88rem;">${addrEsc}</div>
-        <h4 style="margin-bottom:12px;">📁 Identity Documents</h4>
-        <div class="info-grid mb-16">${iI('Aadhar',s.aadhar)}${iI('APAAR',s.apaar_number||s.apaarNumber||'—')}${iI('PEN',s.pen)}</div>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px;">
-          <div><h4 style="margin-bottom:10px;">👨 Father</h4><div class="info-grid" style="grid-template-columns:1fr;">${iI('Name',fNameEsc)}${iI('Phone',s.father_phone||s.fatherPhone)}</div></div>
-          <div><h4 style="margin-bottom:10px;">👩 Mother</h4><div class="info-grid" style="grid-template-columns:1fr;">${iI('Name',mNameEsc)}${iI('Phone',s.mother_phone||s.motherPhone)}</div></div>
+        
+        <div class="responsive-profile-grid-2 mb-16">
+          <div>
+            <h4 style="margin-bottom:8px; font-size:0.75rem; color:var(--clr-text-3); text-transform:uppercase; letter-spacing:0.05em; font-weight:700;">🏠 Address</h4>
+            <div style="padding:12px 16px;background:var(--clr-surface);border-radius:var(--radius-sm);border:1px solid var(--clr-border);color:var(--clr-text-2);font-size:0.88rem;min-height:82px;">${addrEsc}</div>
+          </div>
+          <div>
+            <h4 style="margin-bottom:8px; font-size:0.75rem; color:var(--clr-text-3); text-transform:uppercase; letter-spacing:0.05em; font-weight:700;">🏥 Medical History</h4>
+            <div style="padding:12px 16px;background:var(--clr-surface);border-radius:var(--radius-sm);border:1px solid var(--clr-border);color:var(--clr-text-2);font-size:0.88rem;min-height:82px;">${nmEscapeHTML(s.medical_history||s.medicalHistory||'None recorded')}</div>
+          </div>
         </div>
-        <h4 style="margin-bottom:12px;">🏥 Medical History</h4>
-        <div style="padding:12px 16px;background:var(--clr-surface);border-radius:var(--radius-sm);border:1px solid var(--clr-border);color:var(--clr-text-2);font-size:0.88rem;">${nmEscapeHTML(s.medical_history||s.medicalHistory||'None recorded')}</div>
+
+        <h4 style="margin-bottom:8px; font-size:0.75rem; color:var(--clr-text-3); text-transform:uppercase; letter-spacing:0.05em; font-weight:700;">📁 Identity Documents</h4>
+        <div class="info-grid mb-16">
+          ${iI('Aadhar',s.aadhar)}${iI('APAAR',s.apaar_number||s.apaarNumber||'—')}${iI('PEN',s.pen)}
+        </div>
+
+        <h4 style="margin-bottom:10px; font-size:0.75rem; color:var(--clr-text-3); text-transform:uppercase; letter-spacing:0.05em; font-weight:700;">👪 Family Details</h4>
+        <div class="responsive-profile-grid-equal">
+          <div style="padding:12px 16px;background:var(--clr-surface);border-radius:var(--radius-sm);border:1px solid var(--clr-border);">
+            <div style="font-weight:700; font-size:0.8rem; color:var(--clr-primary); margin-bottom:8px; display:flex; align-items:center; gap:6px;">👨 Father</div>
+            <div style="display:flex; flex-direction:column; gap:4px; font-size:0.85rem;">
+              <div><span style="color:var(--clr-text-3);">Name:</span> <strong style="color:var(--clr-text);">${fNameEsc}</strong></div>
+              <div><span style="color:var(--clr-text-3);">Phone:</span> <strong style="color:var(--clr-text);">${s.father_phone||s.fatherPhone||'—'}</strong></div>
+            </div>
+          </div>
+          <div style="padding:12px 16px;background:var(--clr-surface);border-radius:var(--radius-sm);border:1px solid var(--clr-border);">
+            <div style="font-weight:700; font-size:0.8rem; color:var(--clr-accent); margin-bottom:8px; display:flex; align-items:center; gap:6px;">👩 Mother</div>
+            <div style="display:flex; flex-direction:column; gap:4px; font-size:0.85rem;">
+              <div><span style="color:var(--clr-text-3);">Name:</span> <strong style="color:var(--clr-text);">${mNameEsc}</strong></div>
+              <div><span style="color:var(--clr-text-3);">Phone:</span> <strong style="color:var(--clr-text);">${s.mother_phone||s.motherPhone||'—'}</strong></div>
+            </div>
+          </div>
+        </div>
       </div>
       
-      <div>
-        <h4 style="margin-bottom:12px; display:flex; align-items:center; gap:8px;">📜 History Timeline</h4>
+      <!-- 📜 History Timeline Section -->
+      <div class="profile-card-section">
+        <h4 class="profile-section-title">📜 History Timeline</h4>
         <div class="timeline">
           ${!history.length ? '<div class="empty-state" style="padding:24px;"><p>No records found.</p></div>' : 
             history.map(h => {
-              let icon = '👁', title = h.type === 'observation' ? 'Observation' : h.issue || 'History', body = h.type === 'observation' ? h.observation : h.counselling || h.reason || '';
+              let icon = '👁', title = h.type === 'observation' ? 'Observation' : h.issue || 'History';
+              let bodyEsc = '';
               let footer = '';
-              if (h.type === 'counselling') {
-                icon = '🤝'; 
+              
+              if (h.type === 'observation') {
+                bodyEsc = nmEscapeHTML(h.observation || '');
+              } else if (h.type === 'counselling') {
+                icon = '🤝';
+                bodyEsc = nmEscapeHTML(h.counselling || h.reason || '');
                 footer = `<div class="timeline-footer"><span class="status-badge ${h.follow_up||h.followUp ? 'status-followup' : 'status-resolved'}">${h.follow_up||h.followUp ? 'Follow-up' : h.status}</span></div>`;
               } else if (h.type === 'movement') {
-                icon = '🏃'; title = `Movement: ${h.reason}`;
-                body = `<strong>Leaving:</strong> ${nmFmtDate(h.leave_date||h.leaveDate)} · <strong>Return:</strong> ${nmFmtDate(h.report_date||h.reportDate)}<br><strong>Outgoing Escort:</strong> ${h.escort_name||h.escortName} (${h.relationship})`;
+                icon = '🏃'; 
+                title = `Movement: ${h.reason}`;
+                const leaveDate = nmFmtDate(h.leave_date || h.leaveDate);
+                const returnDate = nmFmtDate(h.report_date || h.reportDate);
+                const escortName = nmEscapeHTML(h.escort_name || h.escortName || '—');
+                const relationship = nmEscapeHTML(h.relationship || '—');
+                
+                bodyEsc = `<strong>Leaving:</strong> ${leaveDate} · <strong>Return:</strong> ${returnDate}<br><strong>Outgoing Escort:</strong> ${escortName} (${relationship})`;
                 if (h.report_date || h.reportDate) {
-                  body += `<br><strong>Incoming Escort:</strong> ${h.return_escort_name || h.returnEscortName || '—'} (${h.return_relationship || h.returnRelationship || '—'})`;
+                  const retEscort = nmEscapeHTML(h.return_escort_name || h.returnEscortName || '—');
+                  const retRel = nmEscapeHTML(h.return_relationship || h.returnRelationship || '—');
+                  bodyEsc += `<br><strong>Incoming Escort:</strong> ${retEscort} (${retRel})`;
                 }
+              } else {
+                bodyEsc = nmEscapeHTML(h.reason || '');
               }
+              
               const titleEsc = nmEscapeHTML(title);
-              const bodyEsc = nmEscapeHTML(body);
               return `
                 <div class="timeline-item ${h.type}">
                   <div class="timeline-dot">${icon}</div>

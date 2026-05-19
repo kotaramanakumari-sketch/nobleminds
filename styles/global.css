@@ -90,7 +90,6 @@ ul { list-style: none; }
 
 /* ── Typography ─────────────────────────────────────────────────────────────── */
 h1 { font-size: clamp(2rem, 5vw, 3.5rem); font-weight: 800; line-height: 1.15; }
-#print-school-heading { font-size: 1.05rem !important; }
 h2 { font-size: clamp(1.5rem, 3vw, 2.25rem); font-weight: 700; }
 h3 { font-size: 1.25rem; font-weight: 600; }
 h4 { font-size: 1rem; font-weight: 600; }
@@ -343,31 +342,6 @@ textarea.form-control { resize: vertical; min-height: 90px; }
 }
 .modal-close:hover { background: var(--clr-danger); color: #fff; }
 
-/* Portrait/Landscape Print Adjustments */
-@media print {
-  body.print-landscape {
-    width: 100% !important;
-  }
-  body.print-landscape #print-section {
-    width: 277mm !important; /* A4 Landscape width */
-    max-width: 100% !important;
-  }
-  body.print-landscape .print-grid {
-    grid-template-columns: repeat(3, 1fr) !important;
-  }
-  body.print-landscape .print-row {
-    flex-direction: row !important;
-    gap: 30px !important;
-  }
-  body.print-landscape .timeline {
-    display: grid !important;
-    grid-template-columns: 1fr 1fr !important;
-    gap: 20px !important;
-  }
-  body.print-landscape .timeline-item {
-    margin-bottom: 0 !important;
-  }
-}
 
 /* ── Panel Layout ───────────────────────────────────────────────────────────── */
 .panel-layout { 
@@ -811,188 +785,149 @@ textarea.form-control { resize: vertical; min-height: 90px; }
   .form-grid-3 { grid-template-columns: 1fr; }
   .stat-cards { grid-template-columns: 1fr; }
 }
-/* ═══════════════════════════════════════════════════════════════════════════
-   PRINT STYLES — Works for both general "Print Page" and Student Profile Print
-   ═══════════════════════════════════════════════════════════════════════════ */
-#print-section { display: none; }
 
-@media print {
-  @page { margin: 1.0cm; size: A4; }
+/* ── PDF Export Mode Overrides (Forces Desktop Layout on Mobile Viewports) ──── */
+.pdf-export-mode .data-table {
+  display: table !important;
+  width: 100% !important;
+  border-collapse: collapse !important;
+}
+.pdf-export-mode .data-table thead {
+  display: table-header-group !important;
+}
+.pdf-export-mode .data-table tbody {
+  display: table-row-group !important;
+}
+.pdf-export-mode .data-table tr {
+  display: table-row !important;
+  margin-bottom: 0 !important;
+  border: none !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  overflow: visible !important;
+}
+.pdf-export-mode .data-table th,
+.pdf-export-mode .data-table td {
+  display: table-cell !important;
+  text-align: left !important;
+  padding: 8px 12px !important;
+  border-bottom: 1px solid #ddd !important;
+  min-height: unset !important;
+  width: auto !important;
+  background: transparent !important;
+}
+.pdf-export-mode .data-table td::before {
+  content: "" !important;
+  display: none !important;
+}
 
-  /* ── Base reset for print ── */
-  * { -webkit-print-color-adjust: exact; print-color-adjust: exact; box-shadow: none !important; text-shadow: none !important; }
-  body { background: #fff !important; color: #111 !important; font-size: 10pt; font-family: 'Inter', Arial, sans-serif; line-height: 1.4; }
+/* Force Student name layout to stay side-by-side inside PDF */
+.pdf-export-mode .data-table td[data-label="Student"],
+.pdf-export-mode .data-table td[data-label="Student Name"] {
+  flex-direction: row !important;
+  align-items: center !important;
+  text-align: left !important;
+  gap: 10px !important;
+}
+.pdf-export-mode .data-table td[data-label="Student"]::before,
+.pdf-export-mode .data-table td[data-label="Student Name"]::before {
+  content: "" !important;
+  display: none !important;
+}
 
-  /* ── Always hide these elements ── */
-  .sidebar,
-  .topbar,
-  .filter-bar,
-  .step-progress,
-  .nav-section-label,
-  .nav-item,
-  .nav-badge,
-  .modal-header .btn,
-  .modal-footer,
-  .modal-close,
-  .nm-toast-container,
-  .nm-confirm-overlay,
-  .topbar-right,
-  .empty-state .btn,
-  [onclick*="print"],
-  #print-page-btn,
-  .timeline-actions,
-  .data-table th:last-child,
-  .data-table td:last-child { display: none !important; }
+/* Profile PDF layout overrides */
+.pdf-export-mode .profile-header {
+  flex-direction: row !important;
+  align-items: center !important;
+  text-align: left !important;
+  gap: 20px !important;
+  padding: 24px !important;
+}
+.pdf-export-mode .profile-actions {
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: flex-end !important;
+}
+.pdf-export-mode .profile-grid {
+  display: grid !important;
+  grid-template-columns: 1.2fr 1fr !important;
+  gap: 28px !important;
+}
 
-  /* ── General page printing (when NOT printing a profile) ── */
-  body:not(.printing-profile) .panel-layout {
-    display: block !important;
-  }
-  body:not(.printing-profile) .sidebar {
-    display: none !important;
-  }
-  body:not(.printing-profile) .main-content {
-    margin-left: 0 !important;
-    width: 100% !important;
-  }
-  body:not(.printing-profile) .topbar {
-    display: none !important;
-  }
-  body:not(.printing-profile) .content-area {
-    padding: 0 !important;
-  }
-  body:not(.printing-profile) .page-section {
-    display: none !important;
-  }
-  body:not(.printing-profile) .page-section.active {
-    display: block !important;
-  }
+/* Redesigned Vertical Profile Layout */
+.profile-vertical-layout {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
 
-  /* Fix card and surface colors for general print */
-  body:not(.printing-profile) .card,
-  body:not(.printing-profile) .stat-card,
-  body:not(.printing-profile) .info-item,
-  body:not(.printing-profile) .timeline-content,
-  body:not(.printing-profile) .modal {
-    background: #fff !important;
-    border: 1px solid #ddd !important;
-    border-radius: 6px !important;
-  }
-  body:not(.printing-profile) h2,
-  body:not(.printing-profile) h3,
-  body:not(.printing-profile) h4,
-  body:not(.printing-profile) .card-title,
-  body:not(.printing-profile) .stat-value,
-  body:not(.printing-profile) .nav-item,
-  body:not(.printing-profile) td,
-  body:not(.printing-profile) th,
-  body:not(.printing-profile) .info-item .val { color: #111 !important; }
-  body:not(.printing-profile) p,
-  body:not(.printing-profile) .stat-label,
-  body:not(.printing-profile) .text-muted,
-  body:not(.printing-profile) .info-item .key,
-  body:not(.printing-profile) .clr-text-2 { color: #555 !important; }
+.profile-card-section {
+  background: var(--clr-bg);
+  border: 1px solid var(--clr-border);
+  border-radius: var(--radius-md);
+  padding: 24px;
+  transition: var(--transition);
+}
 
-  /* Tables for general print — Enforce clean table format */
-  table.data-table { display: table !important; border-collapse: collapse !important; width: 100% !important; border: 1px solid #ddd !important; margin-bottom: 20px !important; }
-  table.data-table thead { display: table-header-group !important; }
-  table.data-table tbody { display: table-row-group !important; }
-  table.data-table tr { display: table-row !important; page-break-inside: avoid !important; }
-  table.data-table th, table.data-table td { display: table-cell !important; border: 1px solid #ddd !important; padding: 8px 10px !important; text-align: left !important; font-size: 8.5pt !important; color: #111 !important; }
-  table.data-table th { background: #f5f5f7 !important; color: #333 !important; font-weight: 700 !important; text-transform: uppercase !important; font-size: 8pt !important; }
-  table.data-table tr:hover td { background: transparent !important; }
+[data-theme="light"] .profile-card-section {
+  background: var(--clr-bg2);
+}
 
-  /* Badges for general print */
-  .badge { border: 1px solid #999 !important; background: #fff !important; color: #333 !important; padding: 1px 6px !important; border-radius: 4px !important; }
-  .status-badge { border: 1px solid #999 !important; background: #fff !important; color: #333 !important; font-size: 7pt !important; }
+.profile-card-section:hover {
+  border-color: rgba(59, 130, 246, 0.25);
+  box-shadow: 0 4px 20px rgba(59, 130, 246, 0.03);
+}
 
-  /* Display print header & footer */
-  .print-header-all, .print-footer-all { display: none !important; }
+.profile-section-title {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--clr-text);
+  margin-bottom: 20px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  border-bottom: 1px solid var(--clr-border);
+  padding-bottom: 12px;
+}
 
-  body:not(.printing-profile) .content-area::before { display: none !important; }
+.responsive-profile-grid-2 {
+  display: grid;
+  grid-template-columns: 1fr 1.5fr;
+  gap: 20px;
+}
 
-  .print-header-all {
-    display: block !important;
-    text-align: center !important;
-    margin-bottom: 24px !important;
-    border-bottom: 2px solid #222 !important;
-    padding-bottom: 8px !important;
-  }
-  .print-header-all h1 {
-    font-size: 16pt !important;
-    font-weight: 900 !important;
-    margin: 0 0 4px 0 !important;
-    color: #000 !important;
-    text-transform: uppercase !important;
-  }
-  .print-header-all p {
-    font-size: 8.5pt !important;
-    margin: 0 !important;
-    color: #555 !important;
-  }
+.responsive-profile-grid-equal {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
 
-  .print-footer-all {
-    display: block !important;
-    position: fixed !important;
-    bottom: 10px !important;
-    left: 0 !important;
-    right: 0 !important;
-    text-align: center !important;
-    font-size: 7.5pt !important;
-    color: #777 !important;
-    border-top: 1px solid #ddd !important;
-    padding-top: 4px !important;
-  }
-
-  /* ── Specific to Student Profile Print ── */
-  body.printing-profile .panel-layout { display: none !important; }
-  body.printing-profile .modal-overlay { display: none !important; }
-  body:not(.printing-profile) #print-section { display: none !important; }
-  body.printing-profile #print-section { display: block !important; width: 100% !important; max-width: 100% !important; padding: 20px; background: #fff !important; color: #111 !important; }
-
-  .print-header {
-    display: flex !important; align-items: center; justify-content: space-between;
-    border-bottom: 2.5px solid #222; padding-bottom: 12px; margin-bottom: 20px;
-  }
-  .print-logo-wrap { display: flex !important; align-items: center; gap: 10px; }
-  .print-logo { width: 44px; height: 44px; object-fit: contain; }
-  .print-header-text h1 { font-size: 14pt; margin: 0; color: #000; font-weight: 800; }
-  .print-header-text p { font-size: 8pt; color: #444; margin: 1px 0 0; }
-  .print-meta { text-align: right; font-size: 8pt; color: #666; }
-
-  .print-section-title {
-    font-size: 10pt; font-weight: 800; text-transform: uppercase;
-    background: #f0f0f2; padding: 6px 10px; margin-top: 20px; margin-bottom: 10px;
-    border-left: 3px solid #000; color: #000 !important;
-  }
-
-  .print-row { display: flex; gap: 20px; margin-bottom: 15px; }
-  .print-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px 20px; width: 100%; }
-
-  .print-info-item {
-    border-bottom: 1px solid #eee; padding: 4px 0;
-    display: flex; justify-content: space-between; align-items: flex-end;
-  }
-  .print-info-item strong { font-size: 7.5pt; text-transform: uppercase; color: #666; font-weight: 600; }
-  .print-info-item span { font-weight: 700; color: #000; font-size: 8.5pt; }
-
-  .print-photo-wrap { flex-shrink: 0; }
-  .print-photo { width: 100px; height: 120px; border: 1px solid #ccc; padding: 1px; object-fit: cover; }
-
-  /* Timeline adjustment for print */
-  .timeline { padding-left: 15px !important; }
-  .timeline::before { background: #eee !important; left: 5px !important; }
-  .timeline-item { margin-bottom: 10px !important; }
-  .timeline-dot { width: 10px !important; height: 10px !important; left: -15px !important; border: 1.5px solid #333 !important; background: #fff !important; }
-  .timeline-content { border: 1px solid #eee !important; background: #fff !important; padding: 5px 10px !important; }
-  .timeline-date { color: #666 !important; font-weight: 700 !important; font-size: 7.5pt !important; }
-  .timeline-title { font-size: 8.5pt !important; color: #000 !important; }
-  .timeline-body { font-size: 8pt !important; }
-
-  .print-footer {
-    position: fixed; bottom: 0; left: 0; right: 0; width: 100%;
-    border-top: 1px solid #ddd; padding-top: 8px; font-size: 7pt; color: #999;
-    display: flex !important; justify-content: space-between;
+@media (max-width: 640px) {
+  .responsive-profile-grid-2,
+  .responsive-profile-grid-equal {
+    grid-template-columns: 1fr !important;
   }
 }
 
+.pdf-export-mode .profile-vertical-layout {
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 24px !important;
+}
+
+.pdf-export-mode .profile-card-section {
+  background: #fff !important;
+  border: 1px solid #ddd !important;
+  color: #333 !important;
+  box-shadow: none !important;
+}
+
+.pdf-export-mode .profile-section-title {
+  color: #111 !important;
+  border-bottom: 1px solid #ddd !important;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+
+   ═══════════════════════════════════════════════════════════════════════════ */
