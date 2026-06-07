@@ -3,10 +3,17 @@
 
 async function renderObservations() {
   const q = (document.getElementById('obs-search')?.value||'').toLowerCase();
+  const fFrom = document.getElementById('obs-from')?.value;
+  const fTo = document.getElementById('obs-to')?.value;
+
   const students = await nmGetStudents(schoolId, currentYearId);
   const obs = await nmGetObservations(schoolId);
   
   const list = obs.filter(o => {
+    const dateVal = o.observation_date || o.date || '';
+    if (fFrom && dateVal < fFrom) return false;
+    if (fTo && dateVal > fTo) return false;
+    
     const s = students.find(x => x.id === (o.student_id || o.studentId));
     return !q || (s && (s.full_name||s.fullName).toLowerCase().includes(q)) || (o.observation||'').toLowerCase().includes(q);
   }).reverse();
@@ -100,8 +107,22 @@ async function saveObservation() {
 }
 
 async function exportObservations() {
-  const list = await nmGetObservations(schoolId);
+  const q = (document.getElementById('obs-search')?.value||'').toLowerCase();
+  const fFrom = document.getElementById('obs-from')?.value;
+  const fTo = document.getElementById('obs-to')?.value;
+
+  let list = await nmGetObservations(schoolId);
   const students = await nmGetStudents(schoolId, currentYearId);
+
+  list = list.filter(o => {
+    const dateVal = o.observation_date || o.date || '';
+    if (fFrom && dateVal < fFrom) return false;
+    if (fTo && dateVal > fTo) return false;
+    
+    const s = students.find(x => x.id === (o.student_id || o.studentId));
+    return !q || (s && (s.full_name||s.fullName).toLowerCase().includes(q)) || (o.observation||'').toLowerCase().includes(q);
+  });
+
   if (!list.length) { nmToast('No observations to export', 'info'); return; }
   const data = list.map(o => {
     const s = students.find(x => x.id === (o.student_id || o.studentId)) || {};

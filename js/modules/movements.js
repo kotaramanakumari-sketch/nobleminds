@@ -3,10 +3,17 @@
 
 async function renderMovements() {
   const q = (document.getElementById('mov-search')?.value||'').toLowerCase();
+  const fFrom = document.getElementById('mov-from')?.value;
+  const fTo = document.getElementById('mov-to')?.value;
+
   const students = await nmGetStudents(schoolId, currentYearId);
   const mov = await nmGetMovements(schoolId);
   
   const list = mov.filter(m => {
+    const dateVal = m.leave_date || m.leaveDate || '';
+    if (fFrom && dateVal < fFrom) return false;
+    if (fTo && dateVal > fTo) return false;
+
     const s = students.find(x => x.id === (m.student_id || m.studentId));
     return !q || (s && (s.full_name||s.fullName).toLowerCase().includes(q)) || 
            (m.escort_name||m.escortName||'').toLowerCase().includes(q) || (m.reason||'').toLowerCase().includes(q);
@@ -170,27 +177,40 @@ async function deleteMovementRecord(id) {
   }
 }
 
-function exportMovements() {
-  nmGetMovements(schoolId).then(mov => {
-    nmGetStudents(schoolId, currentYearId).then(students => {
-      if (!mov.length) { nmToast('No records to export', 'info'); return; }
-      const data = mov.map(m => {
-        const s = students.find(x => x.id === (m.student_id || m.studentId)) || {};
-        return {
-          LeaveDate: m.leave_date || '',
-          ReportDate: m.report_date || 'Away',
-          StudentName: s.full_name || s.fullName || 'Unknown',
-          AdmissionNo: s.admission_number || s.admissionNumber || '',
-          Reason: m.reason,
-          Escort: m.escort_name || m.escortName,
-          Relationship: m.relationship,
-          EscortPhone: m.phone,
-          ReturnEscort: m.return_escort_name || m.returnEscortName || '',
-          ReturnRelationship: m.return_relationship || m.returnRelationship || '',
-          ReturnEscortPhone: m.return_phone || m.returnPhone || ''
-        };
-      });
-      nmExportExcel(data, `NobleMinds_Movements_${new Date().toISOString().split('T')[0]}.xlsx`);
-    });
+async function exportMovements() {
+  const q = (document.getElementById('mov-search')?.value||'').toLowerCase();
+  const fFrom = document.getElementById('mov-from')?.value;
+  const fTo = document.getElementById('mov-to')?.value;
+
+  let mov = await nmGetMovements(schoolId);
+  const students = await nmGetStudents(schoolId, currentYearId);
+
+  mov = mov.filter(m => {
+    const dateVal = m.leave_date || m.leaveDate || '';
+    if (fFrom && dateVal < fFrom) return false;
+    if (fTo && dateVal > fTo) return false;
+
+    const s = students.find(x => x.id === (m.student_id || m.studentId));
+    return !q || (s && (s.full_name||s.fullName).toLowerCase().includes(q)) || 
+           (m.escort_name||m.escortName||'').toLowerCase().includes(q) || (m.reason||'').toLowerCase().includes(q);
   });
+
+  if (!mov.length) { nmToast('No records to export', 'info'); return; }
+  const data = mov.map(m => {
+    const s = students.find(x => x.id === (m.student_id || m.studentId)) || {};
+    return {
+      LeaveDate: m.leave_date || '',
+      ReportDate: m.report_date || 'Away',
+      StudentName: s.full_name || s.fullName || 'Unknown',
+      AdmissionNo: s.admission_number || s.admissionNumber || '',
+      Reason: m.reason,
+      Escort: m.escort_name || m.escortName,
+      Relationship: m.relationship,
+      EscortPhone: m.phone,
+      ReturnEscort: m.return_escort_name || m.returnEscortName || '',
+      ReturnRelationship: m.return_relationship || m.returnRelationship || '',
+      ReturnEscortPhone: m.return_phone || m.returnPhone || ''
+    };
+  });
+  nmExportExcel(data, `NobleMinds_Movements_${new Date().toISOString().split('T')[0]}.xlsx`);
 }

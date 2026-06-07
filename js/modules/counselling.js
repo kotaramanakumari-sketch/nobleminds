@@ -3,10 +3,17 @@
 
 async function renderCounselling() {
   const q = (document.getElementById('cns-search')?.value||'').toLowerCase();
+  const fFrom = document.getElementById('cns-from')?.value;
+  const fTo = document.getElementById('cns-to')?.value;
+
   const students = await nmGetStudents(schoolId, currentYearId);
   const cns = await nmGetCounselling(schoolId);
   
   const list = cns.filter(c => {
+    const dateVal = c.record_date || c.date || '';
+    if (fFrom && dateVal < fFrom) return false;
+    if (fTo && dateVal > fTo) return false;
+
     const s = students.find(x => x.id === (c.student_id || c.studentId));
     return !q || (s && (s.full_name||s.fullName).toLowerCase().includes(q)) || (c.issue||'').toLowerCase().includes(q);
   }).reverse();
@@ -113,8 +120,22 @@ async function deleteCounsellingRecord(id) {
 }
 
 async function exportCounselling() {
-  const list = await nmGetCounselling(schoolId);
+  const q = (document.getElementById('cns-search')?.value||'').toLowerCase();
+  const fFrom = document.getElementById('cns-from')?.value;
+  const fTo = document.getElementById('cns-to')?.value;
+
+  let list = await nmGetCounselling(schoolId);
   const students = await nmGetStudents(schoolId, currentYearId);
+
+  list = list.filter(c => {
+    const dateVal = c.record_date || c.date || '';
+    if (fFrom && dateVal < fFrom) return false;
+    if (fTo && dateVal > fTo) return false;
+
+    const s = students.find(x => x.id === (c.student_id || c.studentId));
+    return !q || (s && (s.full_name||s.fullName).toLowerCase().includes(q)) || (c.issue||'').toLowerCase().includes(q);
+  });
+
   if (!list.length) { nmToast('No records to export', 'info'); return; }
   const data = list.map(c => {
     const s = students.find(x => x.id === (c.student_id || c.studentId)) || {};

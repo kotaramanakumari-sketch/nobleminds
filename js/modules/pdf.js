@@ -38,6 +38,15 @@ async function nmDownloadTablePDF(btn, docTitle = 'Table Records', fileSuffix = 
       cell.style.borderBottom = '1px solid #ddd';
       cell.style.padding = '8px 12px';
       cell.style.textAlign = 'left';
+      cell.style.whiteSpace = 'normal';
+      cell.style.wordBreak = 'break-word';
+      cell.style.overflowWrap = 'break-word';
+      cell.querySelectorAll('*').forEach(el => {
+        el.style.whiteSpace = 'normal';
+        el.style.overflow = 'visible';
+        el.style.textOverflow = 'clip';
+        el.style.maxHeight = 'none';
+      });
     });
 
     // Setup Sandbox (Absolute position off-screen, NOT fixed, to allow full document height)
@@ -62,7 +71,6 @@ async function nmDownloadTablePDF(btn, docTitle = 'Table Records', fileSuffix = 
     container.innerHTML = `
       <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:2px solid #6c63ff; padding-bottom:15px; margin-bottom:20px;">
         <div style="display:flex; align-items:center; gap:12px;">
-          <img src="../assets/logo.png" style="width:40px; height:40px; object-fit:contain;" onerror="this.style.display='none'">
           <div>
             <h1 style="margin:0; font-size:1.4rem; color:#1e1e2d;">${docTitle}</h1>
             <p style="margin:2px 0 0 0; font-size:0.8rem; color:#666;">${schoolName}</p>
@@ -73,6 +81,10 @@ async function nmDownloadTablePDF(btn, docTitle = 'Table Records', fileSuffix = 
         </div>
       </div>
       <div id="pdf-table-wrapper"></div>
+      <div style="margin-top: 30px; text-align: center; border-top: 1px solid #ddd; padding-top: 15px; font-size: 0.8rem; color: #666; display: flex; align-items: center; justify-content: center; gap: 8px;">
+        <img src="../assets/logo.png" style="width:24px; height:24px; object-fit:contain;">
+        <span>Powered by NobleMinds</span>
+      </div>
     `;
     
     container.querySelector('#pdf-table-wrapper').appendChild(clonedTable);
@@ -175,7 +187,6 @@ async function nmDownloadProfilePDF(id, btn) {
     container.innerHTML = `
       <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:2px solid #6c63ff; padding-bottom:15px; margin-bottom:20px;">
         <div style="display:flex; align-items:center; gap:12px;">
-          <img src="../assets/logo.png" style="width:40px; height:40px; object-fit:contain;" onerror="this.style.display='none'">
           <div>
             <h1 style="margin:0; font-size:1.4rem; color:#1e1e2d;">Official Student Record</h1>
             <p style="margin:2px 0 0 0; font-size:0.8rem; color:#666;">${schoolName}</p>
@@ -186,6 +197,10 @@ async function nmDownloadProfilePDF(id, btn) {
         </div>
       </div>
       <div id="pdf-profile-wrapper"></div>
+      <div style="margin-top: 30px; text-align: center; border-top: 1px solid #ddd; padding-top: 15px; font-size: 0.8rem; color: #666; display: flex; align-items: center; justify-content: center; gap: 8px;">
+        <img src="../assets/logo.png" style="width:24px; height:24px; object-fit:contain;">
+        <span>Powered by NobleMinds</span>
+      </div>
     `;
     
     container.querySelector('#pdf-profile-wrapper').appendChild(clonedProfile);

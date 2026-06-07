@@ -3,6 +3,9 @@
 
 async function renderTeacherDiaries() {
   const q = (document.getElementById('diary-search')?.value||'').toLowerCase();
+  const fFrom = document.getElementById('diary-from')?.value;
+  const fTo = document.getElementById('diary-to')?.value;
+
   const session = await sb.auth.getSession();
   const userId = session?.data?.session?.user?.id;
   if (!userId) { 
@@ -13,6 +16,10 @@ async function renderTeacherDiaries() {
   const diaries = await nmGetTeacherDiaries(userId, schoolId);
   
   const list = diaries.filter(d => {
+    const dateVal = d.diary_date || '';
+    if (fFrom && dateVal < fFrom) return false;
+    if (fTo && dateVal > fTo) return false;
+
     return !q || 
            (d.topic_discussed||'').toLowerCase().includes(q) || 
            (d.class||'').toLowerCase().includes(q) ||
@@ -160,10 +167,25 @@ async function deleteTeacherDiary(id) {
 }
 
 async function exportTeacherDiaries() {
+  const q = (document.getElementById('diary-search')?.value||'').toLowerCase();
+  const fFrom = document.getElementById('diary-from')?.value;
+  const fTo = document.getElementById('diary-to')?.value;
+
   const session = await sb.auth.getSession();
   const userId = session.data.session?.user?.id;
-  const diaries = await nmGetTeacherDiaries(userId, schoolId);
+  let diaries = await nmGetTeacherDiaries(userId, schoolId);
   
+  diaries = diaries.filter(d => {
+    const dateVal = d.diary_date || '';
+    if (fFrom && dateVal < fFrom) return false;
+    if (fTo && dateVal > fTo) return false;
+
+    return !q || 
+           (d.topic_discussed||'').toLowerCase().includes(q) || 
+           (d.class||'').toLowerCase().includes(q) ||
+           (d.section||'').toLowerCase().includes(q);
+  });
+
   if (!diaries.length) { nmToast('No diary entries to export', 'info'); return; }
   
   const data = diaries.map(d => ({

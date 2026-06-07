@@ -35,9 +35,13 @@
       <div class="nav-item" onclick="showSection('counselling',this)"><span class="nav-item-icon">🤝</span>Counselling</div>
       <div class="nav-item" onclick="showSection('movement',this)"><span class="nav-item-icon">🏃</span>Movement Record</div>
       <div class="nav-item" onclick="showSection('teacher-diary',this)"><span class="nav-item-icon">📓</span>Teacher Diary</div>
+      <div class="nav-item" onclick="showSection('interactions',this)"><span class="nav-item-icon">📱</span>Parent Interactions</div>
       <div class="nav-section-label">Account</div>
       <div class="nav-item" data-section="settings" onclick="showSection('settings',this)">
         <span class="nav-item-icon">⚙️</span> Settings
+      </div>
+      <div class="nav-item" onclick="window.open('../support.html','_blank')" title="Get help & support">
+        <span class="nav-item-icon">🛟</span> Support
       </div>
       <div class="nav-item" onclick="nmLogout()">
         <span class="nav-item-icon">🚪</span> Logout
@@ -424,6 +428,11 @@
           <div class="search-input-wrapper" style="flex:1;">
             <span>🔍</span><input type="text" id="obs-search" placeholder="Search students..." oninput="renderObservations()">
           </div>
+          <div style="display:flex; gap:8px; align-items:center;">
+            <input type="date" id="obs-from" class="form-control" style="width:130px; height:32px; padding:0 8px; font-size:0.8rem;" onchange="renderObservations()">
+            <span style="color:var(--clr-text-3); font-size:0.8rem;">to</span>
+            <input type="date" id="obs-to" class="form-control" style="width:130px; height:32px; padding:0 8px; font-size:0.8rem;" onchange="renderObservations()">
+          </div>
           <button class="btn btn-ghost btn-sm" onclick="exportObservations()">⬇ Export Excel</button>
           <button class="btn btn-ghost btn-sm" onclick="nmDownloadTablePDF(this, 'Observations Record', 'observations')">📄 Download PDF</button>
         </div>
@@ -450,6 +459,11 @@
           <div class="search-input-wrapper" style="flex:1;">
             <span>🔍</span><input type="text" id="cns-search" placeholder="Search students or issues..." oninput="renderCounselling()">
           </div>
+          <div style="display:flex; gap:8px; align-items:center;">
+            <input type="date" id="cns-from" class="form-control" style="width:130px; height:32px; padding:0 8px; font-size:0.8rem;" onchange="renderCounselling()">
+            <span style="color:var(--clr-text-3); font-size:0.8rem;">to</span>
+            <input type="date" id="cns-to" class="form-control" style="width:130px; height:32px; padding:0 8px; font-size:0.8rem;" onchange="renderCounselling()">
+          </div>
           <button class="btn btn-ghost btn-sm" onclick="exportCounselling()">⬇ Export Excel</button>
           <button class="btn btn-ghost btn-sm" onclick="nmDownloadTablePDF(this, 'Counselling Record', 'counselling')">📄 Download PDF</button>
         </div>
@@ -475,6 +489,11 @@
         <div class="filter-bar mb-20">
           <div class="search-input-wrapper" style="flex:1;">
             <span>🔍</span><input type="text" id="mov-search" placeholder="Search student or escort..." oninput="renderMovements()">
+          </div>
+          <div style="display:flex; gap:8px; align-items:center;">
+            <input type="date" id="mov-from" class="form-control" style="width:130px; height:32px; padding:0 8px; font-size:0.8rem;" onchange="renderMovements()">
+            <span style="color:var(--clr-text-3); font-size:0.8rem;">to</span>
+            <input type="date" id="mov-to" class="form-control" style="width:130px; height:32px; padding:0 8px; font-size:0.8rem;" onchange="renderMovements()">
           </div>
           <button class="btn btn-ghost btn-sm" onclick="exportMovements()">⬇ Export Excel</button>
           <button class="btn btn-ghost btn-sm" onclick="nmDownloadTablePDF(this, 'Movement Record', 'movements')">📄 Download PDF</button>
@@ -514,6 +533,11 @@
           <div class="search-input-wrapper" style="flex:1;">
             <span>🔍</span><input type="text" id="diary-search" placeholder="Search topic or class..." oninput="renderTeacherDiaries()">
           </div>
+          <div style="display:flex; gap:8px; align-items:center;">
+            <input type="date" id="diary-from" class="form-control" style="width:130px; height:32px; padding:0 8px; font-size:0.8rem;" onchange="renderTeacherDiaries()">
+            <span style="color:var(--clr-text-3); font-size:0.8rem;">to</span>
+            <input type="date" id="diary-to" class="form-control" style="width:130px; height:32px; padding:0 8px; font-size:0.8rem;" onchange="renderTeacherDiaries()">
+          </div>
           <button class="btn btn-ghost btn-sm" onclick="exportTeacherDiaries()">⬇ Export Excel</button>
           <button class="btn btn-ghost btn-sm" onclick="nmDownloadTablePDF(this, 'Teacher Diary', 'diaries')">📄 Download PDF</button>
         </div>
@@ -537,6 +561,48 @@
             <div class="empty-state-icon">📓</div>
             <h3>No diary entries</h3>
             <p>Start logging your daily classroom activities.</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- PARENT INTERACTIONS -->
+      <div class="page-section" id="section-interactions">
+        <div class="section-header">
+          <h2>📱 Parent Interactions</h2>
+          <button class="btn btn-primary" onclick="openInteractionModal()">+ Add Interaction</button>
+        </div>
+        <div class="filter-bar mb-20">
+          <div class="search-input-wrapper" style="flex:1;">
+            <span>🔍</span><input type="text" id="int-search" placeholder="Search parent, student, or summary..." oninput="renderInteractions()">
+          </div>
+          <div style="display:flex; gap:8px; align-items:center;">
+            <input type="date" id="int-from" class="form-control" style="width:130px; height:32px; padding:0 8px; font-size:0.8rem;" onchange="renderInteractions()">
+            <span style="color:var(--clr-text-3); font-size:0.8rem;">to</span>
+            <input type="date" id="int-to" class="form-control" style="width:130px; height:32px; padding:0 8px; font-size:0.8rem;" onchange="renderInteractions()">
+          </div>
+          <button class="btn btn-ghost btn-sm" onclick="exportInteractions()">⬇ Export Excel</button>
+          <button class="btn btn-ghost btn-sm" onclick="nmDownloadTablePDF(this, 'Parent Interactions', 'interactions')">📄 Download PDF</button>
+        </div>
+        <div class="card" style="padding:0;overflow:hidden;">
+          <div class="table-wrapper">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>Date</th>
+                  <th>Student</th>
+                  <th>Parent / Guardian</th>
+                  <th>Mode</th>
+                  <th>Summary</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody id="int-tbody"></tbody>
+            </table>
+          </div>
+          <div id="int-empty" class="empty-state hidden">
+            <div class="empty-state-icon">📱</div>
+            <h3>No parent interactions</h3>
+            <p>Log your calls and meetings with parents.</p>
           </div>
         </div>
       </div>
@@ -938,6 +1004,59 @@
     </div>
   </div>
 </div>
+<!-- PARENT INTERACTION MODAL -->
+<div class="modal-overlay" id="int-modal">
+  <div class="modal">
+    <div class="modal-header">
+      <span class="modal-title" id="int-modal-title">Add Parent Interaction</span>
+      <button class="modal-close" onclick="closeModal('int-modal')">✕</button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="int-id">
+      <div class="form-group mb-16">
+        <label class="form-label">Date <span class="required">*</span></label>
+        <input type="date" id="int-date" class="form-control">
+      </div>
+      <div class="form-group mb-16" id="int-search-parent">
+        <label class="form-label">Search Student <span class="required">*</span></label>
+        <div class="student-search-container" id="int-search-wrap">
+          <input type="text" id="int-student-search" class="form-control" placeholder="Type name or admission no...">
+          <div id="int-search-results" class="student-search-results"></div>
+        </div>
+        <div id="int-selection-disp" class="single-selection-disp hidden">
+          <div id="int-selected-name" style="font-weight:600;"></div>
+          <button class="btn btn-ghost btn-sm" onclick="clearSingleSelection('int')">✕ Change</button>
+        </div>
+        <input type="hidden" id="int-student">
+      </div>
+      <div class="form-grid mb-16">
+        <div class="form-group">
+          <label class="form-label">Parent / Guardian Name <span class="required">*</span></label>
+          <input type="text" id="int-parent-name" class="form-control" placeholder="e.g. Mr. Sharma">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Interaction Mode</label>
+          <select id="int-mode" class="form-control">
+            <option value="Mobile">Mobile / Phone Call</option>
+            <option value="Face to Face">Face to Face</option>
+            <option value="Email">Email</option>
+            <option value="Message">Message / WhatsApp</option>
+            <option value="Other">Other</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Discussion Summary <span class="required">*</span></label>
+        <textarea id="int-summary" class="form-control" rows="4" placeholder="Brief details about the interaction..."></textarea>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('int-modal')">Cancel</button>
+      <button class="btn btn-primary" onclick="saveInteraction()">Save Record</button>
+    </div>
+  </div>
+</div>
+
 <script src="../js/supabase.js"></script>
 <script src="../js/auth.js"></script>
 <script src="../js/data.js"></script>
@@ -948,6 +1067,7 @@
 <script src="../js/modules/counselling.js"></script>
 <script src="../js/modules/movements.js"></script>
 <script src="../js/modules/diary.js"></script>
+<script src="../js/modules/interactions.js"></script>
 <script src="../js/modules/pdf.js"></script>
 
 

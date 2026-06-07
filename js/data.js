@@ -325,6 +325,42 @@ async function nmDeleteCounselling(id) {
   if (error) throw error;
 }
 
+// ─── PARENT INTERACTIONS ──────────────────────────────────────────────────────
+async function nmGetInteractions(id, isSchool = true) {
+  let query = sb.from('parent_interactions').select('*').order('interaction_date', { ascending: false });
+  if (id) {
+    if (isSchool) query = query.eq('school_id', id);
+    else query = query.eq('student_id', id);
+  }
+  const { data, error } = await query;
+  return data || [];
+}
+
+async function nmSaveInteraction(rec) {
+  const payload = {
+    student_id: rec.student_id || rec.studentId,
+    school_id: rec.school_id || rec.schoolId,
+    interaction_date: rec.interaction_date || rec.date || nmToday(),
+    interaction_mode: rec.interaction_mode || rec.mode,
+    parent_name: rec.parent_name || rec.parentName,
+    discussion_summary: rec.discussion_summary || rec.summary
+  };
+  if (rec.id) {
+    const { data, error } = await sb.from('parent_interactions').update(payload).eq('id', rec.id).select();
+    if (error) throw error;
+    return data[0];
+  } else {
+    const { data, error } = await sb.from('parent_interactions').insert([payload]).select();
+    if (error) throw error;
+    return data[0];
+  }
+}
+
+async function nmDeleteInteraction(id) {
+  const { error } = await sb.from('parent_interactions').delete().eq('id', id);
+  if (error) throw error;
+}
+
 // ─── MOVEMENTS ────────────────────────────────────────────────────────────────
 async function nmGetMovements(id, isSchool = true) {
   let query = sb.from('movements').select('*').order('leave_date', { ascending: false });
