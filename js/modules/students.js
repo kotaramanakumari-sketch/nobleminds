@@ -308,6 +308,9 @@ async function editStudent(id) {
   const students = await nmGetStudents(schoolId, currentYearId);
   const s = students.find(x => x.id === id);
   if (!s) return;
+  
+  resetForm(); // Clear any previous data
+
   editingId = id;
   photoB64 = s.photo||''; fatherPhotoB64 = s.father_photo||s.fatherPhoto||''; motherPhotoB64 = s.mother_photo||s.motherPhoto||'';
   document.getElementById('form-title').textContent = '✏️ Edit Student Record';
@@ -347,7 +350,7 @@ async function editStudent(id) {
   showSection('add-student', document.querySelector('[onclick*="add-student"]'));
   goToStep(1);
 }
-function setVal(id,v){const el=document.getElementById(id);if(el&&v!=null)el.value=v;}
+function setVal(id,v){const el=document.getElementById(id);if(el)el.value=v!=null?v:'';}
 function setPhotoPreview(boxId,inputId,src){
   const box=document.getElementById(boxId);if(!box)return;
   box.innerHTML=`<input type="file" id="${inputId}" accept="image/*" onchange="previewPhoto(this,'${boxId}')">
