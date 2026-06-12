@@ -33,12 +33,14 @@ async function renderTeacherDiaries() {
   
   tbody.innerHTML = list.map(d => {
     const topicEsc = nmEscapeHTML(d.topic_discussed || '—');
+    const classEsc = nmEscapeHTML(d.class || '—');
+    const secEsc = nmEscapeHTML(d.section || '—');
     return `<tr>
       <td data-label="Date"><div style="font-weight:600;color:var(--clr-primary);">${nmFmtDate(d.diary_date)}</div></td>
       <td data-label="Period"><span class="badge badge-purple">${d.period}</span></td>
       <td data-label="Class">
-        <div style="font-weight:600;">Class ${d.class}</div>
-        <div style="font-size:0.75rem;color:var(--clr-text-2);">Section ${d.section}</div>
+        <div style="font-weight:600;">Class ${classEsc}</div>
+        <div style="font-size:0.75rem;color:var(--clr-text-2);">Section ${secEsc}</div>
       </td>
       <td data-label="Attendance">
         <div style="font-size:0.8rem; display:grid; grid-template-columns:1fr 1fr; gap:4px;">
@@ -199,7 +201,7 @@ async function exportTeacherDiaries() {
     'On Duty': d.on_duty,
     'Not Reported': d.not_reported,
     'Topic Discussed': d.topic_discussed
-  }));
+  })).reverse();
   
   nmExportExcel(data, `Teacher_Diary_${new Date().toISOString().split('T')[0]}.xlsx`);
 }

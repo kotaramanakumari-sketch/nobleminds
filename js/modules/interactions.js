@@ -19,7 +19,7 @@ async function renderInteractions() {
            (s && (s.full_name||s.fullName).toLowerCase().includes(q)) || 
            (i.parent_name||'').toLowerCase().includes(q) ||
            (i.discussion_summary||'').toLowerCase().includes(q);
-  }).reverse();
+  });
   
   const tbody = document.getElementById('int-tbody');
   const empty = document.getElementById('int-empty');
@@ -166,6 +166,6 @@ async function exportInteractions() {
       InteractionMode: i.interaction_mode,
       DiscussionSummary: i.discussion_summary
     };
-  });
+  }).reverse();
   nmExportExcel(data, `NobleMinds_ParentInteractions_${new Date().toISOString().split('T')[0]}.xlsx`);
 }

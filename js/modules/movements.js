@@ -17,7 +17,7 @@ async function renderMovements() {
     const s = students.find(x => x.id === (m.student_id || m.studentId));
     return !q || (s && (s.full_name||s.fullName).toLowerCase().includes(q)) || 
            (m.escort_name||m.escortName||'').toLowerCase().includes(q) || (m.reason||'').toLowerCase().includes(q);
-  }).reverse();
+  });
   
   const tbody = document.getElementById('mov-tbody');
   const empty = document.getElementById('mov-empty');
@@ -211,6 +211,6 @@ async function exportMovements() {
       ReturnRelationship: m.return_relationship || m.returnRelationship || '',
       ReturnEscortPhone: m.return_phone || m.returnPhone || ''
     };
-  });
+  }).reverse();
   nmExportExcel(data, `NobleMinds_Movements_${new Date().toISOString().split('T')[0]}.xlsx`);
 }

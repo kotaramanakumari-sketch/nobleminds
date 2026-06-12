@@ -16,7 +16,7 @@ async function renderCounselling() {
 
     const s = students.find(x => x.id === (c.student_id || c.studentId));
     return !q || (s && (s.full_name||s.fullName).toLowerCase().includes(q)) || (c.issue||'').toLowerCase().includes(q);
-  }).reverse();
+  });
   
   const tbody = document.getElementById('cns-tbody');
   const empty = document.getElementById('cns-empty');
@@ -150,6 +150,6 @@ async function exportCounselling() {
       FollowUp: (c.follow_up || c.followUp) ? 'Yes' : 'No',
       Counselling: c.counselling
     };
-  });
+  }).reverse();
   nmExportExcel(data, `NobleMinds_Counselling_${new Date().toISOString().split('T')[0]}.xlsx`);
 }

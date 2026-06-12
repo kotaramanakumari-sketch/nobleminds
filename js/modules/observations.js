@@ -16,21 +16,30 @@ async function renderObservations() {
     
     const s = students.find(x => x.id === (o.student_id || o.studentId));
     return !q || (s && (s.full_name||s.fullName).toLowerCase().includes(q)) || (o.observation||'').toLowerCase().includes(q);
-  }).reverse();
+  });
   
   const tbody = document.getElementById('obs-tbody');
   const empty = document.getElementById('obs-empty');
   if (!list.length) { tbody.innerHTML=''; empty.classList.remove('hidden'); return; }
-  empty.classList.add('hidden');
+  const studentSeq = {};
+  [...obs].reverse().forEach(o => {
+    const sid = o.student_id || o.studentId;
+    if (sid) {
+      studentSeq[sid] = (studentSeq[sid] || 0) + 1;
+      o._seqNumber = studentSeq[sid];
+    }
+  });
+
   tbody.innerHTML = list.map(o => {
     const s = students.find(x => x.id === (o.student_id || o.studentId)) || { full_name: 'Unknown', class:'?', section:'?', house:'?' };
     const dateVal = o.observation_date || o.date || '';
-    const obsEsc = nmEscapeHTML(o.observation || '—');
-    const nameEsc = nmEscapeHTML(s.full_name || s.fullName || 'Unknown');
-    const admEsc = nmEscapeHTML(s.admission_number || s.admissionNumber || '');
+    const observationEsc = nmEscapeHTML(o.observation || '—');
+    const nameEsc  = nmEscapeHTML(s.full_name || s.fullName || 'Unknown');
+    const admEsc   = nmEscapeHTML(s.admission_number || s.admissionNumber || '');
+    const observerEsc = nmEscapeHTML(o.observed_by || o.observedBy || 'Staff');
 
     return `<tr>
-      <td data-label="Date">${nmFmtDate(dateVal)}</td>
+      <td data-label="Date">${nmFmtDate(dateVal)}<div style="font-size:0.7rem;color:var(--clr-text-3);">by ${observerEsc}</div></td>
       <td data-label="Student">
         <div style="font-weight:600;color:var(--clr-primary);cursor:pointer;" onclick="viewStudent('${s.id}')">${nameEsc}</div>
         <div style="font-size:0.7rem;color:var(--clr-text-2);">${admEsc}</div>
@@ -38,7 +47,8 @@ async function renderObservations() {
       <td data-label="Class">Class ${s.class}</td>
       <td data-label="Section">${s.section}</td>
       <td data-label="House">${s.house||'—'}</td>
-      <td data-label="Observation" style="max-width:300px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${obsEsc}">${obsEsc}</td>
+      <td data-label="No. of Obs"><span class="badge" style="background:#e5e7eb; color:#000; font-weight:bold;">${o._seqNumber || 1}</span></td>
+      <td data-label="Observation" style="max-width:300px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${observationEsc}">${observationEsc}</td>
       <td data-label="Actions"><div style="display:flex;gap:4px;">
         <button class="btn btn-ghost btn-sm btn-icon" onclick="openObservationModal('${o.id}')" title="Edit">✏️</button>
         <button class="btn btn-danger btn-sm btn-icon" onclick="deleteObservationRecord('${o.id}')" title="Delete">🗑</button>
@@ -111,10 +121,19 @@ async function exportObservations() {
   const fFrom = document.getElementById('obs-from')?.value;
   const fTo = document.getElementById('obs-to')?.value;
 
-  let list = await nmGetObservations(schoolId);
+  let obs = await nmGetObservations(schoolId);
   const students = await nmGetStudents(schoolId, currentYearId);
 
-  list = list.filter(o => {
+  const studentSeq = {};
+  [...obs].reverse().forEach(o => {
+    const sid = o.student_id || o.studentId;
+    if (sid) {
+      studentSeq[sid] = (studentSeq[sid] || 0) + 1;
+      o._seqNumber = studentSeq[sid];
+    }
+  });
+
+  let list = obs.filter(o => {
     const dateVal = o.observation_date || o.date || '';
     if (fFrom && dateVal < fFrom) return false;
     if (fTo && dateVal > fTo) return false;
@@ -124,6 +143,7 @@ async function exportObservations() {
   });
 
   if (!list.length) { nmToast('No observations to export', 'info'); return; }
+
   const data = list.map(o => {
     const s = students.find(x => x.id === (o.student_id || o.studentId)) || {};
     return {
@@ -133,9 +153,10 @@ async function exportObservations() {
       Class: s.class || '',
       Section: s.section || '',
       House: s.house || '',
+      'Obs #': o._seqNumber || 1,
       Observation: o.observation
     };
-  });
+  }).reverse();
   nmExportExcel(data, `NobleMinds_Observations_${new Date().toISOString().split('T')[0]}.xlsx`);
 }
 

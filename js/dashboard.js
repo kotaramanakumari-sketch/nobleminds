@@ -161,6 +161,7 @@ async function showSection(id, el) {
   if (id === 'movement')     await renderMovements();
   if (id === 'settings')     await renderAcademicYears();
   if (id === 'teacher-diary') await renderTeacherDiaries();
+  if (id === 'interactions') await renderInteractions();
 }
 function openModal(id)  { document.getElementById(id).classList.add('active'); }
 function closeModal(id) { document.getElementById(id).classList.remove('active'); }

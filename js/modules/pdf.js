@@ -30,6 +30,15 @@ async function nmDownloadTablePDF(btn, docTitle = 'Table Records', fileSuffix = 
       });
     }
 
+    // If it's the observations, counselling, diaries, movements, or interactions table, the user wants the printed version in ascending (oldest-first) order
+    if (['observations', 'counselling', 'diaries', 'movements', 'interactions'].includes(fileSuffix)) {
+      const tbody = clonedTable.querySelector('tbody');
+      if (tbody) {
+        const rows = Array.from(tbody.querySelectorAll('tr'));
+        rows.reverse().forEach(tr => tbody.appendChild(tr));
+      }
+    }
+
     // Apply inline print styles to table
     clonedTable.style.width = '100%';
     clonedTable.style.borderCollapse = 'collapse';
