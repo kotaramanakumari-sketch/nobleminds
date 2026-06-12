@@ -196,9 +196,33 @@
       </button>
     </form>
 
+    <!-- Reset Password Form -->
+    <form id="reset-pwd-form" style="display: none;" autocomplete="off">
+      <div class="form-group mb-16">
+        <label class="form-label">New Password</label>
+        <div class="input-wrapper">
+          <span class="input-icon">🔒</span>
+          <input type="password" id="reset-password" class="form-control"
+                 placeholder="Enter new password" required minlength="6">
+          <span class="input-suffix" id="toggle-reset-pwd" title="Show/hide password">👁</span>
+        </div>
+      </div>
 
+      <div class="form-group mb-20">
+        <label class="form-label">Confirm New Password</label>
+        <div class="input-wrapper">
+          <span class="input-icon">🔒</span>
+          <input type="password" id="reset-confirm-password" class="form-control"
+                 placeholder="Confirm new password" required minlength="6">
+        </div>
+      </div>
 
-    <div style="margin-top: 24px; text-align: center; font-size: 0.9rem; color: var(--clr-text-2);">
+      <button type="submit" class="login-btn" id="reset-submit-btn">
+        <span id="reset-btn-text">Update Password & Sign In →</span>
+      </button>
+    </form>
+
+    <div style="margin-top: 24px; text-align: center; font-size: 0.9rem; color: var(--clr-text-2);" id="register-link-box">
       New School? <a href="register.html" style="color: var(--clr-primary); font-weight: 700;">Register Here</a>
     </div>
 
@@ -227,13 +251,91 @@
 <script src="js/utils.js"></script>
 <script>
   document.addEventListener('DOMContentLoaded', async () => {
-    await nmInitAuth();
+    const hash = window.location.hash;
+    const isRecovery = hash.includes('type=recovery') || hash.includes('recovery') || hash.includes('access_token=');
 
-    // Auto-redirect if already logged in
-    const existing = nmGetSession();
-    if (existing) {
-      window.location.href = existing.role === 'admin' ? 'admin/index.html' : 'user/index.html';
-      return;
+    if (isRecovery) {
+      // Show recovery UI
+      const { data: { session }, error: sessionErr } = await sb.auth.getSession();
+      if (sessionErr || !session) {
+        nmToast('Invalid or expired recovery session. Request a new password reset link.', 'error');
+        setTimeout(() => { window.location.hash = ''; window.location.reload(); }, 3000);
+        return;
+      }
+
+      // Hide standard login form & register box
+      document.getElementById('login-form').style.display = 'none';
+      const regBox = document.getElementById('register-link-box');
+      if (regBox) regBox.style.display = 'none';
+      
+      document.querySelector('.login-title').textContent = 'Reset Password';
+      document.querySelector('.login-sub').textContent = 'Enter your new password below';
+
+      // Show reset form
+      document.getElementById('reset-pwd-form').style.display = 'block';
+
+      // Toggle reset password visibility
+      const resetPwdInput = document.getElementById('reset-password');
+      document.getElementById('toggle-reset-pwd').addEventListener('click', () => {
+        resetPwdInput.type = resetPwdInput.type === 'password' ? 'text' : 'password';
+      });
+
+      // Handle Reset Submit
+      document.getElementById('reset-pwd-form').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const pwd = document.getElementById('reset-password').value;
+        const confirmPwd = document.getElementById('reset-confirm-password').value;
+        const btn = document.getElementById('reset-submit-btn');
+        const btnText = document.getElementById('reset-btn-text');
+
+        if (pwd !== confirmPwd) {
+          nmToast('Passwords do not match.', 'error');
+          return;
+        }
+
+        if (pwd.length < 6) {
+          nmToast('Password must be at least 6 characters long.', 'warning');
+          return;
+        }
+
+        btn.disabled = true;
+        btnText.textContent = 'Updating Password…';
+
+        try {
+          const { error } = await sb.auth.updateUser({ password: pwd });
+          if (error) throw error;
+
+          nmToast('Password updated successfully! Redirecting...', 'success');
+          
+          // Fetch profile and store session
+          const profile = await nmGetProfile(session.user.id);
+          if (profile) {
+            sessionStorage.setItem(NM_SESSION_KEY, JSON.stringify(profile));
+            setTimeout(() => {
+              window.location.href = profile.role === 'admin' ? 'admin/index.html' : 'user/index.html';
+            }, 1000);
+            return;
+          }
+          setTimeout(() => {
+            window.location.href = 'login.html';
+          }, 1500);
+        } catch (err) {
+          nmToast('Failed to update password: ' + err.message, 'error');
+          btn.disabled = false;
+          btnText.textContent = 'Update Password & Sign In →';
+        }
+      });
+
+    } else {
+      // Standard auth check
+      await nmInitAuth();
+
+      // Auto-redirect if already logged in
+      const existing = nmGetSession();
+      if (existing) {
+        window.location.href = existing.role === 'admin' ? 'admin/index.html' : 'user/index.html';
+        return;
+      }
     }
 
     // Toggle password visibility
