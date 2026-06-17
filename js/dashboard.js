@@ -8,7 +8,7 @@ let userId = '';
 
 async function init() {
   await nmInitAuth();
-  const session = nmRequireAuth('user');
+  const session = nmRequireAuth(['user', 'admin']);
   if (session) {
     schoolId = session.school_id || session.school_id;
     userId = session.id || session.user?.id;

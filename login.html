@@ -383,7 +383,7 @@
         if (result.success) {
           document.getElementById('login-btn-text').textContent = '✓ Success!';
           setTimeout(() => {
-            window.location.href = result.user.role === 'admin' ? 'admin/index.html' : 'user/index.html';
+            window.location.href = result.user.role === 'super_admin' ? 'admin/index.html' : 'user/index.html';
           }, 500);
         } else {
           errMsg.textContent = result.message;

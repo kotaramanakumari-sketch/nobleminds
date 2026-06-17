@@ -40,7 +40,7 @@
       <img src="../assets/logo.png" alt="NobleMinds" style="width:40px;height:40px;border-radius:var(--radius-sm);object-fit:contain;background:#fff;padding:2px;">
       <div>
         <div class="sidebar-brand">Noble<span>Minds</span></div>
-        <div class="sidebar-sub">Admin Portal</div>
+        <div class="sidebar-sub">Super Admin Portal</div>
       </div>
     </div>
 
@@ -77,7 +77,7 @@
         <div class="avatar" id="admin-avatar">SA</div>
         <div class="sidebar-user-info">
           <div class="sidebar-user-name" id="admin-name">Super Admin</div>
-          <div class="sidebar-user-role">Administrator</div>
+          <div class="sidebar-user-role">⭐ Platform Owner</div>
         </div>
       </div>
     </div>
@@ -228,7 +228,7 @@
             <div class="table-wrapper">
               <table class="data-table">
                 <thead>
-                  <tr><th>User</th><th>Email</th><th>School</th><th>Created</th><th>Actions</th></tr>
+                  <tr><th>User</th><th>Email</th><th>Role</th><th>School</th><th>Created</th><th>Actions</th></tr>
                 </thead>
                 <tbody id="users-tbody"></tbody>
               </table>
@@ -448,9 +448,18 @@
           <span class="form-error">Select a school</span>
         </div>
       </div>
-      <div class="form-group">
-        <label class="form-label">Phone</label>
-        <input type="tel" id="user-phone" class="form-control" placeholder="10-digit mobile" maxlength="10">
+      <div class="form-grid mb-16">
+        <div class="form-group">
+          <label class="form-label">Role <span class="required">*</span></label>
+          <select id="user-role" class="form-control">
+            <option value="user">👩‍🏫 User (Teacher)</option>
+            <option value="admin">🏫 Admin (Principal / School Owner)</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Phone</label>
+          <input type="tel" id="user-phone" class="form-control" placeholder="10-digit mobile" maxlength="10">
+        </div>
       </div>
     </div>
     <div class="modal-footer">
@@ -477,7 +486,7 @@
 
 <script src="../js/supabase.js?v=1.0.1"></script>
 <script src="../js/utils.js?v=1.0.1"></script>
-<script src="../js/auth.js?v=1.0.1"></script>
+<script src="../js/auth.js?v=2"></script>
 <script src="../js/data.js?v=1.0.1"></script>
 <script src="../js/modules/pdf.js"></script>
 <script>
@@ -489,7 +498,7 @@ let currentStudentId = '';
 // ─── Auth Guard ───────────────────────────────────────────────────────────────
 async function init() {
   await nmInitAuth();
-  const session = nmRequireAuth('admin');
+  const session = nmRequireAuth('super_admin');
   if (session) {
     document.getElementById('admin-name').textContent = session.name;
     document.getElementById('admin-avatar').textContent = nmGetInitials(session.name);
@@ -950,17 +959,23 @@ async function renderUsers() {
     tbody.innerHTML = ''; empty.classList.remove('hidden'); return;
   }
   empty.classList.add('hidden');
+  const roleBadge = (role) => {
+    if (role === 'super_admin') return '<span class="badge badge-pink">⭐ Super Admin</span>';
+    if (role === 'admin') return '<span class="badge badge-purple">🏫 Admin</span>';
+    return '<span class="badge badge-blue">👩‍🏫 Teacher</span>';
+  };
   tbody.innerHTML = filtered.map(u => `<tr>
     <td data-label="User"><div style="display:flex;align-items:center;gap:10px;">
       <div class="avatar">${nmGetInitials(u.name)}</div>
       <div><div style="font-weight:600;">${u.name || '(Unknown)'}</div></div>
     </div></td>
     <td data-label="Email">${u.email || '(Cloud User)'}</td>
-    <td data-label="School">${u.school_name ? `<span class="badge badge-blue">${u.school_name}</span>` : '—'}</td>
+    <td data-label="Role">${roleBadge(u.role)}</td>
+    <td data-label="School">${u.school_name ? `<span class="badge badge-green">${u.school_name}</span>` : '—'}</td>
     <td data-label="Created">${nmFmtDate(u.created_at)}</td>
     <td data-label="Actions"><div class="action-btns">
-      <button class="btn btn-ghost btn-sm btn-icon" title="Edit" onclick='openUserModal(${JSON.stringify(u).replace(/'/g, "&apos;")})'>✏️</button>
-      <button class="btn btn-danger btn-sm btn-icon" title="Delete" onclick="deleteUser('${u.id}')">🗑</button>
+      ${u.role !== 'super_admin' ? `<button class="btn btn-ghost btn-sm btn-icon" title="Edit" onclick='openUserModal(${JSON.stringify(u).replace(/'/g, "&apos;")})'>✏️</button>` : ''}
+      ${u.role !== 'super_admin' ? `<button class="btn btn-danger btn-sm btn-icon" title="Delete" onclick="deleteUser('${u.id}')">🗑</button>` : '<span style="color:var(--clr-text-3);font-size:0.75rem;">Protected</span>'}
     </div></td>
   </tr>`).join('');
 }
@@ -975,11 +990,15 @@ async function openUserModal(user) {
   document.getElementById('user-name').value = user.name || '';
   document.getElementById('user-email').value = user.email || '';
   document.getElementById('user-school').value = user.school_id || '';
+  document.getElementById('user-role').value = user.role || 'user';
   
   // Hide password field for existing users (handled via Auth reset)
   const passGroup = document.getElementById('user-password').closest('.form-group');
   if (user.id) passGroup.style.display = 'none';
   else passGroup.style.display = 'block';
+
+  // Lock email for existing users
+  document.getElementById('user-email').readOnly = !!user.id;
   
   document.getElementById('user-password').value = '';
   openModal('user-modal');
@@ -991,6 +1010,7 @@ async function saveUser() {
   const email = document.getElementById('user-email').value.trim();
   const schoolId = document.getElementById('user-school').value;
   const password = document.getElementById('user-password').value;
+  const role = document.getElementById('user-role').value || 'user';
 
   if (!name || !email) { nmToast('Name and Email are required', 'error'); return; }
 
@@ -1004,9 +1024,10 @@ async function saveUser() {
 
   try {
     if (id) {
-      // Update existing profile
+      // Update existing profile — role can be changed by super_admin
       await nmUpdateProfile(id, {
         name,
+        role,
         school_id: schoolId || null,
         school_name: schoolName || 'Independent'
       });
@@ -1015,7 +1036,7 @@ async function saveUser() {
       // Create new user (requires signing them up)
       if (!password || password.length < 6) { nmToast('Password required (min 6 chars)', 'error'); return; }
       await nmSignUp({
-        name, email, password,
+        name, email, password, role,
         schoolId: schoolId || null,
         schoolName: schoolName || 'Pending',
         udise: '', phone: '', address: '' 

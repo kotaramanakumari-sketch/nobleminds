@@ -33,7 +33,7 @@ async function nmGetProfile(userId) {
  * Used by register.html for instant school setup
  */
 async function nmSignUp(data) {
-  const { email, password, name, schoolName, schoolId, udise, phone, address } = data;
+  const { email, password, name, schoolName, schoolId, udise, phone, address, role } = data;
 
   // 1. Create the Auth User
   const { data: authData, error: authError } = await sb.auth.signUp({
@@ -47,12 +47,12 @@ async function nmSignUp(data) {
   if (authError) throw authError;
   if (!authData.user) throw new Error('Sign up failed');
 
-  // 2. Create the profile — role defaults to 'user'; promote to admin via Supabase dashboard
+  // 2. Create the profile
   const { error: profError } = await sb.from('profiles').insert([{
     id: authData.user.id,
     name: name,
     email: email,
-    role: 'user',
+    role: role || 'user',
     school_id: schoolId || null,
     school_name: schoolId ? schoolName : 'Pending Approval'
   }]);
@@ -134,12 +134,16 @@ function nmRequireAuth(requiredRole) {
     return null;
   }
   
-  if (requiredRole && session.role !== requiredRole) {
-    if (session.role === 'admin')
-      window.location.replace(inSub ? '../admin/' : 'admin/');
-    else
-      window.location.replace(inSub ? '../user/' : 'user/');
-    return null;
+  if (requiredRole) {
+    const roles = Array.isArray(requiredRole) ? requiredRole : [requiredRole];
+    if (!roles.includes(session.role)) {
+      if (session.role === 'super_admin') {
+        window.location.replace(inSub ? '../admin/index.html' : 'admin/index.html');
+      } else {
+        window.location.replace(inSub ? '../user/index.html' : 'user/index.html');
+      }
+      return null;
+    }
   }
   return session;
 }
