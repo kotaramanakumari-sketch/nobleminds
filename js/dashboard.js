@@ -142,7 +142,7 @@ async function setActiveYear(id) {
 }
 
 // ── Navigation ────────────────────────────────────────────────────────────────
-const pageTitles = { dashboard:'Dashboard', students:'Students', 'add-student':'Add Student', import:'Bulk Import', observations:'Observations', counselling:'Counselling', movement:'Movement Record', settings:'Settings', 'teacher-diary': 'Teacher Diary' };
+const pageTitles = { dashboard:'Dashboard', students:'Students', directory:'Student Directory', 'add-student':'Add Student', import:'Bulk Import', observations:'Observations', counselling:'Counselling', movement:'Movement Record', settings:'Settings', 'teacher-diary': 'Teacher Diary' };
 function toggleMobileMenu() {
   document.querySelector('.sidebar').classList.toggle('open');
 }
@@ -156,6 +156,7 @@ async function showSection(id, el) {
 
   if (id === 'dashboard') await renderDashboard();
   if (id === 'students')  await renderStudents();
+  if (id === 'directory') await renderDirectory();
   if (id === 'observations') await renderObservations();
   if (id === 'counselling')  await renderCounselling();
   if (id === 'movement')     await renderMovements();

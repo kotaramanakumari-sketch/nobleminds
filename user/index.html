@@ -28,6 +28,7 @@
       <div class="nav-item active" onclick="showSection('dashboard',this)"><span class="nav-item-icon">📊</span>Dashboard</div>
       <div class="nav-section-label">Students</div>
       <div class="nav-item" onclick="showSection('students',this)"><span class="nav-item-icon">🎓</span>All Students<span class="nav-badge" id="nb-count">0</span></div>
+      <div class="nav-item" onclick="showSection('directory',this)"><span class="nav-item-icon">📇</span>Student Directory</div>
       <div class="nav-item" onclick="showSection('add-student',this);resetForm()"><span class="nav-item-icon">➕</span>Add Student</div>
       <div class="nav-item" onclick="showSection('import',this)"><span class="nav-item-icon">📥</span>Bulk Import</div>
       <div class="nav-section-label">Records</div>
@@ -146,6 +147,61 @@
           <div id="std-empty" class="empty-state hidden">
             <div class="empty-state-icon">🎓</div><h3>No students found</h3><p>Add students or adjust your filters.</p>
           </div>
+        </div>
+      </div>
+
+      <!-- STUDENT DIRECTORY -->
+      <div class="page-section" id="section-directory">
+        <div class="section-header">
+          <h2>📇 Student Directory</h2>
+          <div style="font-size:0.9rem; color:var(--clr-text-2); font-weight:600;" id="dir-school-label"></div>
+        </div>
+
+        <!-- Filter Bar -->
+        <div class="filter-bar mb-20">
+          <div class="search-input-wrapper" style="flex:1; min-width:180px;">
+            <span>🔍</span>
+            <input type="text" id="dir-search" placeholder="Search by name, admission no…" oninput="onDirectoryFilterChange()">
+          </div>
+          <select class="filter-select" id="dir-f-class" onchange="onDirectoryFilterChange()">
+            <option value="">All Classes</option>
+            <option value="1">Class 1</option><option value="2">Class 2</option><option value="3">Class 3</option>
+            <option value="4">Class 4</option><option value="5">Class 5</option><option value="6">Class 6</option>
+            <option value="7">Class 7</option><option value="8">Class 8</option><option value="9">Class 9</option>
+            <option value="10">Class 10</option><option value="11">Class 11</option><option value="12">Class 12</option>
+          </select>
+          <select class="filter-select" id="dir-f-section" onchange="onDirectoryFilterChange()">
+            <option value="">All Sections</option>
+            <option>A</option><option>B</option><option>C</option><option>D</option><option>E</option><option>F</option>
+          </select>
+          <select class="filter-select" id="dir-f-house" onchange="onDirectoryFilterChange()">
+            <option value="">All Houses</option>
+            <option>Red</option><option>Blue</option><option>Green</option><option>Yellow</option>
+          </select>
+        </div>
+
+        <!-- Smart Filters Panel -->
+        <div class="smart-filters">
+          <span class="smart-filter-title">⚡ Smart Filters:</span>
+          <div class="smart-filter-btn" id="sf-obs" onclick="toggleSmartFilter('obs')">
+            <span>👁‍🗨</span> High Observations (>3)
+          </div>
+          <div class="smart-filter-btn" id="sf-med" onclick="toggleSmartFilter('med')">
+            <span>🩺</span> Medical Alerts
+          </div>
+          <div class="smart-filter-btn" id="sf-cns" onclick="toggleSmartFilter('cns')">
+            <span>🤝</span> Active Counselling
+          </div>
+        </div>
+
+        <!-- Directory Grid -->
+        <div id="directory-grid" class="directory-grid"></div>
+
+        <!-- Empty State -->
+        <div id="dir-empty" class="empty-state hidden">
+          <div class="empty-state-icon">📇</div>
+          <h3>No students match</h3>
+          <p>Try adjusting your search queries or disabling active filters.</p>
         </div>
       </div>
 
@@ -1069,6 +1125,7 @@
 <script src="../js/modules/diary.js"></script>
 <script src="../js/modules/interactions.js"></script>
 <script src="../js/modules/pdf.js"></script>
+<script src="../js/modules/directory.js"></script>
 
 
 </body>
