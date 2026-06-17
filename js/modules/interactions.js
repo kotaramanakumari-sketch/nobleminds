@@ -109,6 +109,7 @@ async function saveInteraction() {
     await nmSaveInteraction({
       id: document.getElementById('int-id').value || undefined,
       school_id: schoolId, 
+      user_id: userId,
       student_id: sid, 
       date: date, 
       mode: mode, 

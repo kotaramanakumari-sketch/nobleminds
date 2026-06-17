@@ -99,7 +99,7 @@ async function saveCounselling() {
   try {
     await nmSaveCounselling({
       id: document.getElementById('c-id').value || undefined,
-      school_id: schoolId, student_id: sid, date, issue, status, follow_up: followUp, counselling: text
+      school_id: schoolId, user_id: userId, student_id: sid, date, issue, status, follow_up: followUp, counselling: text
     });
     closeModal('cns-modal');
     nmToast('Counselling record saved','success');

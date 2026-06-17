@@ -4,12 +4,14 @@
 let schoolId = '', currentYearId = '', allYears = [], currentStudentId = '', excelParsed = [], currentStep = 1;
 let allCachedStudents = [];
 let selectedStudentsMap = { o: [], c: null, m: null };
+let userId = '';
 
 async function init() {
   await nmInitAuth();
   const session = nmRequireAuth('user');
   if (session) {
     schoolId = session.school_id || session.school_id;
+    userId = session.id || session.user?.id;
     document.getElementById('user-name-disp').textContent = session.name;
     document.getElementById('user-avatar').textContent    = nmGetInitials(session.name);
     const sn = session.school_name || session.schoolName || 'School Portal';

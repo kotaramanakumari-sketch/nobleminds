@@ -153,7 +153,7 @@ async function saveMovement() {
   try {
     const payload = {
       id: document.getElementById('mov-id').value || undefined,
-      school_id: schoolId, student_id: sid, reason, leave_date: leave, report_date: report || null,
+      school_id: schoolId, user_id: userId, student_id: sid, reason, leave_date: leave, report_date: report || null,
       escort_name: escort, relationship: rel, phone,
       return_escort_name: rEscort || null,
       return_relationship: rRel || null,

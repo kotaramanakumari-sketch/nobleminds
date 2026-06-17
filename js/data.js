@@ -270,6 +270,7 @@ async function nmSaveObservation(obs) {
   const payload = {
     student_id: obs.student_id || obs.studentId,
     school_id: obs.school_id || obs.schoolId,
+    user_id: obs.user_id || obs.userId,
     observation: obs.observation,
     severity: obs.severity || 'Normal',
     observation_date: obs.date || obs.observation_date || nmToday()
@@ -304,6 +305,7 @@ async function nmSaveCounselling(rec) {
   const payload = {
     student_id: rec.student_id || rec.studentId,
     school_id: rec.school_id || rec.schoolId,
+    user_id: rec.user_id || rec.userId,
     issue: rec.issue,
     counselling: rec.counselling,
     status: rec.status,
@@ -340,6 +342,7 @@ async function nmSaveInteraction(rec) {
   const payload = {
     student_id: rec.student_id || rec.studentId,
     school_id: rec.school_id || rec.schoolId,
+    user_id: rec.user_id || rec.userId,
     interaction_date: rec.interaction_date || rec.date || nmToday(),
     interaction_mode: rec.interaction_mode || rec.mode,
     parent_name: rec.parent_name || rec.parentName,
@@ -375,6 +378,7 @@ async function nmSaveMovement(mov) {
   const payload = {
     student_id: mov.student_id || mov.studentId,
     school_id: mov.school_id || mov.schoolId,
+    user_id: mov.user_id || mov.userId,
     leave_date: mov.leave_date || mov.leaveDate,
     report_date: mov.report_date || mov.reportDate,
     reason: mov.reason,

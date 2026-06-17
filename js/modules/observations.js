@@ -99,12 +99,12 @@ async function saveObservation() {
   try {
     if (idValue && selected.length === 1) {
       await nmSaveObservation({ 
-        id: idValue, school_id: schoolId, student_id: selected[0].id, observation_date: date, observation: text 
+        id: idValue, school_id: schoolId, user_id: userId, student_id: selected[0].id, observation_date: date, observation: text 
       });
     } else {
       for (const s of selected) {
         await nmSaveObservation({ 
-          school_id: schoolId, student_id: s.id, observation_date: date, observation: text 
+          school_id: schoolId, user_id: userId, student_id: s.id, observation_date: date, observation: text 
         });
       }
     }
