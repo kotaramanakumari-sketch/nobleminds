@@ -35,7 +35,8 @@
 <div class="panel-layout">
 
   <!-- ── Sidebar ─────────────────────────────────────────────────────────── -->
-  <aside class="sidebar" id="sidebar">
+  <aside class="sidebar" id="main-sidebar">
+    <button class="sidebar-toggle-btn" onclick="toggleSidebar()" id="sidebar-toggle-btn" title="Toggle sidebar">◀</button>
     <div class="sidebar-logo">
       <img src="../assets/logo.png" alt="NobleMinds" style="width:40px;height:40px;border-radius:var(--radius-sm);object-fit:contain;background:#fff;padding:2px;">
       <div>
@@ -497,6 +498,13 @@ let currentStudentId = '';
 
 // ─── Auth Guard ───────────────────────────────────────────────────────────────
 async function init() {
+  if (localStorage.getItem('nm_sidebar_collapsed') === '1') {
+    const sidebar = document.getElementById('main-sidebar');
+    const btn = document.getElementById('sidebar-toggle-btn');
+    if (sidebar) sidebar.classList.add('collapsed');
+    if (btn) { btn.textContent = '▶'; btn.title = 'Expand sidebar'; }
+  }
+
   await nmInitAuth();
   const session = nmRequireAuth('super_admin');
   if (session) {
@@ -587,6 +595,16 @@ async function loadSchoolYears(schoolId) {
 const titles = { dashboard:'Dashboard', management:'System Management', 'school-data':'Student Data by School', settings:'Settings' };
 function toggleMobileMenu() {
   document.querySelector('.sidebar').classList.toggle('open');
+}
+
+function toggleSidebar() {
+  const sidebar = document.getElementById('main-sidebar');
+  const btn = document.getElementById('sidebar-toggle-btn');
+  if (!sidebar || !btn) return;
+  const isCollapsed = sidebar.classList.toggle('collapsed');
+  btn.textContent = isCollapsed ? '▶' : '◀';
+  btn.title = isCollapsed ? 'Expand sidebar' : 'Collapse sidebar';
+  localStorage.setItem('nm_sidebar_collapsed', isCollapsed ? '1' : '0');
 }
 async function showSection(id, el) {
   try {

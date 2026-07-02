@@ -7,6 +7,14 @@ let selectedStudentsMap = { o: [], c: null, m: null };
 let userId = '';
 
 async function init() {
+  // Restore sidebar state early to prevent flicker
+  if (localStorage.getItem('nm_sidebar_collapsed') === '1') {
+    const sidebar = document.getElementById('main-sidebar');
+    const btn = document.getElementById('sidebar-toggle-btn');
+    if (sidebar) sidebar.classList.add('collapsed');
+    if (btn) { btn.textContent = '▶'; btn.title = 'Expand sidebar'; }
+  }
+
   await nmInitAuth();
   const session = nmRequireAuth(['user', 'admin']);
   if (session) {
@@ -161,6 +169,16 @@ async function setActiveYear(id) {
 const pageTitles = { dashboard:'Dashboard', students:'Students', directory:'Student Directory', 'add-student':'Add Student', import:'Bulk Import', observations:'Observations', counselling:'Counselling', movement:'Movement Record', settings:'Settings', 'teacher-diary': 'Teacher Diary', staff: 'Staff Management' };
 function toggleMobileMenu() {
   document.querySelector('.sidebar').classList.toggle('open');
+}
+
+function toggleSidebar() {
+  const sidebar = document.getElementById('main-sidebar');
+  const btn = document.getElementById('sidebar-toggle-btn');
+  if (!sidebar || !btn) return;
+  const isCollapsed = sidebar.classList.toggle('collapsed');
+  btn.textContent = isCollapsed ? '▶' : '◀';
+  btn.title = isCollapsed ? 'Expand sidebar' : 'Collapse sidebar';
+  localStorage.setItem('nm_sidebar_collapsed', isCollapsed ? '1' : '0');
 }
 async function showSection(id, el) {
   document.querySelector('.sidebar').classList.remove('open');
