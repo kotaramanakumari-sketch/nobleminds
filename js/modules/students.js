@@ -32,7 +32,7 @@ async function renderStudents() {
     <td data-label="Phone">${s.phone||'—'}</td>
     <td data-label="Actions"><div style="display:flex;gap:4px;">
       <button class="btn btn-ghost btn-sm" onclick="editStudent('${s.id}')" title="Edit">✏️ Edit</button>
-      <button class="btn btn-danger btn-sm" onclick="deleteStudentRow('${s.id}')" title="Delete">🗑 Delete</button>
+      ${window.currentUserRole === 'admin' ? `<button class="btn btn-danger btn-sm" onclick="deleteStudentRow('${s.id}')" title="Delete">🗑 Delete</button>` : ''}
     </div></td>
   </tr>`; }).join('');
 }
@@ -48,54 +48,110 @@ function exportStudents() {
 
 // ── Student Promotion ──────────────────────────────────────────────────────────
 async function openPromotionModal() {
-  const currentList = await getFilteredStudentList();
-  if (!currentList.length) return nmToast('No students matching current filters to promote','error');
-  
   const years = allYears.filter(y => y.id !== currentYearId);
   if (!years.length) return nmToast('Please create a target Academic Year first in Settings.', 'info');
 
   const sel = document.getElementById('p-target-year');
   sel.innerHTML = '<option value="">— Select Target Year —</option>' + years.map(y => `<option value="${y.id}">${y.name}</option>`).join('');
   
-  document.getElementById('p-selection-info').textContent = `Promoting ${currentList.length} students from the current filtered list.`;
+  document.getElementById('p-source-class').value = '';
+  document.getElementById('p-student-list').innerHTML = '<div style="color:var(--clr-text-3); font-size:0.85rem; text-align:center; padding:20px;">Please select a source class first.</div>';
+  document.getElementById('p-select-all').checked = false;
+  document.getElementById('p-select-all').disabled = true;
+  document.getElementById('p-selection-count').textContent = '0 selected';
+  document.getElementById('p-btn').disabled = true;
+  
   openModal('promotion-modal');
 }
 
-async function getFilteredStudentList() {
-  const q  = (document.getElementById('std-search')?.value||'').toLowerCase();
-  const fc = document.getElementById('f-class')?.value||'';
-  const fs = document.getElementById('f-section')?.value||'';
-  const fg = document.getElementById('f-gender')?.value||'';
+async function loadPromotionStudents() {
+  const cls = document.getElementById('p-source-class').value;
+  const listContainer = document.getElementById('p-student-list');
+  const selectAll = document.getElementById('p-select-all');
+  const btn = document.getElementById('p-btn');
+  
+  if (!cls) {
+    listContainer.innerHTML = '<div style="color:var(--clr-text-3); font-size:0.85rem; text-align:center; padding:20px;">Please select a source class first.</div>';
+    selectAll.disabled = true; selectAll.checked = false;
+    btn.disabled = true;
+    updatePromotionSelectionCount();
+    return;
+  }
+  
+  listContainer.innerHTML = '<div style="color:var(--clr-text-3); font-size:0.85rem; text-align:center; padding:20px;">Loading students...</div>';
   
   let list = await nmGetStudents(schoolId, currentYearId);
-  if (q)  list = list.filter(s=>(s.full_name||s.fullName||'').toLowerCase().includes(q)||(s.admission_number||s.admissionNumber||'').toLowerCase().includes(q));
-  if (fc) list = list.filter(s=>s.class===fc);
-  if (fs) list = list.filter(s=>s.section===fs);
-  if (fg) list = list.filter(s=>s.gender===fg);
-  return list;
+  list = list.filter(s => s.class === cls);
+  
+  if (!list.length) {
+    listContainer.innerHTML = '<div style="color:var(--clr-text-3); font-size:0.85rem; text-align:center; padding:20px;">No students found in this class.</div>';
+    selectAll.disabled = true; selectAll.checked = false;
+    btn.disabled = true;
+    updatePromotionSelectionCount();
+    return;
+  }
+  
+  selectAll.disabled = false;
+  selectAll.checked = false;
+  
+  listContainer.innerHTML = list.map(s => `
+    <label style="display:flex; align-items:center; gap:10px; padding:8px; border:1px solid var(--clr-border); border-radius:var(--radius-sm); cursor:pointer; background:var(--clr-surface);">
+      <input type="checkbox" class="p-student-cb" value="${s.id}" onchange="updatePromotionSelectionCount()" style="width:16px;height:16px;cursor:pointer;">
+      <div style="flex:1;">
+        <div style="font-weight:600; font-size:0.9rem;">${nmEscapeHTML(s.full_name || s.fullName || '—')}</div>
+        <div style="font-size:0.75rem; color:var(--clr-text-2);">Adm: ${nmEscapeHTML(s.admission_number || s.admissionNumber || '—')} • Sec: ${s.section || '—'}</div>
+      </div>
+    </label>
+  `).join('');
+  
+  updatePromotionSelectionCount();
+}
+
+function togglePromoteSelectAll(el) {
+  const cbs = document.querySelectorAll('.p-student-cb');
+  cbs.forEach(cb => cb.checked = el.checked);
+  updatePromotionSelectionCount();
+}
+
+function updatePromotionSelectionCount() {
+  const cbs = document.querySelectorAll('.p-student-cb');
+  const checked = document.querySelectorAll('.p-student-cb:checked');
+  const countSpan = document.getElementById('p-selection-count');
+  const selectAll = document.getElementById('p-select-all');
+  const btn = document.getElementById('p-btn');
+  
+  countSpan.textContent = `${checked.length} selected`;
+  btn.disabled = checked.length === 0;
+  
+  if (cbs.length > 0) {
+    selectAll.checked = (checked.length === cbs.length);
+  }
 }
 
 async function confirmPromotion() {
   const targetYearId = document.getElementById('p-target-year').value;
   if (!targetYearId) return nmToast('Please select a target year','error');
   
-  const list = await getFilteredStudentList();
-  const msg = `Are you sure? You are about to clone ${list.length} students to the new year. Their classes will be incremented automatically (e.g. 4 -> 5).`;
+  const checked = document.querySelectorAll('.p-student-cb:checked');
+  if (checked.length === 0) return nmToast('Please select at least one student to promote','error');
+  
+  const ids = Array.from(checked).map(cb => cb.value);
+  
+  const msg = `Are you sure? You are about to clone ${ids.length} selected students to the new year. Their classes will be incremented automatically (e.g. 4 ➔ 5). Class 12 students will become Alumni.`;
   
   if (await nmConfirm(msg)) {
     const btn = document.getElementById('p-btn');
     btn.disabled = true; btn.textContent = 'Processing Promotion...';
     
     try {
-      const ids = list.map(s => s.id);
       await nmPromoteStudents(ids, targetYearId);
       closeModal('promotion-modal');
-      nmToast(`Successfully promoted ${list.length} students!`,'success');
+      nmToast(`Successfully promoted ${ids.length} students!`,'success');
       await renderStudents();
     } catch(e) {
       nmToast('Promotion failed: ' + e.message, 'error');
     } finally {
-      btn.disabled = false; btn.textContent = 'Confirm Promotion (Clone)';
+      btn.disabled = false; btn.textContent = 'Confirm Promotion';
     }
   }
 }
@@ -245,7 +301,13 @@ async function viewStudent(id) {
         </div>
       </div>
     </div>`;
-  document.getElementById('modal-delete-btn').onclick = () => deleteStudentRow(id, true);
+  const deleteBtn = document.getElementById('modal-delete-btn');
+  if (window.currentUserRole === 'admin') {
+    deleteBtn.style.display = 'block';
+    deleteBtn.onclick = () => deleteStudentRow(id, true);
+  } else {
+    deleteBtn.style.display = 'none';
+  }
   openModal('student-modal');
 }
 function iI(k,v){return`<div class="info-item"><div class="key">${k}</div><div class="val">${v||'—'}</div></div>`;}

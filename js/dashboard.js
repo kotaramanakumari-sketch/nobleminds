@@ -17,6 +17,20 @@ async function init() {
     const sn = session.school_name || session.schoolName || 'School Portal';
     document.getElementById('sb-school-name').textContent = sn;
     
+    window.currentUserRole = session.role;
+    if (session.role === 'admin') {
+      const staffNav = document.getElementById('nav-staff');
+      if (staffNav) staffNav.style.display = 'flex';
+      document.querySelector('.sidebar-user-role').textContent = 'School Admin';
+    } else {
+      const addYearContainer = document.getElementById('add-year-container');
+      const addYearHelper = document.getElementById('add-year-helper');
+      const promoteBtn = document.getElementById('promote-students-btn');
+      if (addYearContainer) addYearContainer.style.display = 'none';
+      if (addYearHelper) addYearHelper.style.display = 'none';
+      if (promoteBtn) promoteBtn.style.display = 'none';
+    }
+
     await loadAcademicYears();
   }
 
@@ -144,7 +158,7 @@ async function setActiveYear(id) {
 }
 
 // ── Navigation ────────────────────────────────────────────────────────────────
-const pageTitles = { dashboard:'Dashboard', students:'Students', directory:'Student Directory', 'add-student':'Add Student', import:'Bulk Import', observations:'Observations', counselling:'Counselling', movement:'Movement Record', settings:'Settings', 'teacher-diary': 'Teacher Diary' };
+const pageTitles = { dashboard:'Dashboard', students:'Students', directory:'Student Directory', 'add-student':'Add Student', import:'Bulk Import', observations:'Observations', counselling:'Counselling', movement:'Movement Record', settings:'Settings', 'teacher-diary': 'Teacher Diary', staff: 'Staff Management' };
 function toggleMobileMenu() {
   document.querySelector('.sidebar').classList.toggle('open');
 }
@@ -165,7 +179,77 @@ async function showSection(id, el) {
   if (id === 'settings')     await renderAcademicYears();
   if (id === 'teacher-diary') await renderTeacherDiaries();
   if (id === 'interactions') await renderInteractions();
+  if (id === 'staff') await renderStaff();
 }
+
+// ── Staff Management (Admin Only) ─────────────────────────────────────────────
+async function renderStaff() {
+  if (window.currentUserRole !== 'admin') return;
+  const allUsers = await nmGetUsers();
+  const staff = allUsers.filter(u => u.school_id === schoolId);
+  const tbody = document.getElementById('staff-tbody');
+  const empty = document.getElementById('staff-empty');
+
+  if (!staff.length) {
+    tbody.innerHTML = '';
+    empty.classList.remove('hidden');
+    return;
+  }
+  
+  empty.classList.add('hidden');
+  const roleBadge = (role) => {
+    if (role === 'super_admin') return '<span class="badge badge-pink">⭐ Super Admin</span>';
+    if (role === 'admin') return '<span class="badge badge-purple">🏫 Admin</span>';
+    return '<span class="badge badge-blue">👩‍🏫 Teacher</span>';
+  };
+
+  tbody.innerHTML = staff.map(u => `<tr>
+    <td data-label="Name"><div style="display:flex;align-items:center;gap:10px;">
+      <div class="avatar">${nmGetInitials(u.name)}</div>
+      <div><div style="font-weight:600;">${u.name || '(Unknown)'}</div></div>
+    </div></td>
+    <td data-label="Email">${u.email || '(Cloud User)'}</td>
+    <td data-label="Role">${roleBadge(u.role)}</td>
+    <td data-label="Created">${nmFmtDate(u.created_at)}</td>
+  </tr>`).join('');
+}
+
+function openStaffModal() {
+  document.getElementById('staff-name').value = '';
+  document.getElementById('staff-email').value = '';
+  document.getElementById('staff-password').value = '';
+  openModal('staff-modal');
+}
+
+async function saveStaff() {
+  const name = document.getElementById('staff-name').value.trim();
+  const email = document.getElementById('staff-email').value.trim();
+  const password = document.getElementById('staff-password').value;
+  
+  if (!name || !email || !password) {
+    return nmToast('Name, Email, and Password are required', 'error');
+  }
+  if (password.length < 6) {
+    return nmToast('Password must be at least 6 characters', 'error');
+  }
+
+  try {
+    await nmSignUp({
+      name, email, password, role: 'user',
+      schoolId,
+      schoolName: document.getElementById('sb-school-name').textContent,
+      udise: '', phone: '', address: ''
+    });
+    
+    nmToast('Staff member added successfully!', 'success');
+    closeModal('staff-modal');
+    await renderStaff();
+  } catch (err) {
+    console.error('Error adding staff:', err);
+    nmToast(err.message || 'Failed to add staff member', 'error');
+  }
+}
+
 function openModal(id)  { document.getElementById(id).classList.add('active'); }
 function closeModal(id) { document.getElementById(id).classList.remove('active'); }
 document.querySelectorAll('.modal-overlay').forEach(o => o.addEventListener('click', e => { if (e.target===o) o.classList.remove('active'); }));

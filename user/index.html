@@ -38,6 +38,9 @@
       <div class="nav-item" onclick="showSection('teacher-diary',this)"><span class="nav-item-icon">📓</span>Teacher Diary</div>
       <div class="nav-item" onclick="showSection('interactions',this)"><span class="nav-item-icon">📱</span>Parent Interactions</div>
       <div class="nav-section-label">Account</div>
+      <div class="nav-item" id="nav-staff" style="display:none;" onclick="showSection('staff',this)">
+        <span class="nav-item-icon">👥</span> Staff
+      </div>
       <div class="nav-item" data-section="settings" onclick="showSection('settings',this)">
         <span class="nav-item-icon">⚙️</span> Settings
       </div>
@@ -113,7 +116,7 @@
           <h2>🎓 Students</h2>
           <div class="action-btns" style="display:flex; gap:12px; flex-wrap:wrap;">
             <button class="btn btn-primary" onclick="showSection('add-student',document.querySelector('[onclick*=add-student]'));resetForm()">+ Add Student</button>
-            <button class="btn btn-primary" style="background:#6c63ff; border-color:#6c63ff;" onclick="openPromotionModal()">⬆ Promote Students</button>
+            <button id="promote-students-btn" class="btn btn-primary" style="background:#6c63ff; border-color:#6c63ff;" onclick="openPromotionModal()">⬆ Promote Students</button>
           </div>
         </div>
         <div class="filter-bar mb-20">
@@ -663,6 +666,28 @@
         </div>
       </div>
 
+      <!-- STAFF MANAGEMENT (Admin Only) -->
+      <div class="page-section" id="section-staff">
+        <div class="section-header">
+          <h2>👥 Staff Management</h2>
+          <div class="action-btns">
+            <button class="btn btn-primary" onclick="openStaffModal()">+ Add Staff</button>
+          </div>
+        </div>
+        <div class="card" style="padding:0;overflow:hidden;">
+          <div class="table-wrapper">
+            <table class="data-table">
+              <thead><tr><th>Name</th><th>Email</th><th>Role</th><th>Created</th></tr></thead>
+              <tbody id="staff-tbody"></tbody>
+            </table>
+          </div>
+          <div id="staff-empty" class="empty-state hidden">
+            <div class="empty-state-icon">👥</div>
+            <h3>No staff found</h3>
+          </div>
+        </div>
+      </div>
+
       <!-- SETTINGS -->
       <div class="page-section" id="section-settings">
         <div class="section-header">
@@ -671,11 +696,11 @@
         <div class="card mb-20" style="max-width: 600px;">
           <h3 style="margin-bottom:16px;">Academic Years</h3>
           <div id="ay-list" style="margin-bottom:16px; border:1px solid var(--clr-border); border-radius:var(--radius-sm); overflow:hidden;"></div>
-          <div style="display:flex; gap:12px;">
+          <div id="add-year-container" style="display:flex; gap:12px;">
             <input type="text" id="ay-name-new" class="form-control" placeholder="e.g. 2024-2025" style="max-width:200px;">
             <button class="btn btn-primary" onclick="addAcademicYear()">Add Year</button>
           </div>
-          <p style="font-size:0.75rem; color:var(--clr-text-3); margin-top:12px;">The active year is the default view for all school staff.</p>
+          <p id="add-year-helper" style="font-size:0.75rem; color:var(--clr-text-3); margin-top:12px;">The active year is the default view for all school staff.</p>
         </div>
 
         <div class="card mb-20" style="max-width: 600px;">
@@ -716,6 +741,35 @@
       </div>
     </div>
     <div class="modal-body" id="student-modal-body"></div>
+  </div>
+</div>
+
+<!-- STAFF MODAL -->
+<div class="modal-overlay" id="staff-modal">
+  <div class="modal">
+    <div class="modal-header">
+      <span class="modal-title">Add New Staff (Teacher)</span>
+      <button class="modal-close" onclick="closeModal('staff-modal')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group mb-16">
+        <label class="form-label">Full Name <span class="required">*</span></label>
+        <input type="text" id="staff-name" class="form-control" placeholder="Staff member name">
+      </div>
+      <div class="form-group mb-16">
+        <label class="form-label">Email <span class="required">*</span></label>
+        <input type="email" id="staff-email" class="form-control" placeholder="staff@school.com">
+      </div>
+      <div class="form-group mb-16">
+        <label class="form-label">Password <span class="required">*</span></label>
+        <input type="password" id="staff-password" class="form-control" placeholder="Min 6 characters">
+      </div>
+      <p style="font-size:0.8rem;color:var(--clr-text-3);">Note: This user will automatically be assigned the <strong>Teacher</strong> role and linked to your school.</p>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('staff-modal')">Cancel</button>
+      <button class="btn btn-primary" onclick="saveStaff()">Add Staff</button>
+    </div>
   </div>
 </div>
 
@@ -955,36 +1009,46 @@
   </div>
 </div>
 
-<!-- PROMOTION MODAL -->
-<div class="modal-overlay" id="promotion-modal">
-  <div class="modal">
-    <div class="modal-header">
-      <span class="modal-title">Bulk Student Promotion</span>
-      <button class="modal-close" onclick="closeModal('promotion-modal')">✕</button>
-    </div>
-    <div class="modal-body">
-      <div style="font-size:0.85rem; background:rgba(108,99,255,0.08); border:1px solid rgba(108,99,255,0.2); padding:12px; border-radius:var(--radius-sm); color:var(--clr-text); margin-bottom:20px;">
-        <strong>Info:</strong> Promotion will <strong>Clone</strong> selected students into a new academic year. Existing classes will automatically increment (e.g., Class 4 → Class 5).
+<!-- PROMOTION MODAL      <div style="font-size:0.85rem; background:rgba(108,99,255,0.08); border:1px solid rgba(108,99,255,0.2); padding:12px; border-radius:var(--radius-sm); color:var(--clr-text); margin-bottom:20px;">
+        <strong>Info:</strong> Select a target year and a source class. You can then pick specific students to promote. Their class will automatically increment (e.g., Class 4 ➔ Class 5).
       </div>
       
-      <div class="form-group mb-16">
-        <label class="form-label">Step 1: Target Academic Year <span class="required">*</span></label>
-        <select id="p-target-year" class="form-control">
-          <option value="">— Select Target Year —</option>
-        </select>
+      <div class="form-grid mb-16">
+        <div class="form-group">
+          <label class="form-label">Step 1: Target Academic Year <span class="required">*</span></label>
+          <select id="p-target-year" class="form-control">
+            <option value="">— Select Target Year —</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Step 2: Source Class (Current Year) <span class="required">*</span></label>
+          <select id="p-source-class" class="form-control" onchange="loadPromotionStudents()">
+            <option value="">— Select Class —</option>
+            <option value="1">Class 1</option><option value="2">Class 2</option><option value="3">Class 3</option>
+            <option value="4">Class 4</option><option value="5">Class 5</option><option value="6">Class 6</option>
+            <option value="7">Class 7</option><option value="8">Class 8</option><option value="9">Class 9</option>
+            <option value="10">Class 10</option><option value="11">Class 11</option><option value="12">Class 12</option>
+          </select>
+        </div>
       </div>
 
       <div class="form-group">
-        <label class="form-label">Step 2: Selection Summary</label>
-        <div id="p-selection-info" style="font-size:0.9rem; font-weight:600; padding:15px; background:var(--clr-surface2); border:1px solid var(--clr-border); border-radius:var(--radius-sm); border-left:4px solid #6c63ff;">
-          Loading...
+        <label class="form-label">Step 3: Select Students to Promote</label>
+        <div style="border:1px solid var(--clr-border); border-radius:var(--radius-sm); background:var(--clr-surface2);">
+          <div style="padding:10px 15px; border-bottom:1px solid var(--clr-border); display:flex; align-items:center; gap:8px;">
+            <input type="checkbox" id="p-select-all" style="width:16px;height:16px;cursor:pointer;" onchange="togglePromoteSelectAll(this)" disabled>
+            <label for="p-select-all" style="font-weight:600; font-size:0.9rem; cursor:pointer;">Select All / Deselect All</label>
+            <span id="p-selection-count" style="margin-left:auto; font-size:0.8rem; color:var(--clr-text-2); font-weight:600;">0 selected</span>
+          </div>
+          <div id="p-student-list" style="max-height:250px; overflow-y:auto; padding:10px 15px; display:flex; flex-direction:column; gap:8px;">
+            <div style="color:var(--clr-text-3); font-size:0.85rem; text-align:center; padding:20px;">Please select a source class first.</div>
+          </div>
         </div>
       </div>
     </div>
     <div class="modal-footer">
       <button class="btn btn-ghost" onclick="closeModal('promotion-modal')">Cancel</button>
-      <button class="btn btn-primary" onclick="confirmPromotion()" id="p-btn">Confirm Promotion (Clone)</button>
-    </div>
+      <button class="btn btn-primary" onclick="confirmPromotion()" id="p-btn" disabled>Confirm Promotion</button>
   </div>
 </div>
 
