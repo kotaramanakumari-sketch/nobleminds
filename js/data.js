@@ -520,7 +520,7 @@ async function nmGetStudentHistory(studentId) {
     ...mov.map(m => ({ ...m, type: 'movement', date: m.leave_date }))
   ];
   
-  return history.sort((a, b) => new Date(b.date) - new Date(a.date));
+  return history.sort((a, b) => new Date(a.date) - new Date(b.date));
 }
 
 // ─── USERS / PROFILES ────────────────────────────────────────────────────────

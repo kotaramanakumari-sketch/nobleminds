@@ -14,8 +14,12 @@ async function nmInitAuth() {
     const profile = await nmGetProfile(session.user.id);
     if (profile) {
       sessionStorage.setItem(NM_SESSION_KEY, JSON.stringify(profile));
+      return profile;
+    } else {
+      sessionStorage.removeItem(NM_SESSION_KEY);
     }
   }
+  return null;
 }
 
 /** Get profile for a specific user ID */
@@ -52,7 +56,7 @@ async function nmSignUp(data) {
     id: authData.user.id,
     name: name,
     email: email,
-    role: role || 'user',
+    role: 'user', // Force user role for security
     school_id: schoolId || null,
     school_name: schoolId ? schoolName : 'Pending Approval'
   }]);
@@ -95,12 +99,8 @@ async function nmLogin(email, password) {
     return { success: false, message: 'Profile not found. Please contact the Super Admin.' };
   }
 
-  if (profile) {
-    sessionStorage.setItem(NM_SESSION_KEY, JSON.stringify(profile));
-    return { success: true, user: profile };
-  }
-
-  return { success: false, message: 'Profile not found.' };
+  sessionStorage.setItem(NM_SESSION_KEY, JSON.stringify(profile));
+  return { success: true, user: profile };
 }
 
 /** Logout */
@@ -111,9 +111,7 @@ async function nmLogout() {
     console.error('Sign out error:', e);
   }
   sessionStorage.removeItem(NM_SESSION_KEY);
-  const inSub = window.location.pathname.includes('/admin/') ||
-                window.location.pathname.includes('/user/');
-  window.location.replace(inSub ? '../login.html' : 'login.html');
+  window.location.replace('/login.html');
 }
 
 /** Get current session (from sessionStorage or Supabase) */
@@ -126,11 +124,9 @@ function nmGetSession() {
  */
 function nmRequireAuth(requiredRole) {
   const session = nmGetSession();
-  const inSub = window.location.pathname.includes('/admin/') ||
-                window.location.pathname.includes('/user/');
                 
   if (!session) {
-    window.location.replace(inSub ? '../login.html' : 'login.html');
+    window.location.replace('/login.html');
     return null;
   }
   
@@ -138,9 +134,9 @@ function nmRequireAuth(requiredRole) {
     const roles = Array.isArray(requiredRole) ? requiredRole : [requiredRole];
     if (!roles.includes(session.role)) {
       if (session.role === 'super_admin') {
-        window.location.replace(inSub ? '../admin/index.html' : 'admin/index.html');
+        window.location.replace('/admin/index.html');
       } else {
-        window.location.replace(inSub ? '../user/index.html' : 'user/index.html');
+        window.location.replace('/user/index.html');
       }
       return null;
     }

@@ -1185,10 +1185,10 @@ async function viewStudent(id) {
         <div style="padding:14px 16px;background:var(--clr-surface);border-radius:var(--radius-sm);border:1px solid var(--clr-border);margin-bottom:20px;color:var(--clr-text-2);">${s.address||'—'}</div>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-bottom:20px;">
           <div><h4 style="margin-bottom:12px;">👨 Father</h4><div class="info-grid" style="grid-template-columns:1fr;">
-            ${infoItem('Name', s.father_name||s.fatherName)}${infoItem('Occupation', s.father_occupation||s.fatherOccupation)}${infoItem('Phone', s.father_phone||s.fatherPhone)}
+            ${infoItem('Name', s.father_name||s.fatherName)}${infoItem('Qualification', s.father_qualification||s.fatherQualification)}${infoItem('Occupation', s.father_occupation||s.fatherOccupation)}${infoItem('Phone', s.father_phone||s.fatherPhone)}
           </div></div>
           <div><h4 style="margin-bottom:12px;">👩 Mother</h4><div class="info-grid" style="grid-template-columns:1fr;">
-            ${infoItem('Name', s.mother_name||s.motherName)}${infoItem('Occupation', s.mother_occupation||s.motherOccupation)}${infoItem('Phone', s.mother_phone||s.motherPhone)}
+            ${infoItem('Name', s.mother_name||s.motherName)}${infoItem('Qualification', s.mother_qualification||s.motherQualification)}${infoItem('Occupation', s.mother_occupation||s.motherOccupation)}${infoItem('Phone', s.mother_phone||s.motherPhone)}
           </div></div>
         </div>
         <h4 style="margin-bottom:12px;">🏥 Medical History</h4>

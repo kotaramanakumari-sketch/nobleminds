@@ -51,13 +51,11 @@ function nmToBase64(file) {
 
 /** Parse CSV text into array of objects */
 function nmParseCSV(text) {
-  const lines = text.trim().split(/\r?\n/);
-  if (lines.length < 2) return [];
-  const headers = lines[0].split(',').map(h => h.trim().replace(/^"|"$/g, ''));
-  return lines.slice(1).map(line => {
-    const vals = line.split(',').map(v => v.trim().replace(/^"|"$/g, ''));
-    return headers.reduce((obj, h, i) => ({ ...obj, [h]: vals[i] || '' }), {});
-  });
+  if (!text || !text.trim()) return [];
+  const workbook = XLSX.read(text, { type: 'string' });
+  const firstSheetName = workbook.SheetNames[0];
+  const worksheet = workbook.Sheets[firstSheetName];
+  return XLSX.utils.sheet_to_json(worksheet, { defval: '' });
 }
 
 /** Download array of objects as Excel (.xlsx) */

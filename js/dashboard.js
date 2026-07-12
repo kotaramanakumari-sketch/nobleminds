@@ -18,7 +18,7 @@ async function init() {
   await nmInitAuth();
   const session = nmRequireAuth(['user', 'admin']);
   if (session) {
-    schoolId = session.school_id || session.school_id;
+    schoolId = session.school_id || session.schoolId;
     userId = session.id || session.user?.id;
     document.getElementById('user-name-disp').textContent = session.name;
     document.getElementById('user-avatar').textContent    = nmGetInitials(session.name);
