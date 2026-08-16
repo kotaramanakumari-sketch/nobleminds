@@ -28,6 +28,9 @@ async function renderMovements() {
     const s = students.find(x => x.id === (m.student_id || m.studentId)) || { full_name: 'Unknown', class:'?', section:'?', house:'?' };
     const isIncoming = !!(m.report_date || m.reportDate);
     const nameEsc = nmEscapeHTML(s.full_name || s.fullName || 'Unknown');
+    const classEsc = nmEscapeHTML(s.class || '?');
+    const secEsc = nmEscapeHTML(s.section || '—');
+    const houseEsc = nmEscapeHTML(s.house || '—');
     const reasonEsc = nmEscapeHTML(m.reason || '—');
     const escortEsc = nmEscapeHTML(m.escort_name || m.escortName || '—');
     const relEsc = nmEscapeHTML(m.relationship || '—');
@@ -39,7 +42,7 @@ async function renderMovements() {
     return `<tr>
       <td data-label="Student">
         <div style="font-weight:600;">${nameEsc}</div>
-        <div style="font-size:0.75rem;color:var(--clr-text-2);">Class ${s.class} · ${s.section} · ${s.house} House</div>
+        <div style="font-size:0.75rem;color:var(--clr-text-2);">Class ${classEsc} · ${secEsc} · ${houseEsc} House</div>
       </td>
       <td data-label="Leave Date"><div style="font-weight:600;color:var(--clr-primary);">${nmFmtDate(m.leave_date||m.leaveDate)}</div></td>
       <td data-label="Reason" style="max-width:200px;font-size:0.85rem;" title="${reasonEsc}">${reasonEsc}</td>
@@ -174,7 +177,9 @@ async function deleteMovementRecord(id) {
     await nmDeleteMovement(id);
     await renderMovements();
     nmToast('Record deleted','info');
+    return true;
   }
+  return false;
 }
 
 async function exportMovements() {

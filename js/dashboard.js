@@ -278,8 +278,8 @@ async function renderDashboard() {
     document.getElementById('dash-school-label').innerHTML = `<span style="color:#d9534f;font-weight:600;">⚠ Account Not Linked</span> &nbsp;&mdash;&nbsp; Your account has not been linked to a school. Please contact the Super Admin.`;
     document.getElementById('ds-total').textContent = '0';
     document.getElementById('ds-sessions').textContent = '0';
-    document.getElementById('ds-followups').textContent = '0';
-    document.getElementById('ds-activities').textContent = '0';
+    document.getElementById('ds-observations').textContent = '0';
+    document.getElementById('ds-diaries').textContent = '0';
     document.getElementById('recent-table').innerHTML = '<div class="empty-state" style="padding:32px;"><div class="empty-state-icon">🚫</div><h3>No School Assigned</h3><p>Data will appear here once an admin assigns you to a school.</p></div>';
     document.getElementById('recent-cns-list').innerHTML = '<div class="empty-state" style="padding:20px;"><p>No records found.</p></div>';
     document.getElementById('nb-count').textContent = '0';
@@ -289,11 +289,13 @@ async function renderDashboard() {
   const stats = await nmGetStats(schoolId, currentYearId);
   const students = (await nmGetStudents(schoolId, currentYearId)) || [];
   const counselling = (await nmGetCounselling(schoolId)) || [];
+  const observations = (await nmGetObservations(schoolId)) || [];
+  const diaries = (await nmGetTeacherDiaries(null, schoolId)) || [];
   
-  document.getElementById('ds-total').textContent    = stats.total;
-  document.getElementById('ds-sessions').textContent = stats.counselling.total;
-  document.getElementById('ds-followups').textContent = stats.counselling.followUps;
-  document.getElementById('ds-activities').textContent = stats.total ? students.filter(s=>s.ncc||s.nss||s.sgfi||s.scouts).length : 0;
+  document.getElementById('ds-total').textContent        = stats.total;
+  document.getElementById('ds-sessions').textContent     = stats.counselling.total;
+  document.getElementById('ds-observations').textContent = observations.length;
+  document.getElementById('ds-diaries').textContent      = diaries.length;
   
   document.getElementById('nb-count').textContent    = stats.total;
   document.getElementById('dash-school-label').textContent = `School: ${document.getElementById('sb-school-name').textContent} · ${stats.total} students enrolled`;
@@ -304,9 +306,10 @@ async function renderDashboard() {
     '<div class="empty-state" style="padding:32px;"><div class="empty-state-icon">🎓</div><h3>No students yet</h3><p>Add your first student to get started.</p></div>' :
     `<div class="table-wrapper"><table class="data-table"><thead><tr><th>Student</th><th>Class</th><th>Added</th><th></th></tr></thead><tbody>${recent.map(s => {
       const nameEsc = nmEscapeHTML(s.full_name || s.fullName || '—');
+      const classEsc = nmEscapeHTML(s.class || '?');
       return `<tr>
-      <td data-label="Student"><div style="display:flex;align-items:center;gap:10px;">${s.photo?`<img src="${s.photo}" style="width:30px;height:30px;border-radius:8px;object-fit:cover;">`:`<div class="avatar" style="width:30px;height:30px;font-size:0.7rem;">${nameEsc[0]}</div>`}<span style="font-weight:600;">${nameEsc}</span></div></td>
-      <td data-label="Class"><span class="badge badge-purple">Class ${s.class}</span></td>
+      <td data-label="Student"><div style="display:flex;align-items:center;gap:10px;">${s.photo?`<img src="${s.photo}" loading="lazy" decoding="async" style="width:30px;height:30px;border-radius:8px;object-fit:cover;">`:`<div class="avatar" style="width:30px;height:30px;font-size:0.7rem;">${nameEsc[0]}</div>`}<span style="font-weight:600;">${nameEsc}</span></div></td>
+      <td data-label="Class"><span class="badge badge-purple">Class ${classEsc}</span></td>
       <td data-label="Added">${nmFmtDate(s.created_at||s.createdAt)}</td>
       <td data-label="Action"><button class="btn btn-ghost btn-sm" onclick="viewStudent('${s.id}')">👁 View</button></td>
     </tr>`; }).join('')}</tbody></table></div>`;

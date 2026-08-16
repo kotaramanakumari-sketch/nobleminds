@@ -24,12 +24,17 @@ async function renderStudents() {
   tbody.innerHTML = list.map(s => {
     const nameEsc = nmEscapeHTML(s.full_name || s.fullName || '—');
     const admEsc = nmEscapeHTML(s.admission_number || s.admissionNumber || '');
+    const classEsc = nmEscapeHTML(s.class || '?');
+    const secEsc = nmEscapeHTML(s.section || '—');
+    const houseEsc = nmEscapeHTML(s.house || '—');
+    const phoneEsc = nmEscapeHTML(s.phone || '—');
+
     return `<tr>
-    <td data-label="Student"><div style="display:flex;align-items:center;gap:10px;cursor:pointer;" onclick="viewStudent('${s.id}')">${s.photo?`<img src="${s.photo}" style="width:34px;height:34px;border-radius:8px;object-fit:cover;">`:`<div class="avatar" style="width:34px;height:34px;font-size:0.75rem;">${(s.full_name||s.fullName||'?')[0]}</div>`}<div><div style="font-weight:600;color:var(--clr-primary);">${nameEsc}</div><div style="font-size:0.72rem;color:var(--clr-text-2);">${admEsc}</div></div></div></td>
-    <td data-label="Class"><span class="badge badge-purple">Class ${s.class||'?'}</span></td>
-    <td data-label="Section">${s.section||'—'}</td>
-    <td data-label="House"><span class="badge badge-gray">${s.house||'—'}</span></td>
-    <td data-label="Phone">${s.phone||'—'}</td>
+    <td data-label="Student"><div style="display:flex;align-items:center;gap:10px;cursor:pointer;" onclick="viewStudent('${s.id}')">${s.photo?`<img src="${s.photo}" loading="lazy" decoding="async" style="width:34px;height:34px;border-radius:8px;object-fit:cover;">`:`<div class="avatar" style="width:34px;height:34px;font-size:0.75rem;">${(s.full_name||s.fullName||'?')[0]}</div>`}<div><div style="font-weight:600;color:var(--clr-primary);">${nameEsc}</div><div style="font-size:0.72rem;color:var(--clr-text-2);">${admEsc}</div></div></div></td>
+    <td data-label="Class"><span class="badge badge-purple">Class ${classEsc}</span></td>
+    <td data-label="Section">${secEsc}</td>
+    <td data-label="House"><span class="badge badge-gray">${houseEsc}</span></td>
+    <td data-label="Phone">${phoneEsc}</td>
     <td data-label="Actions"><div style="display:flex;gap:4px;">
       <button class="btn btn-ghost btn-sm" onclick="editStudent('${s.id}')" title="Edit">✏️ Edit</button>
       ${window.currentUserRole === 'admin' ? `<button class="btn btn-danger btn-sm" onclick="deleteStudentRow('${s.id}')" title="Delete">🗑 Delete</button>` : ''}
@@ -174,12 +179,12 @@ async function viewStudent(id) {
 
   document.getElementById('student-modal-body').innerHTML = `
     <div class="profile-header">
-      <div class="profile-photo">${s.photo?`<img src="${s.photo}" style="width:100%;height:100%;border-radius:inherit;object-fit:cover;">`:'<span style="font-size:2.5rem;">👤</span>'}</div>
+      <div class="profile-photo">${s.photo?`<img src="${s.photo}" loading="lazy" decoding="async" style="width:100%;height:100%;border-radius:inherit;object-fit:cover;">`:'<span style="font-size:2.5rem;">👤</span>'}</div>
       <div style="flex:1;">
         <div style="display:flex; justify-content:space-between; align-items:flex-start; gap: 16px;">
           <div>
             <div class="profile-name">${nameEsc}</div>
-            <div style="color:var(--clr-text-2);font-size:0.88rem;">${admEsc} · ID: ${s.id.slice(0,8)}</div>
+            <div style="color:var(--clr-text-2);font-size:0.88rem;">${admEsc} · ID: ${String(s.id).slice(0,8)}</div>
           </div>
         </div>
         <div class="profile-meta">
@@ -310,7 +315,7 @@ async function viewStudent(id) {
   }
   openModal('student-modal');
 }
-function iI(k,v){return`<div class="info-item"><div class="key">${k}</div><div class="val">${v||'—'}</div></div>`;}
+function iI(k,v){return`<div class="info-item"><div class="key">${nmEscapeHTML(k||'')}</div><div class="val">${nmEscapeHTML(v||'—')}</div></div>`;}
 
 // ── Quick Actions from Profile ────────────────────────────────────────────────
 async function quickAddObservation(id) {
@@ -468,12 +473,12 @@ function nextStep(n) {
 }
 
 function buildSummary() {
-  const g = id => document.getElementById(id)?.value||'';
-  const gender = document.querySelector('input[name="gender"]:checked')?.value||'—';
+  const g = id => nmEscapeHTML(document.getElementById(id)?.value||'');
+  const gender = nmEscapeHTML(document.querySelector('input[name="gender"]:checked')?.value||'—');
   const acts = ['ncc','nss','sgfi','scouts'].filter(a=>document.getElementById('f-'+a)?.checked).join(', ')||'None';
   document.getElementById('form-summary').innerHTML = `
     <b>Name:</b> ${g('f-name')} &nbsp;|&nbsp; <b>Adm No:</b> ${g('f-adm')} &nbsp;|&nbsp; <b>Class:</b> ${g('f-class-val')}-${g('f-section-val')}<br>
-    <b>DOB:</b> ${nmFmtDate(g('f-dob'))} &nbsp;|&nbsp; <b>Age:</b> ${g('f-age')} &nbsp;|&nbsp; <b>Gender:</b> ${gender} &nbsp;|&nbsp; <b>House:</b> ${g('f-house')||'—'}<br>
+    <b>DOB:</b> ${nmFmtDate(document.getElementById('f-dob')?.value||'')} &nbsp;|&nbsp; <b>Age:</b> ${g('f-age')} &nbsp;|&nbsp; <b>Gender:</b> ${gender} &nbsp;|&nbsp; <b>House:</b> ${g('f-house')||'—'}<br>
     <b>Religion:</b> ${g('f-religion')||'—'} &nbsp;|&nbsp; <b>Caste:</b> ${g('f-caste')||'—'}<br>
     <b>Father:</b> ${g('f-fname')||'—'} (${g('f-focc')||'—'}) &nbsp;|&nbsp; <b>Mother:</b> ${g('f-mname')||'—'} (${g('f-mocc')||'—'})<br>
     <b>Activities:</b> ${acts}`;
@@ -700,13 +705,14 @@ if (dz) {
   dz.addEventListener('drop', e => { e.preventDefault(); dz.classList.remove('drag-over'); const f = e.dataTransfer.files[0]; if(f) { const inp=document.getElementById('excel-file'); const dt=new DataTransfer(); dt.items.add(f); inp.files=dt.files; handleExcelUpload(inp); } });
 }
 async function deleteTimelineRecord(type, id) {
+  let confirmed = false;
   if (type === 'observation') {
-    if (typeof deleteObservationRecord === 'function') await deleteObservationRecord(id);
+    if (typeof deleteObservationRecord === 'function') confirmed = await deleteObservationRecord(id);
   } else if (type === 'counselling') {
-    if (typeof deleteCounsellingRecord === 'function') await deleteCounsellingRecord(id);
+    if (typeof deleteCounsellingRecord === 'function') confirmed = await deleteCounsellingRecord(id);
   } else if (type === 'movement') {
-    if (typeof deleteMovementRecord === 'function') await deleteMovementRecord(id);
+    if (typeof deleteMovementRecord === 'function') confirmed = await deleteMovementRecord(id);
   }
-  // Refresh the profile view
-  if (currentStudentId) await viewStudent(currentStudentId);
+  // Refresh the profile view only when the user actually confirmed the delete
+  if (confirmed && currentStudentId) await viewStudent(currentStudentId);
 }

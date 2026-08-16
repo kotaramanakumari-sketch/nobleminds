@@ -34,6 +34,8 @@ async function renderInteractions() {
     const summaryEsc = nmEscapeHTML(i.discussion_summary || '—');
     const nameEsc  = nmEscapeHTML(s.full_name || s.fullName || 'Unknown');
     const admEsc   = nmEscapeHTML(s.admission_number || s.admissionNumber || '');
+    const classEsc = nmEscapeHTML(s.class || '?');
+    const secEsc   = nmEscapeHTML(s.section || '');
 
     let modeBadgeClass = 'badge-gray';
     if(modeEsc === 'Mobile' || modeEsc === 'Message') modeBadgeClass = 'badge-blue';
@@ -44,7 +46,7 @@ async function renderInteractions() {
       <td data-label="Date">${nmFmtDate(dateVal)}</td>
       <td data-label="Student">
         <div style="font-weight:600;color:var(--clr-primary);cursor:pointer;" onclick="viewStudent('${s.id}')">${nameEsc}</div>
-        <div style="font-size:0.7rem;color:var(--clr-text-2);">${admEsc} · Class ${s.class} ${s.section||''}</div>
+        <div style="font-size:0.7rem;color:var(--clr-text-2);">${admEsc} · Class ${classEsc} ${secEsc}</div>
       </td>
       <td data-label="Parent / Guardian">
         <div style="font-weight:500;">${parentEsc}</div>
@@ -130,7 +132,9 @@ async function deleteInteractionRecord(id) {
     await nmDeleteInteraction(id);
     await renderInteractions();
     nmToast('Record deleted','info');
+    return true;
   }
+  return false;
 }
 
 async function exportInteractions() {

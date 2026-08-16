@@ -81,8 +81,8 @@ async function nmDownloadTablePDF(btn, docTitle = 'Table Records', fileSuffix = 
       <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:2px solid #6c63ff; padding-bottom:15px; margin-bottom:20px;">
         <div style="display:flex; align-items:center; gap:12px;">
           <div>
-            <h1 style="margin:0; font-size:1.4rem; color:#1e1e2d;">${docTitle}</h1>
-            <p style="margin:2px 0 0 0; font-size:0.8rem; color:#666;">${schoolName}</p>
+            <h1 style="margin:0; font-size:1.4rem; color:#1e1e2d;">${nmEscapeHTML(docTitle)}</h1>
+            <p style="margin:2px 0 0 0; font-size:0.8rem; color:#666;">${nmEscapeHTML(schoolName)}</p>
           </div>
         </div>
         <div style="text-align:right; font-size:0.75rem; color:#666;">

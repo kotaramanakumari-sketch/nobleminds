@@ -34,22 +34,29 @@ async function renderTeacherDiaries() {
   tbody.innerHTML = list.map(d => {
     const topicEsc = nmEscapeHTML(d.topic_discussed || '—');
     const classEsc = nmEscapeHTML(d.class || '—');
-    const secEsc = nmEscapeHTML(d.section || '—');
+    const secEsc   = nmEscapeHTML(d.section || '—');
+    const periodEsc = nmEscapeHTML(String(d.period || '—'));
+    const pEsc     = nmEscapeHTML(String(d.present ?? '—'));
+    const lEsc     = nmEscapeHTML(String(d.leave ?? '—'));
+    const odEsc    = nmEscapeHTML(String(d.on_duty ?? '—'));
+    const nrEsc    = nmEscapeHTML(String(d.not_reported ?? '—'));
+    const totEsc   = nmEscapeHTML(String(d.total_students ?? '—'));
+
     return `<tr>
       <td data-label="Date"><div style="font-weight:600;color:var(--clr-primary);">${nmFmtDate(d.diary_date)}</div></td>
-      <td data-label="Period"><span class="badge badge-purple">${d.period}</span></td>
+      <td data-label="Period"><span class="badge badge-purple">${periodEsc}</span></td>
       <td data-label="Class">
         <div style="font-weight:600;">Class ${classEsc}</div>
         <div style="font-size:0.75rem;color:var(--clr-text-2);">Section ${secEsc}</div>
       </td>
       <td data-label="Attendance">
         <div style="font-size:0.8rem; display:grid; grid-template-columns:1fr 1fr; gap:4px;">
-          <div><span style="color:var(--clr-success);">■</span> P: ${d.present}</div>
-          <div><span style="color:var(--clr-danger);">■</span> L: ${d.leave}</div>
-          <div><span style="color:var(--clr-amber);">■</span> OD: ${d.on_duty}</div>
-          <div><span style="color:var(--clr-text-3);">■</span> NR: ${d.not_reported}</div>
+          <div><span style="color:var(--clr-success);">■</span> P: ${pEsc}</div>
+          <div><span style="color:var(--clr-danger);">■</span> L: ${lEsc}</div>
+          <div><span style="color:var(--clr-amber);">■</span> OD: ${odEsc}</div>
+          <div><span style="color:var(--clr-text-3);">■</span> NR: ${nrEsc}</div>
         </div>
-        <div style="font-size:0.75rem;font-weight:700;margin-top:4px;">Total: ${d.total_students}</div>
+        <div style="font-size:0.75rem;font-weight:700;margin-top:4px;">Total: ${totEsc}</div>
       </td>
       <td data-label="Topic" style="max-width:200px;font-size:0.85rem;" title="${topicEsc}">${topicEsc}</td>
       <td data-label="Actions">
@@ -63,10 +70,10 @@ async function renderTeacherDiaries() {
 }
 
 function updateDiaryTotal() {
-  const p = parseInt(document.getElementById('d-present').value) || 0;
-  const l = parseInt(document.getElementById('d-leave').value) || 0;
-  const od = parseInt(document.getElementById('d-onduty').value) || 0;
-  const nr = parseInt(document.getElementById('d-notreported').value) || 0;
+  const p = Math.max(0, parseInt(document.getElementById('d-present')?.value) || 0);
+  const l = Math.max(0, parseInt(document.getElementById('d-leave')?.value) || 0);
+  const od = Math.max(0, parseInt(document.getElementById('d-onduty')?.value) || 0);
+  const nr = Math.max(0, parseInt(document.getElementById('d-notreported')?.value) || 0);
   const totalEl = document.getElementById('d-total-calc');
   if (totalEl) totalEl.textContent = p + l + od + nr;
 }
@@ -124,10 +131,10 @@ async function saveTeacherDiary() {
   const period = document.getElementById('d-period').value;
   const cls = document.getElementById('d-class').value.trim();
   const sec = document.getElementById('d-section').value.trim();
-  const present = parseInt(document.getElementById('d-present').value) || 0;
-  const leave = parseInt(document.getElementById('d-leave').value) || 0;
-  const onduty = parseInt(document.getElementById('d-onduty').value) || 0;
-  const notreported = parseInt(document.getElementById('d-notreported').value) || 0;
+  const present = Math.max(0, parseInt(document.getElementById('d-present').value) || 0);
+  const leave = Math.max(0, parseInt(document.getElementById('d-leave').value) || 0);
+  const onduty = Math.max(0, parseInt(document.getElementById('d-onduty').value) || 0);
+  const notreported = Math.max(0, parseInt(document.getElementById('d-notreported').value) || 0);
   const topic = document.getElementById('d-topic').value.trim();
 
   if (!date || !period || !cls || !sec || !topic) {
@@ -165,7 +172,9 @@ async function deleteTeacherDiary(id) {
     await nmDeleteTeacherDiary(id);
     await renderTeacherDiaries();
     nmToast('Entry deleted', 'info');
+    return true;
   }
+  return false;
 }
 
 async function exportTeacherDiaries() {

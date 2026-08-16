@@ -83,10 +83,6 @@ async function nmSetDefaultYear(yearId, schoolId) {
   if (error) throw error;
 }
 
-async function nmDeleteMovement(id) {
-  const { error } = await sb.from('movements').delete().eq('id', id);
-  if (error) throw error;
-}
 
 // ─── SCHOOLS ──────────────────────────────────────────────────────────────────
 async function nmGetSchools(force = false) {

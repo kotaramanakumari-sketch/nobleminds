@@ -27,8 +27,13 @@ async function renderCounselling() {
     const dateVal = c.record_date || c.date || '';
     const issueEsc = nmEscapeHTML(c.issue || '—');
     const detailsEsc = nmEscapeHTML(c.counselling || c.details || c.counselling_notes || '—');
-    const nameEsc  = nmEscapeHTML(s.full_name || s.fullName || 'Unknown');
-    const admEsc   = nmEscapeHTML(s.admission_number || s.admissionNumber || '');
+    const nameEsc    = nmEscapeHTML(s.full_name || s.fullName || 'Unknown');
+    const admEsc     = nmEscapeHTML(s.admission_number || s.admissionNumber || '');
+    const classEsc   = nmEscapeHTML(s.class || '?');
+    const secEsc     = nmEscapeHTML(s.section || '—');
+    const houseEsc   = nmEscapeHTML(s.house || '—');
+    const statusText = c.follow_up || c.followUp ? 'Follow-up' : c.status || 'Resolved';
+    const statusEsc  = nmEscapeHTML(statusText);
 
     return `<tr>
       <td data-label="Date">${nmFmtDate(dateVal)}</td>
@@ -36,12 +41,12 @@ async function renderCounselling() {
         <div style="font-weight:600;color:var(--clr-primary);cursor:pointer;" onclick="viewStudent('${s.id}')">${nameEsc}</div>
         <div style="font-size:0.7rem;color:var(--clr-text-2);">${admEsc}</div>
       </td>
-      <td data-label="Class"><span class="badge badge-purple">Class ${s.class}</span></td>
-      <td data-label="Section">${s.section||'—'}</td>
-      <td data-label="House"><span class="badge badge-gray">${s.house||'—'}</span></td>
+      <td data-label="Class"><span class="badge badge-purple">Class ${classEsc}</span></td>
+      <td data-label="Section">${secEsc}</td>
+      <td data-label="House"><span class="badge badge-gray">${houseEsc}</span></td>
       <td data-label="Issue" style="max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${issueEsc}">${issueEsc}</td>
       <td data-label="Details" style="max-width:280px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${detailsEsc}">${detailsEsc}</td>
-      <td data-label="Status"><span class="status-badge ${c.follow_up||c.followUp ? 'status-followup' : 'status-resolved'}">${c.follow_up||c.followUp ? 'Follow-up' : c.status||'Resolved'}</span></td>
+      <td data-label="Status"><span class="status-badge ${c.follow_up||c.followUp ? 'status-followup' : 'status-resolved'}">${statusEsc}</span></td>
       <td data-label="Action">
         <div style="display:flex;gap:4px;">
           <button class="btn btn-ghost btn-sm" onclick="openCounsellingModal('${c.id}')">✏️ Edit</button>
@@ -116,7 +121,9 @@ async function deleteCounsellingRecord(id) {
     await nmDeleteCounselling(id);
     await renderCounselling();
     nmToast('Record deleted','info');
+    return true;
   }
+  return false;
 }
 
 async function exportCounselling() {

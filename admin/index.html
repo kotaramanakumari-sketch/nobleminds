@@ -661,20 +661,27 @@ async function renderSupportQueries() {
     tbody.innerHTML = ''; empty.classList.remove('hidden'); return;
   }
   empty.classList.add('hidden');
-  tbody.innerHTML = queries.map(q => `<tr>
+  tbody.innerHTML = queries.map(q => {
+    const schoolEsc = nmEscapeHTML(q.school_name || '—');
+    const userEsc   = nmEscapeHTML(q.user_name || '—');
+    const emailEsc  = nmEscapeHTML(q.email || '');
+    const phoneEsc  = nmEscapeHTML(q.phone || '');
+    const queryEsc  = nmEscapeHTML(q.query || '—');
+
+    return `<tr>
     <td data-label="School/User">
-      <div style="font-weight:600;">${q.school_name || '—'}</div>
-      <div style="font-size:0.75rem; color:var(--clr-text-2);">${q.user_name || '—'}</div>
-      <div style="font-size:0.75rem; color:var(--clr-text-3);">${q.email || ''} ${q.phone || ''}</div>
+      <div style="font-weight:600;">${schoolEsc}</div>
+      <div style="font-size:0.75rem; color:var(--clr-text-2);">${userEsc}</div>
+      <div style="font-size:0.75rem; color:var(--clr-text-3);">${emailEsc} ${phoneEsc}</div>
     </td>
-    <td data-label="Query"><div style="max-width:300px; white-space:normal; font-size:0.85rem;">${q.query}</div></td>
+    <td data-label="Query"><div style="max-width:300px; white-space:normal; font-size:0.85rem;">${queryEsc}</div></td>
     <td data-label="Date">${nmFmtDate(q.created_at)}</td>
     <td data-label="Status"><span class="badge ${q.status === 'pending' ? 'badge-amber' : 'badge-green'}">${q.status}</span></td>
     <td data-label="Actions"><div class="action-btns">
       ${q.status === 'pending' ? `<button class="btn btn-success btn-sm" onclick="resolveQuery('${q.id}')">✓ Resolve</button>` : ''}
       <button class="btn btn-danger btn-sm btn-icon" title="Delete" onclick="deleteQuery('${q.id}')">🗑</button>
     </div></td>
-  </tr>`).join('');
+  </tr>`; }).join('');
 }
 
 async function resolveQuery(id) {
@@ -713,18 +720,25 @@ async function renderRequests() {
     tbody.innerHTML = ''; empty.classList.remove('hidden'); return;
   }
   empty.classList.add('hidden');
-  tbody.innerHTML = reqs.map(r => `<tr>
-    <td data-label="UDISE"><span class="badge badge-purple">${r.udise || '—'}</span></td>
-    <td data-label="School"><div style="font-weight:600;">${r.school_name}</div></td>
-    <td data-label="Admin">${r.admin_name}</td>
-    <td data-label="Email">${r.email}</td>
-    <td data-label="Phone">${r.phone}</td>
+  tbody.innerHTML = reqs.map(r => {
+    const udiseEsc  = nmEscapeHTML(r.udise || '—');
+    const schoolEsc = nmEscapeHTML(r.school_name || '—');
+    const adminEsc  = nmEscapeHTML(r.admin_name || '—');
+    const emailEsc  = nmEscapeHTML(r.email || '—');
+    const phoneEsc  = nmEscapeHTML(r.phone || '—');
+
+    return `<tr>
+    <td data-label="UDISE"><span class="badge badge-purple">${udiseEsc}</span></td>
+    <td data-label="School"><div style="font-weight:600;">${schoolEsc}</div></td>
+    <td data-label="Admin">${adminEsc}</td>
+    <td data-label="Email">${emailEsc}</td>
+    <td data-label="Phone">${phoneEsc}</td>
     <td data-label="Date">${nmFmtDate(r.created_at)}</td>
     <td data-label="Actions"><div class="action-btns">
       <button class="btn btn-success btn-sm" onclick="approveRequest('${r.id}')">✓ Approve</button>
       <button class="btn btn-ghost btn-sm" onclick="rejectRequest('${r.id}')">✕ Reject</button>
     </div></td>
-  </tr>`).join('');
+  </tr>`; }).join('');
 }
 
 async function approveRequest(id) {
@@ -784,14 +798,17 @@ async function renderDashboard() {
     const cnt = stds.length;
     const pct = stats.total ? Math.round(cnt / stats.total * 100) : 0;
     
+    const sNameEsc = nmEscapeHTML(s.name || '—');
+    const sCodeEsc = nmEscapeHTML(s.code || 'SC');
+    const sAddrEsc = nmEscapeHTML(s.address || 'No address');
     schoolLabels.push(s.name);
     schoolCounts.push(cnt);
 
     html += `<div style="padding:14px 20px;border-bottom:1px solid var(--clr-border);display:flex;align-items:center;gap:16px;">
-      <div class="school-logo-circle">${(s.code || 'SC').slice(0,2)}</div>
+      <div class="school-logo-circle">${sCodeEsc.slice(0,2)}</div>
       <div style="flex:1;min-width:0;">
-        <div style="font-weight:600;font-size:0.9rem;">${s.name}</div>
-        <div style="font-size:0.78rem;color:var(--clr-text-2);">${s.code || 'CODE'} · ${s.address || 'No address'}</div>
+        <div style="font-weight:600;font-size:0.9rem;">${sNameEsc}</div>
+        <div style="font-size:0.78rem;color:var(--clr-text-2);">${sCodeEsc} · ${sAddrEsc}</div>
         <div style="margin-top:6px;height:4px;background:var(--clr-surface2);border-radius:2px;overflow:hidden;">
           <div style="width:${pct}%;height:100%;background:linear-gradient(90deg,var(--clr-primary),var(--clr-accent));border-radius:2px;"></div>
         </div>
@@ -880,17 +897,24 @@ async function renderSchools() {
   for (const s of schools) {
     const stds = await nmGetStudents(s.id);
     const cnt = stds.length;
+    const nameEsc      = nmEscapeHTML(s.name || '—');
+    const addrEsc      = nmEscapeHTML(s.address || '');
+    const codeEsc      = nmEscapeHTML(s.code || 'SC');
+    const udiseCodeEsc = nmEscapeHTML(s.udise || s.code || '—');
+    const prinEsc      = nmEscapeHTML(s.principal || '—');
+    const phoneEsc     = nmEscapeHTML(s.phone || '—');
+
     html += `<tr>
       <td data-label="School"><div style="display:flex;align-items:center;gap:12px;">
-        <div class="school-logo-circle">${(s.code||'SC').slice(0,2)}</div>
-        <div><div style="font-weight:600;">${s.name}</div><div style="font-size:0.75rem;color:var(--clr-text-2);">${s.address||''}</div></div>
+        <div class="school-logo-circle">${codeEsc.slice(0,2)}</div>
+        <div><div style="font-weight:600;">${nameEsc}</div><div style="font-size:0.75rem;color:var(--clr-text-2);">${addrEsc}</div></div>
       </div></td>
-      <td data-label="Code"><span class="badge badge-purple">${s.udise || s.code || '—'}</span></td>
-      <td data-label="Principal">${s.principal||'—'}</td>
-      <td data-label="Phone">${s.phone||'—'}</td>
+      <td data-label="Code"><span class="badge badge-purple">${udiseCodeEsc}</span></td>
+      <td data-label="Principal">${prinEsc}</td>
+      <td data-label="Phone">${phoneEsc}</td>
       <td data-label="Students"><span class="badge badge-green">${cnt}</span></td>
       <td data-label="Actions"><div class="action-btns">
-        <button class="btn btn-ghost btn-sm btn-icon" title="Edit" onclick='openSchoolModal(${JSON.stringify(s).replace(/'/g, "&apos;")})'>✏️</button>
+        <button class="btn btn-ghost btn-sm btn-icon" title="Edit" onclick="openSchoolModal('${s.id}')">✏️</button>
         <button class="btn btn-danger btn-sm btn-icon" title="Delete" onclick="deleteSchool('${s.id}')">🗑</button>
       </div></td>
     </tr>`;
@@ -898,8 +922,15 @@ async function renderSchools() {
   tbody.innerHTML = html;
 }
 
-function openSchoolModal(school) {
-  school = school || {};
+async function openSchoolModal(schoolOrId) {
+  let school = {};
+  if (typeof schoolOrId === 'string') {
+    const schools = await nmGetSchools();
+    school = schools.find(s => s.id === schoolOrId) || {};
+  } else if (typeof schoolOrId === 'object' && schoolOrId !== null) {
+    school = schoolOrId;
+  }
+
   document.getElementById('school-modal-title').textContent = school.id ? 'Edit School' : 'New School Registration';
   document.getElementById('school-id').value        = school.id || '';
   document.getElementById('school-udise').value     = school.udise || '';
@@ -946,7 +977,7 @@ async function deleteSchool(id) {
 // ─── USERS ────────────────────────────────────────────────────────────────────
 async function populateSchoolDropdowns() {
   const schools = await nmGetSchools();
-  const opts = schools.map(s => `<option value="${s.id}">${s.name}</option>`).join('');
+  const opts = schools.map(s => `<option value="${s.id}">${nmEscapeHTML(s.name)}</option>`).join('');
   
   const selects = ['user-school', 'user-school-filter', 'view-school-select'];
   selects.forEach(id => {
@@ -983,26 +1014,37 @@ async function renderUsers() {
     if (role === 'admin') return '<span class="badge badge-purple">🏫 Admin</span>';
     return '<span class="badge badge-blue">👩‍🏫 Teacher</span>';
   };
-  tbody.innerHTML = filtered.map(u => `<tr>
+  tbody.innerHTML = filtered.map(u => {
+    const nameEsc   = nmEscapeHTML(u.name || '(Unknown)');
+    const emailEsc  = nmEscapeHTML(u.email || '(Cloud User)');
+    const schoolEsc = u.school_name ? nmEscapeHTML(u.school_name) : null;
+
+    return `<tr>
     <td data-label="User"><div style="display:flex;align-items:center;gap:10px;">
       <div class="avatar">${nmGetInitials(u.name)}</div>
-      <div><div style="font-weight:600;">${u.name || '(Unknown)'}</div></div>
+      <div><div style="font-weight:600;">${nameEsc}</div></div>
     </div></td>
-    <td data-label="Email">${u.email || '(Cloud User)'}</td>
+    <td data-label="Email">${emailEsc}</td>
     <td data-label="Role">${roleBadge(u.role)}</td>
-    <td data-label="School">${u.school_name ? `<span class="badge badge-green">${u.school_name}</span>` : '—'}</td>
+    <td data-label="School">${schoolEsc ? `<span class="badge badge-green">${schoolEsc}</span>` : '—'}</td>
     <td data-label="Created">${nmFmtDate(u.created_at)}</td>
     <td data-label="Actions"><div class="action-btns">
-      ${u.role !== 'super_admin' ? `<button class="btn btn-ghost btn-sm btn-icon" title="Edit" onclick='openUserModal(${JSON.stringify(u).replace(/'/g, "&apos;")})'>✏️</button>` : ''}
+      ${u.role !== 'super_admin' ? `<button class="btn btn-ghost btn-sm btn-icon" title="Edit" onclick="openUserModal('${u.id}')">✏️</button>` : ''}
       ${u.role !== 'super_admin' ? `<button class="btn btn-danger btn-sm btn-icon" title="Delete" onclick="deleteUser('${u.id}')">🗑</button>` : '<span style="color:var(--clr-text-3);font-size:0.75rem;">Protected</span>'}
     </div></td>
-  </tr>`).join('');
+  </tr>`; }).join('');
 }
 
 
-async function openUserModal(user) {
+async function openUserModal(userOrId) {
   await populateSchoolDropdowns();
-  user = user || {};
+  let user = {};
+  if (typeof userOrId === 'string') {
+    const users = await nmGetUsers();
+    user = users.find(u => u.id === userOrId) || {};
+  } else if (typeof userOrId === 'object' && userOrId !== null) {
+    user = userOrId;
+  }
   
   document.getElementById('user-modal-title').textContent = user.id ? 'Edit User' : 'Create New User';
   document.getElementById('user-id').value = user.id || '';
@@ -1115,7 +1157,7 @@ async function renderSchoolStudents() {
             const admEsc = nmEscapeHTML(s.admission_number || s.admissionNumber || '');
             return `<tr>
             <td data-label="Student Name"><div style="display:flex;align-items:center;gap:10px;cursor:pointer;" onclick="viewStudent('${s.id}')">
-              ${s.photo ? `<img src="${s.photo}" style="width:32px;height:32px;border-radius:8px;object-fit:cover;">` : `<div class="avatar" style="width:32px;height:32px;font-size:0.7rem;">${nameEsc[0]}</div>`}
+              ${s.photo ? `<img src="${s.photo}" loading="lazy" decoding="async" style="width:32px;height:32px;border-radius:8px;object-fit:cover;">` : `<div class="avatar" style="width:32px;height:32px;font-size:0.7rem;">${nameEsc[0]}</div>`}
               <div><div style="font-weight:600;color:var(--clr-primary);">${nameEsc}</div><div style="font-size:0.72rem;color:var(--clr-text-2);">${admEsc}</div></div>
             </div></td>
             <td data-label="Class"><span class="badge badge-purple">Class ${s.class||'?'}</span></td>
@@ -1141,7 +1183,7 @@ async function viewStudent(id) {
   document.getElementById('student-view-body').innerHTML = `
     <div class="profile-header">
       <div class="profile-photo">
-        ${s.photo ? `<img src="${s.photo}" style="width:100%;height:100%;object-fit:cover;border-radius:inherit;">` : `<span>👤</span>`}
+        ${s.photo ? `<img src="${s.photo}" loading="lazy" decoding="async" style="width:100%;height:100%;object-fit:cover;border-radius:inherit;">` : `<span>👤</span>`}
       </div>
       <div style="flex:1;">
         <div style="display:flex; justify-content:space-between; align-items:flex-start; gap: 16px;">

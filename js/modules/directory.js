@@ -150,7 +150,11 @@ function applyDirectoryFilters() {
 
   emptyState.classList.add('hidden');
 
-  grid.innerHTML = filtered.map(s => {
+  // Render initial batch of 24 items with lazy loading for optimal performance
+  const batchLimit = 24;
+  const initialBatch = filtered.slice(0, batchLimit);
+
+  const renderCard = s => {
     const sId = s.id;
     const nameEsc = nmEscapeHTML(s.full_name || s.fullName || 'Unknown Student');
     const admEsc = nmEscapeHTML(s.admission_number || s.admissionNumber || '—');
@@ -195,7 +199,7 @@ function applyDirectoryFilters() {
       <div class="student-card">
         <div class="student-card-header">
           ${s.photo ? 
-            `<img class="student-card-avatar" src="${s.photo}" alt="${nameEsc}">` : 
+            `<img class="student-card-avatar" src="${s.photo}" alt="${nameEsc}" loading="lazy" decoding="async">` : 
             `<div class="student-card-avatar" style="background: ${avatarColor}; color: #fff; border: none;">${initials}</div>`
           }
           <div class="student-card-info">
@@ -247,7 +251,51 @@ function applyDirectoryFilters() {
         </div>
       </div>
     `;
-  }).join('');
+  };
+
+  let html = initialBatch.map(renderCard).join('');
+  if (filtered.length > batchLimit) {
+    window._nmFilteredDirectory = filtered;
+    window._nmRenderCard = renderCard;
+    html += `
+      <div id="dir-load-more-wrap" style="grid-column: 1 / -1; text-align: center; padding: 20px 0;">
+        <button class="btn btn-ghost" onclick="loadMoreDirectoryItems(this)" style="border: 1px solid var(--clr-border);">
+          ⬇ Load More (${filtered.length - batchLimit} remaining)
+        </button>
+      </div>
+    `;
+  }
+  grid.innerHTML = html;
+}
+
+function loadMoreDirectoryItems(btn) {
+  const grid = document.getElementById('directory-grid');
+  const wrap = document.getElementById('dir-load-more-wrap');
+  if (!window._nmFilteredDirectory || !window._nmRenderCard) return;
+
+  const currentCount = grid.querySelectorAll('.student-card').length;
+  const nextBatch = window._nmFilteredDirectory.slice(currentCount, currentCount + 24);
+  
+  if (wrap) wrap.remove();
+  
+  const div = document.createElement('div');
+  div.innerHTML = nextBatch.map(window._nmRenderCard).join('');
+  while (div.firstChild) {
+    grid.appendChild(div.firstChild);
+  }
+
+  const newTotal = grid.querySelectorAll('.student-card').length;
+  if (newTotal < window._nmFilteredDirectory.length) {
+    const remaining = window._nmFilteredDirectory.length - newTotal;
+    const newWrap = document.createElement('div');
+    newWrap.id = 'dir-load-more-wrap';
+    newWrap.style.cssText = 'grid-column: 1 / -1; text-align: center; padding: 20px 0;';
+    newWrap.innerHTML = `
+      <button class="btn btn-ghost" onclick="loadMoreDirectoryItems(this)" style="border: 1px solid var(--clr-border);">
+        ⬇ Load More (${remaining} remaining)
+      </button>
+    `;
+  }
 }
 
 /** Helper function to generate initials avatar background color based on hashing */

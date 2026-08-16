@@ -17,10 +17,10 @@ BEGIN
   END LOOP;
 END $$;
 
--- Step 2: Drop old helper functions
-DROP FUNCTION IF EXISTS get_my_role();
-DROP FUNCTION IF EXISTS get_my_school_id();
-DROP FUNCTION IF EXISTS get_my_profile();
+-- Step 2: Drop old helper functions safely with CASCADE
+DROP FUNCTION IF EXISTS get_my_role() CASCADE;
+DROP FUNCTION IF EXISTS get_my_school_id() CASCADE;
+DROP FUNCTION IF EXISTS get_my_profile() CASCADE;
 
 -- Step 3: Create helper functions with correct return types
 CREATE OR REPLACE FUNCTION get_my_role()

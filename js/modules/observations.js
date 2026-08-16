@@ -34,8 +34,11 @@ async function renderObservations() {
     const s = students.find(x => x.id === (o.student_id || o.studentId)) || { full_name: 'Unknown', class:'?', section:'?', house:'?' };
     const dateVal = o.observation_date || o.date || '';
     const observationEsc = nmEscapeHTML(o.observation || '—');
-    const nameEsc  = nmEscapeHTML(s.full_name || s.fullName || 'Unknown');
-    const admEsc   = nmEscapeHTML(s.admission_number || s.admissionNumber || '');
+    const nameEsc     = nmEscapeHTML(s.full_name || s.fullName || 'Unknown');
+    const admEsc      = nmEscapeHTML(s.admission_number || s.admissionNumber || '');
+    const classEsc    = nmEscapeHTML(s.class || '?');
+    const secEsc      = nmEscapeHTML(s.section || '—');
+    const houseEsc    = nmEscapeHTML(s.house || '—');
     const observerEsc = nmEscapeHTML(o.observed_by || o.observedBy || 'Staff');
 
     return `<tr>
@@ -44,9 +47,9 @@ async function renderObservations() {
         <div style="font-weight:600;color:var(--clr-primary);cursor:pointer;" onclick="viewStudent('${s.id}')">${nameEsc}</div>
         <div style="font-size:0.7rem;color:var(--clr-text-2);">${admEsc}</div>
       </td>
-      <td data-label="Class">Class ${s.class}</td>
-      <td data-label="Section">${s.section}</td>
-      <td data-label="House">${s.house||'—'}</td>
+      <td data-label="Class">Class ${classEsc}</td>
+      <td data-label="Section">${secEsc}</td>
+      <td data-label="House">${houseEsc}</td>
       <td data-label="No. of Obs"><span class="badge" style="background:#e5e7eb; color:#000; font-weight:bold;">${o._seqNumber || 1}</span></td>
       <td data-label="Observation" style="max-width:300px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${observationEsc}">${observationEsc}</td>
       <td data-label="Actions"><div style="display:flex;gap:4px;">
@@ -165,5 +168,7 @@ async function deleteObservationRecord(id) {
     await nmDeleteObservation(id);
     await renderObservations();
     nmToast('Observation deleted','info');
+    return true;
   }
+  return false;
 }
