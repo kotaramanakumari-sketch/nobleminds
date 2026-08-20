@@ -166,11 +166,8 @@ async function nmDownloadProfilePDF(id, btn) {
     // Clone the profile content
     const clonedProfile = modalBody.cloneNode(true);
     
-    // Remove interactive elements that shouldn't be printed
-    const actions = clonedProfile.querySelector('.profile-actions');
-    if (actions) actions.remove();
-    
-    clonedProfile.querySelectorAll('.timeline-actions').forEach(el => el.remove());
+    // Remove interactive elements and buttons that shouldn't be printed
+    clonedProfile.querySelectorAll('.profile-actions, .timeline-actions, button, .btn').forEach(el => el.remove());
 
     // Setup Sandbox securely off-screen
     sandbox.style.position = 'absolute';
@@ -222,11 +219,12 @@ async function nmDownloadProfilePDF(id, btn) {
     const filename = `profile_${safeName}.pdf`;
 
     const opt = {
-      margin:       [10, 6, 10, 6], // Top, Left, Bottom, Right in mm (Shifted left via 6mm margins)
+      margin:       [10, 8, 10, 8], // Top, Left, Bottom, Right in mm
       filename:     filename,
       image:        { type: 'jpeg', quality: 0.98 },
-      html2canvas:  { scale: 2, useCORS: true },
-      jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
+      html2canvas:  { scale: 2, useCORS: true, logging: false },
+      jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' },
+      pagebreak:    { mode: ['css', 'legacy'], avoid: ['.timeline-item', '.info-item', '.profile-card-section'] }
     };
 
     // Force raw Blob extraction
