@@ -1,32 +1,51 @@
 -- ==============================================================================
--- NOBLEMINDS — FINAL SECURE RLS SCRIPT (TYPE-SAFE)
--- Run this in Supabase SQL Editor
+-- NOBLEMINDS — FIX SUPER ADMIN HISTORY TIMELINE RLS POLICIES
+-- Run this in your Supabase SQL Editor
 -- ==============================================================================
 
--- 1. DROP THE OLD POLICIES THAT CAUSE RECURSION OR LEAK DATA
-DROP POLICY IF EXISTS "Teacher owns observations" ON observations;
-DROP POLICY IF EXISTS "Teacher owns or Admin sees all" ON observations;
-DROP POLICY IF EXISTS "School Isolation Policy" ON observations;
-DROP POLICY IF EXISTS "School records isolation" ON observations;
+-- 1. Ensure RLS is enabled on all timeline and student tables
+ALTER TABLE observations ENABLE ROW LEVEL SECURITY;
+ALTER TABLE counselling_records ENABLE ROW LEVEL SECURITY;
+ALTER TABLE movements ENABLE ROW LEVEL SECURITY;
+ALTER TABLE parent_interactions ENABLE ROW LEVEL SECURITY;
+ALTER TABLE students ENABLE ROW LEVEL SECURITY;
 
-DROP POLICY IF EXISTS "Teacher owns counselling" ON counselling_records;
-DROP POLICY IF EXISTS "Teacher owns or Admin sees all" ON counselling_records;
-DROP POLICY IF EXISTS "School Isolation Policy" ON counselling_records;
-DROP POLICY IF EXISTS "School records isolation" ON counselling_records;
+-- 2. DYNAMICALLY DROP EXISTING POLICIES ON TIMELINE & STUDENT TABLES
+DO $$ 
+DECLARE
+    r RECORD;
+BEGIN
+    FOR r IN (
+        SELECT policyname, tablename 
+        FROM pg_policies 
+        WHERE tablename IN ('observations', 'counselling_records', 'movements', 'parent_interactions', 'students')
+          AND schemaname = 'public'
+    ) 
+    LOOP
+        EXECUTE format('DROP POLICY IF EXISTS %I ON public.%I', r.policyname, r.tablename);
+    END LOOP;
+END $$;
 
-DROP POLICY IF EXISTS "Teacher owns movements" ON movements;
-DROP POLICY IF EXISTS "Teacher owns or Admin sees all" ON movements;
-DROP POLICY IF EXISTS "School Isolation Policy" ON movements;
-DROP POLICY IF EXISTS "School records isolation" ON movements;
+-- 3. ENSURE HELPER FUNCTIONS EXIST
+CREATE OR REPLACE FUNCTION get_my_role()
+RETURNS text
+LANGUAGE sql
+SECURITY DEFINER
+STABLE
+AS $$
+  SELECT role FROM public.profiles WHERE id = auth.uid() LIMIT 1;
+$$;
 
-DROP POLICY IF EXISTS "Teacher owns interactions" ON parent_interactions;
-DROP POLICY IF EXISTS "Teacher owns or Admin sees all" ON parent_interactions;
-DROP POLICY IF EXISTS "School Isolation Policy" ON parent_interactions;
-DROP POLICY IF EXISTS "School records isolation" ON parent_interactions;
+CREATE OR REPLACE FUNCTION get_my_school_id()
+RETURNS uuid
+LANGUAGE sql
+SECURITY DEFINER
+STABLE
+AS $$
+  SELECT school_id FROM public.profiles WHERE id = auth.uid() LIMIT 1;
+$$;
 
--- 2. CREATE SECURE POLICIES USING EXISTING HELPER FUNCTIONS
--- We cast ::text to ensure no "uuid = text" errors occur if the tables were created with text columns.
-
+-- 4. CREATE POLICIES FOR OBSERVATIONS
 CREATE POLICY "Teacher owns or Admin sees all"
   ON observations FOR ALL
   USING (
@@ -52,6 +71,7 @@ CREATE POLICY "Teacher owns or Admin sees all"
     )
   );
 
+-- 5. CREATE POLICIES FOR COUNSELLING RECORDS
 CREATE POLICY "Teacher owns or Admin sees all"
   ON counselling_records FOR ALL
   USING (
@@ -77,6 +97,7 @@ CREATE POLICY "Teacher owns or Admin sees all"
     )
   );
 
+-- 6. CREATE POLICIES FOR MOVEMENTS
 CREATE POLICY "Teacher owns or Admin sees all"
   ON movements FOR ALL
   USING (
@@ -102,6 +123,7 @@ CREATE POLICY "Teacher owns or Admin sees all"
     )
   );
 
+-- 7. CREATE POLICIES FOR PARENT INTERACTIONS
 CREATE POLICY "Teacher owns or Admin sees all"
   ON parent_interactions FOR ALL
   USING (
@@ -127,10 +149,7 @@ CREATE POLICY "Teacher owns or Admin sees all"
     )
   );
 
--- 3. STUDENTS TABLE RLS
-DROP POLICY IF EXISTS "Teacher sees all students" ON students;
-DROP POLICY IF EXISTS "Users can see students in their school" ON students;
-
+-- 8. CREATE POLICIES FOR STUDENTS
 CREATE POLICY "Users can see students in their school"
   ON students FOR ALL
   USING (
@@ -141,3 +160,13 @@ CREATE POLICY "Users can see students in their school"
     get_my_role() = 'super_admin'
     OR school_id::text = (get_my_school_id())::text
   );
+
+-- ==============================================================================
+-- VERIFICATION
+-- Run this query after executing the above script to verify active policies:
+-- ==============================================================================
+SELECT tablename, policyname, cmd
+FROM pg_policies
+WHERE schemaname = 'public'
+  AND tablename IN ('observations', 'counselling_records', 'movements', 'parent_interactions', 'students')
+ORDER BY tablename, policyname;
