@@ -165,11 +165,18 @@ async function nmDownloadProfilePDF(id, btn) {
 
     // Clone the profile content
     const clonedProfile = modalBody.cloneNode(true);
+    clonedProfile.style.padding = '0';
+    clonedProfile.style.margin = '0';
     
     // Remove interactive elements and buttons that shouldn't be printed
-    clonedProfile.querySelectorAll('.profile-actions, .timeline-actions, button, .btn').forEach(el => el.remove());
+    clonedProfile.querySelectorAll('.profile-actions, .timeline-actions, button, .btn, .modal-close').forEach(el => el.remove());
 
-    // Setup Sandbox securely off-screen
+    // Ensure all images inside cloned profile have CORS enabled
+    clonedProfile.querySelectorAll('img').forEach(img => {
+      img.setAttribute('crossOrigin', 'anonymous');
+    });
+
+    // Setup Sandbox securely off-screen at absolute top 0
     sandbox.style.position = 'absolute';
     sandbox.style.left = '-9999px';
     sandbox.style.top = '0';
@@ -178,24 +185,35 @@ async function nmDownloadProfilePDF(id, btn) {
 
     // Setup Container (Portrait A4 max)
     container.style.width = '740px';
-    container.style.padding = '30px 24px';
+    container.style.padding = '10px 15px';
     container.style.boxSizing = 'border-box';
     container.style.background = '#fff';
     container.style.color = '#333';
     container.style.fontFamily = 'system-ui, -apple-system, sans-serif';
     container.classList.add('pdf-export-mode');
 
-    const schoolName = document.getElementById('sb-school-name')?.textContent || 'NobleMinds Platform';
+    // Extract School Name (Checks sidebar element or student profile subtitle)
+    let schoolName = document.getElementById('sb-school-name')?.textContent;
+    if (!schoolName || schoolName === 'NobleMinds') {
+      const subTitle = modalBody.querySelector('.profile-header div[style*="color:var(--clr-text-2)"]')?.textContent || '';
+      const parts = subTitle.split('·');
+      if (parts.length > 1 && parts[1].trim()) {
+        schoolName = parts[1].trim();
+      } else {
+        schoolName = 'NobleMinds Platform';
+      }
+    }
+
     const studentNameEl = modalBody.querySelector('.profile-name');
     const studentName = studentNameEl ? studentNameEl.textContent.trim() : 'Unknown';
 
     // Inject Official Header
     container.innerHTML = `
-      <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:2px solid #6c63ff; padding-bottom:15px; margin-bottom:20px;">
+      <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:2px solid #6c63ff; padding-bottom:10px; margin-bottom:12px;">
         <div style="display:flex; align-items:center; gap:12px;">
           <div>
-            <h1 style="margin:0; font-size:1.4rem; color:#1e1e2d;">Official Student Record</h1>
-            <p style="margin:2px 0 0 0; font-size:0.8rem; color:#666;">${schoolName}</p>
+            <h1 style="margin:0; font-size:1.25rem; color:#1e1e2d;">Official Student Record</h1>
+            <p style="margin:2px 0 0 0; font-size:0.78rem; color:#666;">${nmEscapeHTML(schoolName)}</p>
           </div>
         </div>
         <div style="text-align:right; font-size:0.75rem; color:#666;">
@@ -203,8 +221,8 @@ async function nmDownloadProfilePDF(id, btn) {
         </div>
       </div>
       <div id="pdf-profile-wrapper"></div>
-      <div style="margin-top: 30px; text-align: center; border-top: 1px solid #ddd; padding-top: 15px; font-size: 0.8rem; color: #666; display: flex; align-items: center; justify-content: center; gap: 8px;">
-        <img src="../assets/logo.png" style="width:24px; height:24px; object-fit:contain;">
+      <div style="margin-top: 16px; text-align: center; border-top: 1px solid #ddd; padding-top: 10px; font-size: 0.75rem; color: #666; display: flex; align-items: center; justify-content: center; gap: 8px;">
+        <img src="../assets/logo.png" style="width:18px; height:18px; object-fit:contain;" crossOrigin="anonymous">
         <span>Powered by NobleMinds</span>
       </div>
     `;
@@ -213,16 +231,29 @@ async function nmDownloadProfilePDF(id, btn) {
     sandbox.appendChild(container);
     document.body.appendChild(sandbox);
 
+    // Wait for all images inside container to finish loading
+    const imgs = Array.from(container.querySelectorAll('img'));
+    await Promise.all(imgs.map(img => {
+      if (img.complete) return Promise.resolve();
+      return new Promise(res => { img.onload = res; img.onerror = res; });
+    }));
+
     await new Promise(r => setTimeout(r, 200));
 
     const safeName = studentName.replace(/[^a-z0-9]/gi, '_').toLowerCase();
     const filename = `profile_${safeName}.pdf`;
 
     const opt = {
-      margin:       [10, 8, 10, 8], // Top, Left, Bottom, Right in mm
+      margin:       [5, 5, 5, 5], // Ultra-compact 5mm margin
       filename:     filename,
       image:        { type: 'jpeg', quality: 0.98 },
-      html2canvas:  { scale: 2, useCORS: true, logging: false },
+      html2canvas:  { 
+        scale: 2, 
+        useCORS: true, 
+        logging: false,
+        scrollY: 0,
+        scrollX: 0
+      },
       jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' },
       pagebreak:    { mode: ['css', 'legacy'], avoid: ['.timeline-item', '.info-item', '.profile-card-section'] }
     };

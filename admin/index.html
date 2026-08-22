@@ -1291,7 +1291,7 @@ async function viewStudent(id) {
     </div>`;
   openModal('student-view-modal');
 }
-function infoItem(key,val){return`<div class="info-item"><div class="key">${key}</div><div class="val">${val||'—'}</div></div>`;}
+function infoItem(key,val){return`<div class="info-item"><div class="key">${nmEscapeHTML(key||'')}</div><div class="val">${nmEscapeHTML(val||'—')}</div></div>`;}
 
 function adminQuickAdd(type, stdId) {
   closeModal('student-view-modal');
