@@ -436,19 +436,23 @@ async function nmProcessRegistrationRequest(requestId, approve = true) {
         principal: req.admin_name
       });
 
-      // 2. Create/Update the Profile record for the administrator
-      // We look for the profile by email since we don't have the UID in the request.
-      const { data: profile, error: pError } = await sb.from('profiles').select('*').eq('email', req.email).single();
-      
-      if (profile) {
-        await sb.from('profiles').update({
-          school_id: school.id,
-          school_name: school.name,
-          role: 'user' // School admin
-        }).eq('id', profile.id);
-      } else {
-        console.warn('No profile found for email:', req.email);
-        // If profile doesn't exist yet, it will be created when they sign up or we can't do much here.
+      // 2. Create/Update the Profile record for the administrator (School Principal)
+      const reqEmail = (req.email || '').trim();
+      if (reqEmail) {
+        const { data: profiles, error: pError } = await sb.from('profiles').select('*').ilike('email', reqEmail);
+        
+        if (profiles && profiles.length > 0) {
+          for (const p of profiles) {
+            const { error: uErr } = await sb.from('profiles').update({
+              school_id: school.id,
+              school_name: school.name,
+              role: 'admin' // School Principal
+            }).eq('id', p.id);
+            if (uErr) console.error('Error updating profile school link:', uErr);
+          }
+        } else {
+          console.warn('No profile found for email during school approval:', reqEmail);
+        }
       }
       console.log('Processed school and profile linking for request:', school.id);
     }

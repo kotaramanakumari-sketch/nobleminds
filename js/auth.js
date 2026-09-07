@@ -56,7 +56,7 @@ async function nmSignUp(data) {
     id: authData.user.id,
     name: name,
     email: email,
-    role: 'user', // Force user role for security
+    role: role || 'user', // Set requested role or default to user
     school_id: schoolId || null,
     school_name: schoolId ? schoolName : 'Pending Approval'
   }]);

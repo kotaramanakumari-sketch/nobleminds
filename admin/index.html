@@ -1092,7 +1092,6 @@ async function saveUser() {
         school_id: schoolId || null,
         school_name: schoolName || 'Independent'
       });
-      nmToast('User profile updated!', 'success');
     } else {
       // Create new user (requires signing them up)
       if (!password || password.length < 6) { nmToast('Password required (min 6 chars)', 'error'); return; }

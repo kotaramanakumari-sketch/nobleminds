@@ -3,21 +3,34 @@
 -- Run this in Supabase SQL Editor
 -- ==============================================================================
 
--- Drop any old super admin update policy first
+-- Drop old super admin update policy first
 DROP POLICY IF EXISTS "Super admin updates any profile" ON profiles;
 DROP POLICY IF EXISTS "Super admin manages all profiles" ON profiles;
-DROP POLICY IF EXISTS "Super admin updates any profile" ON profiles;
+DROP POLICY IF EXISTS "profiles_update_policy" ON profiles;
 
--- Create the policy:
--- The inner SELECT (WHERE id = auth.uid()) is safe — it is covered by "Own profile read"
--- so there is NO infinite recursion here.
-CREATE POLICY "Super admin updates any profile"
+-- Create SECURITY DEFINER function to check role safely
+CREATE OR REPLACE FUNCTION public.get_my_role()
+RETURNS text
+LANGUAGE sql
+SECURITY DEFINER
+STABLE
+AS $$
+  SELECT role FROM public.profiles WHERE id = auth.uid() LIMIT 1;
+$$;
+
+-- Create update policy using SECURITY DEFINER function (no recursion)
+CREATE POLICY "profiles_update_policy"
   ON profiles FOR UPDATE
+  TO authenticated
   USING (
-    (SELECT role FROM profiles WHERE id = auth.uid()) = 'super_admin'
+    id = auth.uid()
+    OR public.get_my_role() = 'super_admin'
+    OR (public.get_my_role() = 'admin' AND school_id = public.get_my_school_id())
   )
   WITH CHECK (
-    (SELECT role FROM profiles WHERE id = auth.uid()) = 'super_admin'
+    id = auth.uid()
+    OR public.get_my_role() = 'super_admin'
+    OR (public.get_my_role() = 'admin' AND school_id = public.get_my_school_id())
   );
 
 -- Verify policies on profiles table
