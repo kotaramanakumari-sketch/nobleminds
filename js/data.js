@@ -592,10 +592,10 @@ function nmSortDiaries(diaries) {
     let idxA = periodOrder.indexOf(pA);
     let idxB = periodOrder.indexOf(pB);
     
-    if (idxA === -1) idxA = 999;
-    if (idxB === -1) idxB = 999;
+    if (idxA === -1) idxA = -1;
+    if (idxB === -1) idxB = -1;
     
-    return idxA - idxB;
+    return idxB - idxA;
   });
 }
 
