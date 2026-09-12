@@ -15,7 +15,7 @@ async function renderTeacherDiaries() {
   }
   const diaries = await nmGetTeacherDiaries(userId, schoolId);
   
-  const list = diaries.filter(d => {
+  let list = diaries.filter(d => {
     const dateVal = d.diary_date || '';
     if (fFrom && dateVal < fFrom) return false;
     if (fTo && dateVal > fTo) return false;
@@ -25,6 +25,7 @@ async function renderTeacherDiaries() {
            (d.class||'').toLowerCase().includes(q) ||
            (d.section||'').toLowerCase().includes(q);
   });
+  list = nmSortDiaries(list);
   
   const tbody = document.getElementById('diary-tbody');
   const empty = document.getElementById('diary-empty');

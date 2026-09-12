@@ -280,6 +280,12 @@ async function viewStudent(id) {
                   const retRel = nmEscapeHTML(h.return_relationship || h.returnRelationship || '—');
                   bodyEsc += `<br><strong>Incoming Escort:</strong> ${retEscort} (${retRel})`;
                 }
+              } else if (h.type === 'interaction') {
+                icon = '📱';
+                const pName = nmEscapeHTML(h.parent_name || h.parentName || 'Parent');
+                const pMode = nmEscapeHTML(h.interaction_mode || h.interactionMode || 'Call');
+                title = `Parent Interaction: ${pName} (${pMode})`;
+                bodyEsc = nmEscapeHTML(h.discussion_summary || h.summary || '');
               } else {
                 bodyEsc = nmEscapeHTML(h.reason || '');
               }
@@ -712,6 +718,8 @@ async function deleteTimelineRecord(type, id) {
     if (typeof deleteCounsellingRecord === 'function') confirmed = await deleteCounsellingRecord(id);
   } else if (type === 'movement') {
     if (typeof deleteMovementRecord === 'function') confirmed = await deleteMovementRecord(id);
+  } else if (type === 'interaction') {
+    if (typeof deleteInteractionRecord === 'function') confirmed = await deleteInteractionRecord(id);
   }
   // Refresh the profile view only when the user actually confirmed the delete
   if (confirmed && currentStudentId) await viewStudent(currentStudentId);

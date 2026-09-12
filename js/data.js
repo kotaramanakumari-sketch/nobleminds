@@ -508,16 +508,18 @@ async function nmGetStats(schoolId, academicYearId) {
 
 // ─── HISTORY ──────────────────────────────────────────────────────────────────
 async function nmGetStudentHistory(studentId) {
-  const [obs, cns, mov] = await Promise.all([
+  const [obs, cns, mov, ints] = await Promise.all([
     nmGetObservations(studentId, false),
     nmGetCounselling(studentId, false),
-    nmGetMovements(studentId, false)
+    nmGetMovements(studentId, false),
+    nmGetInteractions(studentId, false)
   ]);
   
   const history = [
     ...obs.map(o => ({ ...o, type: 'observation', date: o.observation_date })),
     ...cns.map(c => ({ ...c, type: 'counselling', date: c.record_date })),
-    ...mov.map(m => ({ ...m, type: 'movement', date: m.leave_date }))
+    ...mov.map(m => ({ ...m, type: 'movement', date: m.leave_date })),
+    ...ints.map(i => ({ ...i, type: 'interaction', date: i.interaction_date }))
   ];
   
   return history.sort((a, b) => new Date(a.date) - new Date(b.date));
@@ -573,6 +575,30 @@ async function nmDeleteSupportQuery(id) {
 }
 
 // ─── TEACHER DIARIES ──────────────────────────────────────────────────────────
+function nmSortDiaries(diaries) {
+  if (!Array.isArray(diaries)) return [];
+  const periodOrder = ['1', '2', '3', '4', '5', '6', '7', '8', 'remedial', 'superwise', 'superwise study'];
+  
+  return diaries.sort((a, b) => {
+    const dateA = a.diary_date || a.diaryDate || '';
+    const dateB = b.diary_date || b.diaryDate || '';
+    if (dateA !== dateB) {
+      return dateB.localeCompare(dateA);
+    }
+    
+    const pA = String(a.period || '').trim().toLowerCase();
+    const pB = String(b.period || '').trim().toLowerCase();
+    
+    let idxA = periodOrder.indexOf(pA);
+    let idxB = periodOrder.indexOf(pB);
+    
+    if (idxA === -1) idxA = 999;
+    if (idxB === -1) idxB = 999;
+    
+    return idxA - idxB;
+  });
+}
+
 async function nmGetTeacherDiaries(userId, schoolId) {
   let query = sb.from('teacher_diaries').select('*').order('diary_date', { ascending: false });
   if (userId) query = query.eq('user_id', userId);
@@ -580,7 +606,7 @@ async function nmGetTeacherDiaries(userId, schoolId) {
   
   const { data, error } = await query;
   if (error) { console.error('Error fetching teacher diaries:', error); return []; }
-  return data || [];
+  return nmSortDiaries(data || []);
 }
 
 async function nmSaveTeacherDiary(diary) {
